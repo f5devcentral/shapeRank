@@ -1,8 +1,6 @@
-# Solutions Engineering Template Repository
-A template repository that contains all required files (LICENSE, SUPPORT, CONTRIBUTING, etc) as outlined in the org standards.  
+# ShapeRank
 
-
-The sections below are recommended in your project's README.md file. 
+ShapeRank is new programming language under development at F5.  ShapeRank is designed for data analytics, machine learning and reactive programming. ShapeRank is purely functional and statically typed. All ShapeRank values are multi-dimensional streams, and all operations are automatically lifted to process such streams in parallel. This lifting originates in the APL language family, and is known as rank-polymorphism.  ShapeRank is unusual in that it extends  rank-polymorphism to streams.  
 
 ## Overview
 Provide a short overview of the project.
@@ -20,7 +18,7 @@ Outline how the user can use your project and the various features the project o
 Outline any requirements to setup a development environment if someone would like to contribute.  You may also link to another file for this information. 
 
 ## Support
-For support, please open a GitHub issue.  Note, the code in this repository is community supported and is not supported by F5 Networks.  For a complete list of supported projects please reference [SUPPORT.md](SUPPORT.md).
+For support, please open a GitHub issue. Note that ShapeRank is research project, bot a product.
 
 ## Community Code of Conduct
 Please refer to the [F5 DevCentral Community Code of Conduct](code_of_conduct.md).
@@ -30,7 +28,7 @@ Please refer to the [F5 DevCentral Community Code of Conduct](code_of_conduct.md
 [Apache License 2.0](LICENSE)
 
 ## Copyright
-Copyright 2014-2020 F5 Networks Inc.
+Copyright 2014-2021 F5 Networks Inc.
 
 
 ### F5 Networks Contributor License Agreement
