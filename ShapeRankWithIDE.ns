@@ -1,0 +1,120 @@
+Newspeak3
+'Root'
+class ShapeRankWithIDE  packageUsing: manifest = (
+|
+        private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.
+        private hopscotchIDE = manifest HopscotchWebIDE packageUsing: manifest.
+	    private Embedder = manifest ShapeRankEmbedder.
+        private ShapeRankASTs = manifest ShapeRankASTs.
+        private ShapeRankDemo = manifest ShapeRankDemo.
+        private ShapeRankDemo2 = manifest ShapeRankDemo2.
+        private ShapeRankScopes = manifest ShapeRankScopes.
+        private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private CombinatorialParsing = manifest CombinatorialParsing.
+        private ShapeRankGrammar = manifest ShapeRankGrammar.
+        private ShapeRankParser = manifest ShapeRankParser.
+        private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
+        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration.
+        private ShapeRankParserTests = manifest ShapeRankParserTests.
+        private ShapeRankParsingTestsConfiguration = manifest ShapeRankParsingTestsConfiguration.
+        private ShapeRankTestData = manifest ShapeRankTestData.
+        private ShapeRankTypecheckerTests = manifest ShapeRankTypecheckerTests.
+        private ShapeRankTypecheckerTestsConfiguration = manifest ShapeRankTypecheckerTestsConfiguration.
+        private ShapeRankInferenceTests = manifest ShapeRankInferenceTests.
+        private ShapeRankInferenceTestsConfiguration = manifest ShapeRankInferenceTestsConfiguration.
+        private ShapeRankWorkspace = manifest ShapeRankWorkspace.
+        private ShapeRankWorkspaceApp = manifest ShapeRankWorkspaceApp.
+        private ShapeRankNotebook = manifest ShapeRankNotebook.
+        private CollectionUtils = manifest CollectionUtils.
+        private NodeAPI = manifest NodeAPI.
+        private Tensorflow = manifest Tensorflow.
+|
+) (
+populateNamespace: namespace = (
+	namespace at: #ShapeRankWithIDE put: self class.
+	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
+	namespace at: #ShapeRankDemo put: ShapeRankDemo.	
+	namespace at: #ShapeRankDemo2 put: ShapeRankDemo2.	
+	namespace at: #ShapeRankScopes put: ShapeRankScopes.
+	namespace at: #ShapeRankTypechecker put: ShapeRankTypechecker.
+	namespace at: #ShapeRankInterpreter put: ShapeRankInterpreter.
+	namespace at: #ShapeRankGrammar put: ShapeRankGrammar.
+	namespace at: #ShapeRankParser put: ShapeRankParser.
+	namespace at: #ShapeRankEmbedder put: Embedder.
+	namespace at: #ShapeRankParserTests put: ShapeRankParserTests.
+	namespace at: #ShapeRankParsingTestsConfiguration put: ShapeRankParsingTestsConfiguration.
+	namespace at: #ShapeRankInterpreterTests put: ShapeRankInterpreterTests.
+	namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration.
+	namespace at: #ShapeRankTypecheckerTests put: ShapeRankTypecheckerTests.
+	namespace at: #ShapeRankTypecheckerTestsConfiguration put: ShapeRankTypecheckerTestsConfiguration.
+	namespace at: #ShapeRankInferenceTests put: ShapeRankInferenceTests.
+	namespace at: #ShapeRankInferenceTestsConfiguration put: ShapeRankInferenceTestsConfiguration.
+	namespace at: #ShapeRankTestData put: ShapeRankTestData.
+    namespace at: #ShapeRankWorkspace put: ShapeRankWorkspace.
+	namespace at: #ShapeRankWorkspaceApp put: ShapeRankWorkspaceApp.
+    namespace at: #ShapeRankNotebook put: ShapeRankNotebook.
+    namespace at: #CollectionUtils put: CollectionUtils.
+    namespace at: #NodeAPI put: NodeAPI.
+    namespace at: #Tensorflow put: Tensorflow. 
+)
+public main: platform args: args = (
+    | ide namespace hopscotchPlatform |
+	hopscotchPlatform:: hopscotchRuntime using: platform.
+	ide:: hopscotchIDE ideUsingPlatform: hopscotchPlatform.
+    hopscotchIDE augmentIDE: ide withPlatform: platform.
+    namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+    ide launch: (ide browsing HomeSubject new)
+)
+) : (
+public shapeRankParserFrom: platform <Platform> manifest: manifest = (
+	|
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+	Scopes
+	Typechecker
+	interpreter
+	utils
+	|
+	utils:: manifest CollectionUtils usingPlatform: platform.
+	Scopes::
+	 (manifest ShapeRankScopes usingPlatform: platform asts: manifest ShapeRankASTs tensorflow: manifest Tensorflow nodeAPI: manifest NodeAPI) Scopes.
+        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils.
+        Evaluator:: interpreter Evaluator.
+        parsers:: manifest CombinatorialParsing usingPlatform: platform.
+        grammar:: manifest ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: manifest ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+    ^parser
+)
+public shapeRankParserWithTypechecker: platform <Platform> manifest: manifest = (
+	|
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+	Scopes
+	Typechecker
+	interpreter
+	utils
+	|
+	utils:: manifest CollectionUtils usingPlatform: platform.
+	Scopes::
+	 (manifest ShapeRankScopes usingPlatform: platform asts: manifest ShapeRankASTs tensorflow: manifest Tensorflow nodeAPI: manifest NodeAPI) Scopes.
+        Typechecker::
+	  (manifest ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.
+        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils.
+        Evaluator:: interpreter Evaluator.
+        parsers:: manifest CombinatorialParsing usingPlatform: platform.
+        grammar:: manifest ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: manifest ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+    ^parser
+)
+)

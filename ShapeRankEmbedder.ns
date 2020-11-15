@@ -1,0 +1,329 @@
+Newspeak3
+'Root'
+class ShapeRankEmbedder usingPlatform: platform namespace: ns browsing: b
+  parser: p = (
+(*
+A quick and dirty adaptation of AmpleforthEmbedder to evaluate
+ShapeRank code in the browser.
+
+Copyright 2014-2017 Google Inc.
+*)
+|
+	private List = platform collections List.
+	private Color = platform graphics Color.
+	private ObjectMirror = platform mirrors ObjectMirror.
+	private ClassMirror = platform mirrors ClassMirror.
+	private Subject = platform hopscotch core Subject.
+	private Presenter = platform hopscotch core Presenter.
+	private TextEditorFragment = platform hopscotch fragments TextEditorFragment.
+	private Gradient = platform hopscotch Gradient.
+	private EmbeddedHopscotchWindow = platform hopscotch core EmbeddedHopscotchWindow.
+
+	private ObjectSubject = b ObjectSubject.
+
+	private namespace = ns.
+	private browsing = b.
+	private document = platform js global at: 'document'.
+	private JSObject = platform js global at: 'Object'.
+	private platformMirror = ObjectMirror reflecting: platform.
+	private parser = p.
+	private preludeSlot ::= standardPrelude.
+ |
+
+namespace at: #ShapeRankEmbedder put: self class) (
+class ErrorPresenter onSubject: s = Presenter onSubject: s (
+) (
+public definition ^ <Fragment> = (
+	^label: subject errorMessage
+)
+public isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfErrorPresenter
+)
+public isKindOfErrorPresenter ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class ErrorSubject onModel: s <String> = Subject onModel: s (
+|
+	public errorMessage = s.
+|) (
+public createPresenter ^ <ErrorPresenter> = (
+	^ErrorPresenter onSubject: self
+)
+public isKindOfErrorSubject ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfErrorSubject
+)
+) : (
+)
+class ProgramPresenter onSubject: s = Presenter onSubject: s (
+) (
+definition ^ <Fragment> = (
+  | cm = codeMirror: subject prelude. |
+ cm acceptResponse: [subject prelude: cm textBeingAccepted. cm leaveEditState].
+ ^cm
+)
+public isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfProgramPresenter
+)
+public isKindOfProgramPresenter ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class ProgramSubject = Subject onModel: nil (
+) (
+createPresenter  = (
+  ^ProgramPresenter onSubject: self
+)
+public prelude = (
+ preludeSlot isNil ifTrue: [preludeSlot:: standardPrelude].
+ ^preludeSlot.
+)
+public prelude: s <String> = (
+ preludeSlot:: s
+)
+public isKindOfProgramSubject ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfProgramSubject
+)
+) : (
+)
+class SnippetPresenter onSubject: s = Presenter onSubject: s () (
+eval: e <String> = (
+  ^(parser program parseString:  subject programPrelude, e) eval
+)
+evaluate2: expression <String> ^<Fragment> = (	
+	| thread <ThreadMirror> |
+	[thread:: platformMirror evaluate: (withoutNbsp: expression)]
+		on: Error do: [:e | ^linkForError: e].
+	thread isFulfilled ifTrue: [^linkForResult: thread result].
+	thread isBroken ifTrue: [^linkForError: thread result].
+	^nothing
+)
+evaluate: expression <String> = (
+	| result <Tensor> |
+	[result:: ObjectMirror reflecting: (eval: (withoutNbsp: expression))]
+		on: Error do: [:e | ^linkForError: e].
+     ^(TensorSubject onModel:  result) presenter
+)
+linkForResult: objectMirror = (
+	^link: objectMirror reflectee printString
+	action: [enterSubject: (TensorSubject onModel: objectMirror) fromSnippet: subject]
+)
+typecheck: expression <String> = (
+	| result <TypeAST> |
+  [result:: type: (withoutNbsp: expression) ] on: Error do: [:e | ^linkForError: e]. 
+
+  ^(row: {label: 'Type'. blank: 4. label: result printString}) color: (Color r: 0 g: 1 b: 0). 
+)
+public isKindOfSnippetPresenter ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfSnippetPresenter
+)
+definition = (
+	| result |
+	^column: {
+		(codeMirror: subject snippet)
+			changeResponse: [:editor | result content: (column: {typecheck: editor textBeingAccepted asString. evaluate: editor textBeingAccepted asString})].
+		result:: holder: [deferred: [column: {typecheck: subject snippet. evaluate: subject snippet}]].
+	}
+)
+linkForError: exception = (
+	^(link: exception printString
+	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception)) fromSnippet: subject])
+	color: (Color r: 1 g: 0 b: 0)	
+)
+type: e <String> ^ <TensorTypeAST> = (
+  ^(parser program parseString: subject programPrelude, e) expression userType
+)
+) : (
+)
+public class SnippetSubject onModel: m = Subject onModel: m () (
+createPresenter = (
+	^SnippetPresenter onSubject: self
+)
+public programPrelude ^ <String> = (
+^preludeSlot
+)
+public snippet = (
+	^model
+)
+public isKindOfSnippetSubject ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfSnippetSubject
+)
+) : (
+)
+class TensorPresenter onSubject: s = Presenter onSubject: s () (
+definition = (
+  ^(column: {
+      row: {label: 'Tensor'. blank: 4. linkForResult: subject tensor}.      
+      row: {label: 'rank'. blank: 4.  label: subject tensor reflectee rank printString}.
+      row: {label: 'shape'. blank: 4. label: shapeString}.
+    }) color: (Color h: 240 s: 0.05 asFloat v: 0.9 asFloat)
+)
+linkForResult: om <ObjectMirror> = (
+	^link: om reflectee printString
+	action: [enterSubject: (ObjectSubject onModel: om) fromSnippet: subject]
+)
+metaButton = (
+  ^button: 'Inspect in Newspeak' action: [enterSubject: (ObjectSubject onModel: objectMirror) fromSnippet: subject].
+)
+objectMirror = (
+  ^subject model
+)
+shapeString ^ <String> = (
+  | result = subject tensor reflectee shape printString. |
+  result isEmpty ifTrue: [^'[]'].
+  ^result
+)
+public isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfTensorPresenter
+)
+public isKindOfTensorPresenter ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class TensorSubject onModel: m = Subject onModel: m () (
+createPresenter = (
+	^TensorPresenter onSubject: self
+)
+public tensor = (
+  ^model
+)
+public isKindOfTensorSubject ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfTensorSubject
+)
+) : (
+)
+domElementsWithClass: klass <String> do: action <[:Alien[Element]]> = (
+	| elements = document getElementsByClassName: klass. |
+	0 to: (elements at: 'length') - 1 do:
+		[:index | action value: (elements at: index)].
+)
+evaluateSubject: se <String> ^ <Subject> = (
+(* Takes a string representing a unary block and evaluates it with
+	browsing as its argument.  The result should be a Subject, which gets
+	returned. In other words, the string should contain an expression of type
+   [:BrowsingForHTML | Subject]
+*)
+	| blk |
+	blk:: platformMirror
+		evaluate: (withoutNbsp: se)
+		ifCompilerError: [:e | ^ErrorSubject onModel: 'compile-time error: ', e printString]
+		ifError: [:e | ^ErrorSubject onModel: 'runtime error: ', e printString].
+		^blk value: browsing
+)
+populateNamespace = (
+ | platformClass <ClassMirror> = topLevelClassOf: platformMirror. |
+	namespace at: #SimpleBrowsing put: (ClassMirror reflecting: self Browsing) mixin declaration.
+	namespace at: platformClass name put: platformClass.
+	platformClass slots do: [:s <SlotMirror> | | klass <ClassMIrror> o <ObjectMirror> |
+		o:: platformMirror getSlot: s name.
+		klass:: topLevelClassOf: o.
+		namespace at: klass name put: klass.
+		].
+)
+public processClassPresenters = (
+	domElementsWithClass: 'classPresenter' do: [:element |
+		|
+		errorBlock =
+			[:errorMessage <String> |
+			^EmbeddedHopscotchWindow
+				into: element
+				openSubject: (ErrorSubject onModel: errorMessage)].
+		className <String> = element getAttribute: 'className'.
+		klass <Class>
+		cm <ClassDeclarationMirror>
+		|
+		klass:: namespace at: className ifAbsent: [nil].
+		klass isKindOfBehavior ifFalse: [errorBlock value: className, ' is not a class'].
+		(* isKindOfClass should be defined but isn't. *)
+		cm:: (ClassMirror reflecting: klass) mixin declaration.
+		EmbeddedHopscotchWindow
+			into: element
+			openSubject: (browsing ClassSubject onModel: cm)
+	].
+)
+public processEvaluators = (
+	domElementsWithClass: 'shapeRankEvaluator' do:
+		[:element |
+		| expression = element getAttribute: 'expression'.
+                  mode = JSObject new at: #mode put: 'open'; yourself.
+                  shadow = element attachShadow: mode.
+                  style = document createElement: 'style'.
+                  |
+                style at: #textContent put: '
+@import url("CodeMirror/lib/codemirror.css");
+:host {
+  all: initial !important;
+  display: block;
+  background: white;
+}'.
+                shadow appendChild: style.
+
+		EmbeddedHopscotchWindow
+			into: shadow
+			openSubject: (SnippetSubject onModel: expression)].
+)
+public processMinibrowsers = (
+	domElementsWithClass: 'minibrowser' do:
+		[:element |
+		EmbeddedHopscotchWindow
+			into: element
+			openSubject: browsing HomeSubject new].
+)
+public processPreludes = (
+	domElementsWithClass: 'programPrelude' do:
+		[:element |
+		EmbeddedHopscotchWindow
+			into: element
+			openSubject: ProgramSubject new].
+)
+public start = (
+	processEvaluators.
+	processPreludes.
+(*	processMinibrowsers.
+	processClassPresenters.*)
+)
+topLevelClassOf: om <ObjectMirror> ^ <ClassDeclarationMirror> = (
+	| klass ::= om getClass mixin declaration. |
+	[klass mixin enclosingClass isNil] whileFalse: [klass:: klass enclosingClass].
+	^klass
+)
+withoutNbsp: string = (
+	('a' at: 1) isKindOfInteger
+		ifTrue:
+			[ | bytes = ByteArray withAll: string. |
+			1 to: bytes size do: [:index | (bytes at: index) = 160 ifTrue: [bytes at: index put: 32]].
+			^bytes asString]
+		ifFalse:
+			[ | nonbreakingSpace = String fromRune: 160.
+			space = String fromRune: 32. |
+			^string replaceAll: nonbreakingSpace with: space]
+)
+public standardPrelude ^ <String> = (
+  ^'
+let a = [1, 2, 3]
+let b = [4, 5, 6]
+let v1 = [10, 20, 30]
+let v2 = [100, 200, 300];
+
+'
+)
+) : (
+)

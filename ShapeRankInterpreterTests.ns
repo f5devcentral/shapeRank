@@ -1,0 +1,897 @@
+Newspeak3
+'Root'
+class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+|
+	private Stopwatch = platform kernel Stopwatch.
+	private Parser = parsing Parser.
+	private TestContext = minitest TestContext.
+
+      supplier = s.
+|
+) (
+public class InterpreterTests = TestContext (
+) (
+assertIsScalar: result  = (
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: [result isScalar] description: 'Scalar expected!'. 
+)
+public badtestMatmul  = (
+(* bad test, source needs fixing *)
+  | result = interpretFileNamed: 'matmul.sr0'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) dimensions size equals: 1.
+  assert: ((result contents at: 1) dimensions at: 1) equals: 3.
+  assert: (result contents at: 2) dimensions size equals: 1.
+  assert: ((result contents at: 2) dimensions at: 1) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 700.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 1160.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1620.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1580.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2560.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3540.
+)
+expectRuntimeError: blk <[]> = (
+  should: blk signal: Error
+)
+interpretCompilationUnit: string = (
+	^(Parser new program parseString: string) eval
+)
+interpretFileNamed: fn <String>  = (
+  ^interpretCompilationUnit: (supplier supplyTestNamed: fn)
+)
+public testAppend = (
+  | result = interpretFileNamed: 'append'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 6.
+  assert: result contents size equals: 6.
+  assert: (result contents at: 1) asScalar equals: 1.
+  assert: (result contents at: 2) asScalar equals: 3.
+  assert: (result contents at: 3) asScalar equals: 4.
+  assert: (result contents at: 4) asScalar equals: 7.
+  assert: (result contents at: 5) asScalar equals: 22.
+  assert: (result contents at: 6) asScalar equals: 355.
+)
+public testAppend2 = (
+  | result = interpretFileNamed: 'append2'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 3.
+  assert: (result contents at: 2) asScalar equals: 4.
+)
+public testAppend6 = (
+  | result = interpretFileNamed: 'append6'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 4.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 7.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 22.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 355.
+)
+public testAsArray  = (
+  | result = interpretFileNamed: 'asArray'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 1.
+  assert: (result contents at: 1) asScalar equals: 42.
+)
+public testContains_false = (
+  | result = interpretFileNamed: 'contains_false'. |
+  assertIsScalar: result. 
+  assert: result  asScalar equals: false.
+)
+public testContains_true = (
+  | result = interpretFileNamed: 'contains_true'. |
+  assertIsScalar: result. 
+  assert: result  asScalar equals: true.
+)
+public testDotProduct  = (
+  | result = interpretFileNamed: 'dotProduct'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 300.
+  assert: (result contents at: 2) asScalar equals: 1740.
+)
+public testIdentity_3 = (
+  | result = interpretFileNamed: 'identity_3'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: 3.
+)
+public testIdentity_rec = (
+  | result = interpretFileNamed: 'identity_rec'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: 3.
+)
+public testIf11  = (
+  | result = interpretFileNamed: 'if11'. |
+  assertIsScalar: result. 
+  assert: result asScalar equals: 4.
+)
+public testIf21  = (
+  | result = interpretFileNamed: 'if21'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 4.
+  assert: (result contents at: 2) asScalar equals: 5.
+)
+public testIf22  = (
+  | result = interpretFileNamed: 'if22'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 4.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 1.
+)
+public testIota  = (
+  | result = interpretFileNamed: 'iota'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 6.
+  assert: (result contents at: 1) asScalar equals: 1.
+  assert: (result contents at: 2) asScalar equals: 2.
+  assert: (result contents at: 3) asScalar equals: 3.
+  assert: (result contents at: 4) asScalar equals: 4.
+  assert: (result contents at: 5) asScalar equals: 5.
+  assert: (result contents at: 6) asScalar equals: 6.
+)
+public testIota3  = (
+  | result = interpretFileNamed: 'iota3'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 7.
+  assert: (result contents at: 1) asScalar equals: 1.
+  assert: (result contents at: 2) asScalar equals: 2.
+  assert: (result contents at: 3) asScalar equals: 3.
+  assert: (result contents at: 4) asScalar equals: 4.
+  assert: (result contents at: 5) asScalar equals: 5.
+  assert: (result contents at: 6) asScalar equals: 6.
+  assert: (result contents at: 7) asScalar equals: 7.
+)
+public testLength  = (
+  | result = interpretFileNamed: 'length'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 3.
+  assert: (result contents at: 2) asScalar equals: 3.
+)
+public testLet = (
+  | result = interpretFileNamed: 'let'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 4.
+  assert: (result contents at: 2) asScalar equals: 10.
+  assert: (result contents at: 3) asScalar equals: 18.
+)
+public testLiteralInt  = (
+  | result = interpretFileNamed: 'literal_int'. |
+  assertIsScalar: result. 
+  assert: result asScalar equals: 23.
+)
+public testMakeTensor  = (
+  | result = interpretFileNamed: 'makeTensor'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1)asScalar equals: 4.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 5.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 6.
+)
+public testMask  = (
+  | result = interpretFileNamed: 'mask'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 4.
+  assert: (result contents at: 2) asScalar equals: 7.
+)
+public testMatVecMul  = (
+  | result = interpretFileNamed: 'matVecMul'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result contents at: 1)  asScalar equals: 300.
+  assert: (result contents at: 2)  asScalar equals: 700.
+)
+public testMatVecMulInnerProduct  = (
+  | result = interpretFileNamed: 'matVecMul_inner_product'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result contents at: 1)  asScalar equals: 300.
+  assert: (result contents at: 2)  asScalar equals: 700.
+)
+public testMatmul  = (
+  | result = interpretFileNamed: 'matmul'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 700.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 1160.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1620.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1580.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2560.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3540.
+)
+public testMatmulInnerProduct  = (
+  | result = interpretFileNamed: 'matmul_inner_product'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 700.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 1160.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1620.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1580.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2560.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3540.
+)
+public testMatmulRerank  = (
+  | result = interpretFileNamed: 'matmul_rerank'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 700.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 1160.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1620.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1580.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2560.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3540.
+)
+public testMatrix = (
+  | result = interpretFileNamed: 'matrix'. |
+  assert: result rank equals: 2.
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 5.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 7.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 10.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 6.
+)
+public testOuterProduct2  = (
+  | result = interpretFileNamed: 'outerProduct2'. |
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 5.
+  assert: (result dimensions at: 2) equals: 5.
+
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 4.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 6.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 8.
+  assert: ((result contents at: 1) contents at: 4) asScalar equals: 10.
+  assert: ((result contents at: 1) contents at: 5) asScalar equals: 12.
+
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 6.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 9.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 12.
+  assert: ((result contents at: 2) contents at: 4) asScalar equals: 15.
+  assert: ((result contents at: 2) contents at: 5) asScalar equals: 18.
+
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 8.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 12.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 16.
+  assert: ((result contents at: 3) contents at: 4) asScalar equals: 20.
+  assert: ((result contents at: 3) contents at: 5) asScalar equals: 24.
+
+  assert: ((result contents at: 4) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 4) contents at: 2) asScalar equals: 15.
+  assert: ((result contents at: 4) contents at: 3) asScalar equals: 20.
+  assert: ((result contents at: 4) contents at: 4) asScalar equals: 25.
+  assert: ((result contents at: 4) contents at: 5) asScalar equals: 30.
+
+  assert: ((result contents at: 5) contents at: 1) asScalar equals: 12.
+  assert: ((result contents at: 5) contents at: 2) asScalar equals: 18.
+  assert: ((result contents at: 5) contents at: 3) asScalar equals: 24.
+  assert: ((result contents at: 5) contents at: 4) asScalar equals: 30.
+  assert: ((result contents at: 5) contents at: 5) asScalar equals: 36.
+)
+public testPair = (
+  | result = interpretFileNamed: 'pair'. |
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 4.
+  assert: (result dimensions at: 1) equals: 4.
+  assert: (result dimensions at: 2) equals: 2.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 4.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 3.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 8.
+  assert: ((result contents at: 4) contents at: 1) asScalar equals: 4.
+  assert: ((result contents at: 4) contents at: 2) asScalar equals: 16.
+)
+public testPlusExpr = (
+  | result = interpretFileNamed: 'plusExpr'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: result contents size equals: 2.
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 8.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 10.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 12.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 14.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 16.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 18.
+)
+public testPointwiseVector = (
+  | result = interpretFileNamed: 'pointwiseVector'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 2.
+  assert: (result contents at: 2) asScalar equals: 4.
+  assert: (result contents at: 3) asScalar equals: 6.
+)
+public testPointwiseVectorScalar = (
+  | result = interpretFileNamed: 'pointwiseVectorScalar'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 2.
+  assert: (result contents at: 2) asScalar equals: 4.
+  assert: (result contents at: 3) asScalar equals: 6.
+)
+public testPolyEval3 = (
+  | result = interpretFileNamed: 'polyEval3'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: 98.
+)
+public testPrimes = (
+  | result = interpretFileNamed: 'primes'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result dimensions at: 1) equals: 3.
+  
+  assert: (result contents at: 1) asScalar equals: 2.
+  assert: (result contents at: 2) asScalar equals: 3.
+  assert: (result contents at: 3) asScalar equals: 5.
+)
+public testRange  = (
+  | result = interpretFileNamed: 'range'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 5.
+  assert: (result contents at: 1) asScalar equals: 2.
+  assert: (result contents at: 2) asScalar equals: 3.
+  assert: (result contents at: 3) asScalar equals: 4.
+  assert: (result contents at: 4) asScalar equals: 5.
+  assert: (result contents at: 5) asScalar equals: 6.
+)
+public testReplicate = (
+  | result = interpretFileNamed: 'replicate'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 7.
+  assert: (result contents at: 1) asScalar equals: 42.
+  assert: (result contents at: 2) asScalar equals: 42.
+  assert: (result contents at: 3) asScalar equals: 42.
+  assert: (result contents at: 4) asScalar equals: 42.
+  assert: (result contents at: 5) asScalar equals: 42.
+  assert: (result contents at: 6) asScalar equals: 42.
+  assert: (result contents at: 7) asScalar equals: 42.
+)
+public testRerank = (
+  | result = interpretFileNamed: 'rerank'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result contents at: 1)  asScalar equals: 6.
+  assert: (result contents at: 2)  asScalar equals: 15.
+)
+public testRerank2 = (
+  | result = interpretFileNamed: 'rerank2'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 1.
+  assert: (result dimensions at: 2) equals: 6.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 4) asScalar equals: 4.
+  assert: ((result contents at: 1) contents at: 5) asScalar equals: 5.
+  assert: ((result contents at: 1) contents at: 6) asScalar equals: 6.
+)
+public testRerank3 = (
+  | result = interpretFileNamed: 'rerank3'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 10.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 300.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 100.
+)
+public testRotateLeft0 = (
+  | result = interpretFileNamed: 'rotate_left0'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 300.
+)
+public testRotateLeft1 = (
+  | result = interpretFileNamed: 'rotate_left1'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 3.
+)
+public testRotateLeft2 = (
+  | result = interpretFileNamed: 'rotate_left2'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 30.
+
+)
+public testRotateLeft3 = (
+  | result = interpretFileNamed: 'rotate_left3'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 300.
+)
+public testRotateLeft4 = (
+  | result = interpretFileNamed: 'rotate_left4'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 3.
+)
+public testRotateRight0 = (
+  | result = interpretFileNamed: 'rotate_right0'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 300.
+)
+public testRotateRight1 = (
+  | result = interpretFileNamed: 'rotate_right1'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 30.
+
+)
+public testRotateRight2 = (
+  | result = interpretFileNamed: 'rotate_right2'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 3.
+)
+public testRotateRight3 = (
+  | result = interpretFileNamed: 'rotate_right3'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 30.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 300.
+)
+public testRotateRight4 = (
+  | result = interpretFileNamed: 'rotate_right4'. |
+
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 100.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 200.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 300.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 10.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 20.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 30.
+)
+public testScalarVectorMatrix  = (
+  | result = interpretFileNamed: 'scalarVectorMatrix'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) dimensions size equals: 1.
+  assert: ((result contents at: 1) dimensions at: 1) equals: 3.
+  assert: (result contents at: 2) dimensions size equals: 1.
+  assert: ((result contents at: 2) dimensions at: 1) equals: 3.
+  assert: (result contents at: 3) dimensions size equals: 1.
+  assert: ((result contents at: 3) dimensions at: 1) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 12.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 14.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 16.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 28.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 32.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 44.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 46.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 48.
+)
+public testShapecast  = (
+  | result = interpretFileNamed: 'shapeCast'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 4.
+  assert: (result contents at: 2) asScalar equals: 7.
+)
+public testShapecast2  = (
+ expectRuntimeError: [interpretFileNamed: 'shapeCast2'] 
+)
+public testTimesVec  = (
+  | result = interpretFileNamed: 'timesVec'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 4.
+  assert: (result dimensions at: 1) equals: 4.
+  assert: (result contents at: 1)  asScalar equals: 50.
+  assert: (result contents at: 2)  asScalar equals: 120.
+  assert: (result contents at: 3)  asScalar equals: 210.
+  assert: (result contents at: 4)  asScalar equals: 320.
+)
+public testTwice  = (
+  | result = interpretFileNamed: 'twice'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: 6.
+)
+public testVecMatmul  = (
+  | result = interpretFileNamed: 'vecMatmul'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result contents at: 1) asScalar equals: 700.
+  assert: (result contents at: 2) asScalar equals: 1160.
+  assert: (result contents at: 3) asScalar equals: 1620.
+)
+public testVector  = (
+  | result = interpretFileNamed: 'vector'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 3.
+  assert: (result contents at: 2) asScalar equals: 2.
+  assert: (result contents at: 3) asScalar equals: 5.
+)
+public assertInterprets: str1 <String> to: str2 <String> description: d <String> = (
+  assert: [(interpretCompilationUnit: str1) = (interpretCompilationUnit: str2)]
+    description: d.
+)
+public testArithmeticOperators = (
+  assertInterprets: '3+  4' to: '7' description: 'plus expected'.
+  assertInterprets: '3- 4' to: '-1' description: 'minus expected'.
+  assertInterprets: '3 *4' to: '12' description: 'times expected'.
+  assertInterprets: '8/ 4' to: '2' description: 'div expected'.
+  assertInterprets: '5%2' to: '1' description: 'mod expected'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] + [[1, 0, 0], [0, 1, 0]]'
+                to: '[[4, 4, 5], [6, 8, 8]]'
+       description: 'plus expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] - [[1, 0, 0], [0, 1, 0]]'
+                to: '[[2, 4, 5], [6, 6, 8]]'
+       description: 'minus expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] * [[1, 0, 2], [2, 1, 0]]'
+                to: '[[3, 0, 10], [12, 7, 0]]'
+       description: 'times expected on tensors'.
+
+  assertInterprets: '[[3, 4, 12], [8, 20, 8]] / [[1, 2, 4], [4, 5, 1]]'
+                to: '[[3, 2, 3], [2, 4, 8]]'
+       description: 'div expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] % [[1, 2, 4], [4, 5, 1]]'
+                to: '[[0, 0, 1], [2, 2, 0]]'
+       description: 'mod expected on tensors'.
+)
+public testBooleanOperators = (
+  assertInterprets: '3<  4' to: 'true' description: 'lt expected'.
+  assertInterprets: '3<=3'  to: 'true' description: 'leq expected'.
+  assertInterprets: '3 >4'  to: 'false' description: 'gt expected'.
+  assertInterprets: '3>= 3' to: 'true' description: 'geq expected'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] < [[4, 4, 4], [7, 7, 7]]'
+                to: '[[true, false, false], [true, false, false]]'
+       description: 'lt expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] <= [[4, 4, 4], [7, 7, 7]]'
+                to: '[[true, true, false], [true, true, false]]'
+       description: 'leq expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] > [[4, 4, 4], [7, 7, 7]]'
+                to: '[[false, false, true], [false, false, true]]'
+       description: 'gt expected on tensors'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] >= [[4, 4, 4], [7, 7, 7]]'
+                to: '[[false, true, true], [false, true, true]]'
+       description: 'geq expected on tensors'.
+
+  assertInterprets: '[true, false, true, false] < [true, true, false, false]'
+                to: '[false, true, false, false]'
+       description: 'lt should work on booleans'.
+
+  assertInterprets: '[true, false, true, false] > [true, true, false, false]'
+                to: '[false, false, true, false]'
+       description: 'gt should work on booleans'.
+
+  assertInterprets: '[true, false, true, false] <= [true, true, false, false]'
+                to: '[true, true, false, true]'
+       description: 'leq should work on booleans'.
+
+  assertInterprets: '[true, false, true, false] >= [true, true, false, false]'
+                to: '[true, false, true, true]'
+       description: 'geq should work on booleans'.
+
+  assertInterprets: '["aaa", "aba", "baa"] < ["aba", "baa", "aaa"]'
+                to: '[true, true, false]'
+       description: 'lt should work on strings'.
+
+  assertInterprets: '["aaa", "aba", "baa"] > ["aba", "baa", "aaa"]'
+                to: '[false, false, true]'
+       description: 'gt should work on strings'.
+
+  assertInterprets: '["aaa", "aba", "baa"] <= ["baa", "aba", "aaa"]'
+                to: '[true, true, false]'
+       description: 'leq should work on strings'.
+
+  assertInterprets: '["aaa", "aba", "baa"] >= ["baa", "aba", "aaa"]'
+                to: '[false, true, true]'
+       description: 'geq should work on strings'.
+)
+public testEqualityOperators = (
+  assertInterprets: 'true==false' to: 'false' description: 'equals expected'.
+  assertInterprets: 'false!=true' to: 'true' description: 'notEquals expected'.
+
+  assertInterprets: '[[3, 4, 5], [6, 7, 8]] == [[4, 4, 4], [7, 7, 7]]'
+                to: '[[false, true, false], [false, true, false]]'
+       description: 'equals expected on tensors'.
+
+  assertInterprets: '[[true, false, true], [false, true, false]] != [[true, true, false], [false, true, false]]'
+                to: '[[false, true, true], [false, false, false]]'
+       description: 'notEquals expected on tensors'.
+)
+public testWhereIn = (
+  assertInterprets: 'a*2 where a = b+1 where b = c*3 where c = 2'
+    to: '14' description: 'where statements should track scopes'.
+  assertInterprets: 'b*2 where a = b+1 where b = c*3 where c = 2'
+    to: '12' description: 'where statements should track scopes'.
+  assertInterprets: 'c*2 where a = b+1 where b = c*3 where c = 2'
+    to: '4' description: 'where statements should track scopes'.
+)
+public testStructLiterals = (
+  assertInterprets: '{a: a, b: a+2} where a = 2' to: '{ a: 2, b: 4 }'
+    description: 'struct literals should track scopes'.
+  assertInterprets: '{c: 4, foo: true}' to: '{ foo: true, c: 4 }'
+    description: 'struct literals should be order-independent'.
+)
+public testStructDot = (
+  assertInterprets: 'x.foo where x = { f: 1, fo: 2, foo: 4 }' to: '4'
+    description: 'dot should index struct literals'.
+  assertInterprets: '{foo: 93, bar: 87}.bar' to: '87'
+    description: 'dot should accept struct literals in caller position'.
+  assertInterprets: '[[{a: 1}, {a: 5, b: 2}], [{d: 9, a: 7}, {a: 3, z: 0}]].a'
+                to: '[[1, 5], [7, 3]]'
+       description: 'dot should be able to index tensors'.
+  assertInterprets: '[[{a: {foo: 1}}, {a: {foo: 5, bar: 3}, b: 2}], [{d: 9, a: {foo: 7, baz: false}}, {a: {foo: 3}, z: 0}]].a.foo'
+                to: '[[1, 5], [7, 3]]'
+       description: 'dot should be able to index tensors repeatedly'.
+)
+public testStructInFunctions = (
+  assertInterprets: 'func f(x: {foo: Int}): {bar: Int} = {bar: x.foo + 1}; f({foo: 3})'
+                to: '{bar: 4}'
+       description: 'functions should be able to take apart and build structs'.
+)
+public testStringLit = (
+  | result = interpretCompilationUnit: '"hello \"wo\\rld\""'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: 'hello "wo\rld"'.
+)
+public testFloats = (
+  | result = interpretCompilationUnit: '23.21 + 9.09'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: (32.3 asFloat).
+)
+public testNumericSubtypes = (
+  | result ::= interpretCompilationUnit: '23.21 + 9'. |
+  assertIsScalar: result.
+  assert: result asScalar equals: (32.21 asFloat).
+
+  result:: interpretCompilationUnit: '8 + 92.1'.
+  assertIsScalar: result.
+  assert: result asScalar equals: (100.1 asFloat).
+)
+public testNoReturn = (
+(*  dummy(x: Int) = x; dummy(3) *)
+  | result = interpretFileNamed: 'noReturn'. |
+  assert: [result isKindOfTensor] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result asScalar equals: 3.
+)
+public testScalarDotScalar = (
+  | result = interpretCompilationUnit: '{a: 1}.a'. |
+  assertIsScalar: result.
+)
+public testArgmax = (
+  assertInterprets: 'argmax([4,3,5,1])' to: '3' description: 'argmax returns an index'.
+  assertInterprets: 'argmax([[2,3],[3,3]])' to: '[2,1]' description: 'argmax extends into  tensors'.
+)
+public testExp = (
+  assertInterprets: 'exp([0, 0.6931471805599453])' to: '[1, 2]' description: 'exp'.
+)
+public disabledTestGradientDescent = (
+  | result = interpretFileNamed: 'gradient_descent'. |
+   result out.
+)
+public testMatmulRerank2  = (
+  expectRuntimeError: [interpretFileNamed: 'matmul_rerank2'] 
+)
+public testPolyEval4 = (
+  expectRuntimeError: [interpretFileNamed: 'polyEval4'] 
+)
+public testBlockStateBug = (
+  | result = interpretCompilationUnit:
+    'func abs(v: Int): Int = if v < 0 then -v else v;
+     abs(-4) + abs(5)'. |
+  assert: (result asScalar) = 9 description: 'blocks should not carry state'.
+)
+public testReplicateToOneBug = (
+  assertInterprets: 'func snd(x: Int, y: Int) = y; snd(2,[3])' to: '[3]'
+    description: 'we should be able to replicate to match 1-tensors'.
+)
+public testReduce = (
+  | result = interpretFileNamed: 'reduce'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 5.
+  assert: (result contents at: 2) asScalar equals: 7.
+  assert: (result contents at: 3) asScalar equals: 9.  
+)
+public testScan = (
+  | result = interpretFileNamed: 'scan'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 2.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: result contents size equals: 2.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 5.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 7.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 9.
+)
+public testPolyReduce2 = (
+  | result = interpretFileNamed: 'polyReduce2'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 4.
+  assert: (result contents at: 2) asScalar equals: 5.  
+  assert: (result contents at: 3) asScalar equals: 6.
+)
+public testPolyReduce = (
+  | result = interpretFileNamed: 'polyReduce'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 1. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: result contents size equals: 3.
+  assert: (result contents at: 1) asScalar equals: 1.
+  assert: (result contents at: 2) asScalar equals: 2.  
+  assert: (result contents at: 3) asScalar equals: 3.
+)
+) : (
+TEST_CONTEXT = ()
+)
+) : (
+)

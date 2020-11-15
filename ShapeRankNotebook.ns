@@ -1,0 +1,57 @@
+Newspeak3
+'Root'
+class ShapeRankNotebook packageUsing: manifest = (
+  |
+  private CombinatorialParsing = manifest CombinatorialParsing.
+  private CollectionUtils = manifest CollectionUtils.
+  private NodeAPI = manifest NodeAPI.
+  private Tensorflow = manifest Tensorflow.
+  private ShapeRankASTs = manifest ShapeRankASTs.
+  private ShapeRankScopes = manifest ShapeRankScopes.
+  private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+  private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+  private ShapeRankGrammar = manifest ShapeRankGrammar.
+  private ShapeRankParser = manifest ShapeRankParser.
+  private ShapeRankWorkspace = manifest ShapeRankWorkspace.
+  
+  private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.  
+  |
+) (
+public main: platform args: args = (
+  |
+  utils = CollectionUtils usingPlatform: platform.
+  scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+  typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
+  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils) Evaluator.
+  parsers = CombinatorialParsing usingPlatform: platform.
+  grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
+  parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
+  hopscotchPlatform = hopscotchRuntime using: platform.  
+  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform engine: evaluator  parser: parsing code: linearClassificationDemo.
+  |
+  
+  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
+)
+linearClassificationDemo^ <String> = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+     avg(crossEntropyLoss(data.yp, model(params, data.x)))
+   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
+             { W: [$cn][$fn]Float, b: [$cn]Float } =
+     gradientDescent(0.05, loss, params, data)
+   let trainedParams = fold(train, initParams, trainingSet)
+   func infer(x: [2]Float): Int = argmax(model(trainedParams, x));
+   infer([[0.25, 0.65], [0.2, 0.9], [0.1, 0.1], [0.7, 0]])'
+)
+) : (
+)

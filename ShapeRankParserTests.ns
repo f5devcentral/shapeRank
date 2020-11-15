@@ -1,0 +1,291 @@
+Newspeak3
+'ShapeRank'
+class ShapeRankParserTests usingPlatform: platform parsing: parsing asts: asts minitest: minitest = (
+(* Tests *)
+|
+	private Stopwatch = platform kernel Stopwatch.
+	private Parser = parsing Parser.
+	private TestContext = minitest TestContext.
+        private List = platform collections List.
+        private Map = platform collections Map.
+        private NumAST = asts NumAST.
+        private BoolAST = asts BoolAST.
+        private CallAST = asts CallAST.
+        private IdentifierAST = asts IdentifierAST.
+        private WhereAST = asts WhereAST.
+        private StringAST = asts StringAST.
+        private StructLiteralAST = asts StructLiteralAST.
+        private StructDotAST = asts StructDotAST.
+        private ParameterAST = asts ParameterAST.
+        private FunctionAST = asts FunctionAST.
+        private TypeStructAST = asts TypeStructAST.
+        private TypeIdAST = asts TypeIdAST.
+        private TensorTypeAST = asts TensorTypeAST.
+        private ShapeVectorAST = asts ShapeVectorAST.
+        private ProgramAST = asts ProgramAST.
+
+        private emptyShape = ShapeVectorAST dimensions: {} position: {0. 0}.
+|) (
+public class ParsingTests = TestContext (
+) (
+parseCompilationUnit: string = (
+	^Parser new program parseString: string
+)
+parseFileNamed: fn <String>  = (
+   | file = StandardFileStream oldFileNamed: 'shapeRank2/tests/', fn. |
+  ^parseCompilationUnit: file readStream contents
+)
+public typeOf: obj <Object> ^<TypeAST> = (
+  obj isKindOfString ifTrue: [^TypeIdAST named: obj position: {0. 0}].
+  obj isKindOfArray ifTrue: [ | map = Map new. |
+    obj do: [:v | map at: (v at: 1) put: (tensorTypeOf: (v at: 2)) ].
+    ^TypeStructAST table: map position: {0. 0}
+  ].
+  Error signal: 'Could not make type of obj'.
+)
+public tensorTypeOf: obj <Object> ^<TypeAST> = (
+  | base = typeOf: obj. |
+  base isKindOfTensorTypeAST
+    ifTrue: [^base]
+    ifFalse: [^TensorTypeAST shape: emptyShape type: base position: {0. 0}].
+)
+public param: arg <{String. Object}> ^<ParameterAST> = (
+  ^ParameterAST named: (arg at: 1) type: (tensorTypeOf: (arg at: 2)) position: {0. 0}
+)
+public fn: args <{String. List[{String. Object}]. Object. Object}> ^<FunctionAST> = (
+  | name = args at: 1.
+    params = (args at: 2) collect: [:v | param: v].
+    rt = tensorTypeOf: (args at: 3).
+    body = astOf: (args at: 4). |
+  ^FunctionAST named: name parameters: params returnType: rt body: body position: {0. 0}
+)
+public astOf: obj <Object> ^<ExprAST> = (
+  obj isKindOfNumber ifTrue: [^NumAST value: (
+      obj isKindOfFraction ifTrue: [obj asFloat] ifFalse: [obj]
+    ) position: {0. 0}].
+  obj isKindOfString ifTrue: [^IdentifierAST named: obj position: {0. 0}].
+  (* obj isKindOfBoolean is what I want, but *)
+  ((obj = true) | (obj = false)) ifTrue: [^BoolAST value: obj position: {0. 0}].
+  obj isKindOfProgramAST ifTrue: [^obj expression].
+  obj isKindOfAST ifTrue: [^ast].
+  Error signal: 'Could not make AST of obj.'
+)
+public emptyProgramAround: ast <ExprAST> ^<ProgramAST> = (
+  ^ProgramAST declarations: (List new)
+              expression: ast
+              position: {0. 0}
+)
+public unary: name <String> arg: a <Object> ^<ExprAST> = (
+  ^emptyProgramAround: (CallAST function: name
+                                arguments: {astOf: a}
+                                position: {0. 0})
+)
+public binary: name <String> args: args <{Object. Object}> ^<ExprAST> = (
+  ^emptyProgramAround: (CallAST function: name
+                                arguments: {astOf: (args at: 1). astOf: (args at: 2)}
+                                position: {0. 0})
+)
+public where: args <{Object. Symbol. Object}> ^<ExprAST> = (
+  ^emptyProgramAround: (WhereAST expr1: (astOf: (args at: 1))
+                                 ident: (args at: 2)
+                                 expr2: (astOf: (args at: 3))
+                                 position: {0. 0})
+)
+public struct: args <List[{Symbol. Object}]> ^<ExprAST> = (
+  | map = Map new. |
+  args do: [:v | map at: (v at: 1) put: (astOf: (v at: 2)) ].
+  ^emptyProgramAround: (StructLiteralAST data: map position: {0. 0})
+)
+public dot: args <{Object. Symbol}> ^<ExprAST> = (
+  ^emptyProgramAround: (StructDotAST expr: (astOf: (args at: 1)) label: (args at: 2) position: {0. 0})
+)
+public str: obj <Object> = (
+  ^emptyProgramAround: (StringAST value: obj position: {0. 0})
+)
+public negate: a <Object> = (
+  ^unary: 'negate' arg: a
+)
+public not: a <Object> = (
+  ^unary: 'not' arg: a
+)
+public plus: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '+' args: args
+)
+public minus: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '-' args: args
+)
+public range: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '..' args: args
+)
+public mul: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '*' args: args
+)
+public div: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '/' args: args
+)
+public eq: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '==' args: args
+)
+public neq: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '!=' args: args
+)
+public lt: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '<' args: args
+)
+public gt: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '>' args: args
+)
+public leq: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '<=' args: args
+)
+public geq: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: '>=' args: args
+)
+public and: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: 'and' args: args
+)
+public or: args <{Object. Object}> ^<ExprAST> = (
+  ^binary: 'or' args: args
+)
+public testPlusExpr = (
+  assert: [(parseCompilationUnit: 'plus(3, 4)') = (binary: 'plus' args: {3. 4}) ]
+    description: 'Plus expected.'
+)
+public testFloatExpr = (
+  assert: [(parseCompilationUnit: '0.241 + 12.311') = (plus: {0.241. 12.311})]
+    description: 'floats expected.'.
+)
+public testAdditiveInfixExpr = (
+  assert: [(parseCompilationUnit: '3+4') = (plus: {3. 4}) ]
+    description: 'Infix plus expected.'.
+  assert: [(parseCompilationUnit: '3-4') = (minus: {3. 4}) ]
+    description: 'Infix minus expected.'.
+  assert: [(parseCompilationUnit: '3..4') = (range: {3. 4})]
+    description: 'Infix range expected.'
+)
+public testAdditiveInfixPrecedence = (
+  assert: [(parseCompilationUnit: '1-2-3') = (minus: {minus: {1. 2}. 3}) ]
+    description: 'Infix minus should be left-recursive.'.
+  assert: [(parseCompilationUnit: '1+2+3') = (plus: {plus: {1. 2}. 3}) ]
+    description: 'Infix plus should be left-recursive.'.
+  assert: [(parseCompilationUnit: '1-2+3..4') = (range: {plus: {minus: {1. 2}. 3}. 4}) ]
+    description: 'Infix plus/minus mixed operators should be left-recursive.'.
+)
+public testMultiplicativeInfixExpr = (
+  assert: [(parseCompilationUnit: '3*4') = (mul: {3. 4}) ]
+    description: 'Infix multiplication expected.'.
+  assert: [(parseCompilationUnit: '3/4') = (div: {3. 4}) ]
+    description: 'Infix division expected.'.
+)
+public testMultiplicativeInfixPrecedence = (
+  assert: [(parseCompilationUnit: '1/2/3') = (div: {div: {1. 2}. 3}) ]
+    description: 'Infix division should be left-recursive.'.
+  assert: [(parseCompilationUnit: '1*2*3') = (mul: {mul: {1. 2}. 3}) ]
+    description: 'Infix multiplication should be left-recursive.'.
+  assert: [(parseCompilationUnit: '1/2*3/4') = (div: {mul: {div: {1. 2}. 3}. 4}) ]
+    description: 'Infix mul/div mixed operators should be left-recursive.'.
+)
+public testAdditiveMultiplicativeInfixPrecedence = (
+assert: [(parseCompilationUnit: '1+2*3-4/5..6') = (range: {minus: {plus: {1. mul: {2. 3}}. div: {4. 5}}. 6} ) ]
+    description: 'Multiplicative operators should have higher precedence than additive.'.
+)
+public testUnaryPrefixExpr = (
+  assert: [(parseCompilationUnit: '-3') = (negate: 3) ]
+    description: 'Prefix negate expected.'.
+  assert: [(parseCompilationUnit: 'not true') = (not: true) ]
+    description: 'Prefix not expected.'.
+)
+public testAddMulUnaryInfixPrecedence = (
+  assert: [(parseCompilationUnit: '-1..2*-3--4/-5+6') = (plus: {minus: {range: {negate: 1. mul: {2. negate: 3}}. div: {negate: 4. negate: 5}}. 6} ) ]
+    description: 'Multiplicative operators should have higher precedence than additive.'.
+)
+public testRelationalExpr = (
+  assert: [(parseCompilationUnit: '3 == 4') = (eq: {3. 4}) ]
+    description: 'Infix equals expected.'.
+  assert: [(parseCompilationUnit: '3 != 4') = (neq: {3. 4}) ]
+    description: 'Infix notEquals expected.'.
+  assert: [(parseCompilationUnit: '3 < 4') = (lt: {3. 4}) ]
+    description: 'Infix lt expected.'.
+  assert: [(parseCompilationUnit: '3 > 4') = (gt: {3. 4}) ]
+    description: 'Infix gt expected.'.
+  assert: [(parseCompilationUnit: '3 <= 4') = (leq: {3. 4}) ]
+    description: 'Infix leq expected.'.
+  assert: [(parseCompilationUnit: '3 >= 4') = (geq: {3. 4}) ]
+    description: 'Infix geq expected.'.
+)
+public testRelationalInfixPrecedence = (
+  (* I'm not convinced most of these work as they should,
+     but at least we should document that this is how they work *)
+  assert: [(parseCompilationUnit: '3 == 4 == 5') = (eq: {eq: {3. 4}. 5}) ]
+    description: 'Infix equals should be left recursive.'.
+  assert: [(parseCompilationUnit: '3 != 4 != 5') = (neq: {neq: {3. 4}. 5}) ]
+    description: 'Infix notEquals should be left recursive.'.
+  assert: [(parseCompilationUnit: '3 < 4 < 5') = (lt: {lt: {3. 4}. 5}) ]
+    description: 'Infix lt should be left recursive.'.
+  assert: [(parseCompilationUnit: '3 > 4 > 5') = (gt: {gt: {3. 4}. 5}) ]
+    description: 'Infix gt should be left recursive.'.
+  assert: [(parseCompilationUnit: '3 <= 4 <= 5') = (leq: {leq: {3. 4}. 5}) ]
+    description: 'Infix leq should be left recursive.'.
+  assert: [(parseCompilationUnit: '3 >= 4 >= 5') = (geq: {geq: {3. 4}. 5}) ]
+    description: 'Infix geq should be left recursive.'.
+)
+public testRelAddMulUnaryPrecedence = (
+  assert: [(parseCompilationUnit: '-1>=2*-3==-4/-5<6') = (lt: {eq: {geq: {negate: 1. mul: {2. negate: 3}}. div: {negate: 4. negate: 5}}. 6}) ]
+    description: 'Mul > add > relational in precedence'.
+)
+public testAndOrExprs = (
+  assert: [(parseCompilationUnit: 'true and false') = (and: {true. false}) ]
+    description: 'Infix and expected.'.
+  assert: [(parseCompilationUnit: 'false or true') = (or: {false. true}) ]
+    description: 'Infix or expected.'.
+)
+public testAndOrPrecedence = (
+  assert: [(parseCompilationUnit: 'true and false or false and true or false') =
+    (or: {or: {and: {true. false}. and: {false. true}}. false}) ]
+    description: 'Infix and should have higher precedence than or.'.
+)
+public testWhereExprs = (
+  assert: [(parseCompilationUnit: 'a + a where a = 2') = (where: {plus: {'a'. 'a'}. 'a'. 2}) ]
+    description: 'Where expression expected.'.
+)
+public testWherePrecedence = (
+  assert: [(parseCompilationUnit: 'a where a = b where b = c where c = 2') = (where: {where: {where: {'a'. 'a'. 'b'}. 'b'. 'c'}. 'c'. 2}) ]
+    description: 'Where expressions should be left-associative.'.
+)
+public testStructLiteralExpr = (
+  assert: [(parseCompilationUnit: '{ a: 4, b: true }') = (struct: {{'b'. true}. {'a'. 4}}) ]
+    description: 'Struct literal expected.'.
+)
+public testDotExprs = (
+  assert: [(parseCompilationUnit: 'a.foo') = (dot: {'a'. 'foo'}) ]
+    description: 'Dot expression expected.'.
+)
+public testDotExprPrecedence = (
+  assert: [(parseCompilationUnit: 'a.foo.bar.baz') =
+      (dot: {dot: {dot: {'a'. 'foo'} . 'bar'} . 'baz'}) ]
+    description: 'Dot expressions should be left-recursive.'.
+)
+public testStructType = (
+  assert: [((parseCompilationUnit: 'func f(x: {foo: Int, bar: Bool}): Int = x.foo; 1')
+             declarations at: 1) =
+            (fn: {'f'. {{'x'. {{'foo'. 'Int'}. {'bar'. 'Bool'}}}}. 'Int'.
+                               dot: {'x'. 'foo'} }) ]
+    description: 'Struct type literal expected.'
+)
+public testStrLiterals = (
+  assert: [(parseCompilationUnit: '"\"\\hello\\\""') = (str: '"\hello\"')]
+    description: 'should be able to parse string literals with escapes'.
+  assert: [(parseCompilationUnit:
+              '   "   hello    "    ==   " world  "  ') =
+       (eq: {str: '   hello    '. str:   ' world  '})]
+    description: 'tokenisation should strip spaces from the appropriate places'.
+)
+public testFuncDeclWith = (
+  | result = parseCompilationUnit: 'func dummy(x: Int): Int = x; append(3, 4)'. |
+  assert: [result isKindOfProgramAST] description: 'Program expected'.
+)
+) : (
+TEST_CONTEXT = ()
+)
+) : (
+)

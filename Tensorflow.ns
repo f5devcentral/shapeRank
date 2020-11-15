@@ -1,0 +1,143 @@
+Newspeak3
+'Root'
+class Tensorflow usingPlatform: platform nodeAPI: node tensorClass: TensorClass = (
+  | private api = node.
+    private tf = api require: '@tensorflow/tfjs-node'.
+    private JSObject = platform js global at: 'Object'.
+    private JSArray = platform js global at: 'Array'.
+    private util = api require: 'util'.
+    private Map = platform collections Map.
+    private List = platform collections List.
+    private Tensor = TensorClass.
+  |
+) (
+public assocListToJsObj: assocList = (
+  | ret = JSObject new. |
+  assocList do: [:v | ret at: (v at: 1) put: (v at: 2). ].
+  ^ret
+)
+public listToJsArray: lst = (
+  | ret = JSArray new. |
+  lst do: [:v | ret push: v ].
+  ^ret
+)
+public jsArrayToList: arr = (
+  | ret = List new. |
+  (* something about the arr forEach translation through the vm
+     is utterly broken. all three arguments to the closure
+     appear to be just arr itself *)
+  (1 to: (arr at: #length)) do: [:i |
+    ret add: (arr at: (i-1)).
+  ].
+  ^ret
+)
+public gradientDescent: lr lossFunction: loss <[List[Tensor] | Tensor[Float]]> params: p <List[Tensor]> = (
+  | gd = api require: './gradient-descent-wrapper'.
+    init = listToJsArray: (p collect: [:v | tensorToJsArray: v]).
+    newParams = gd gradientDescent: [:jsParams |
+                  | params = (jsArrayToList: jsParams) collect: [:v | jsToTensor: v]. |
+                  (loss value: params) asScalar asFloat
+                ] init: init stepSize: (0.3 asFloat)
+                  deltaSize: 1 numSteps: 15 precision: (0.001 asFloat). |
+    ^(jsArrayToList: newParams) collect: [:v | jsToTensor: v ]
+)
+tensorToJsArray: tensor <Tensor> ^<JsArray> = (
+  (* this doesn't always strictly return a JsArray, but this is
+     the appropriate representation for scalars as arguments
+     to tf.tensor *)
+  tensor isScalar ifTrue: [^tensor asScalar].
+  ^listToJsArray: (tensor contents collect: [:obj | tensorToJsArray: obj])
+)
+jsToTensor: thing ^<Tensor> = (
+  | utils = api require: './utils'.
+    typ = utils typeof: thing. |
+  typ = 'object' ifTrue: [
+    | lst = (jsArrayToList: thing) collect: [:v | jsToTensor: v].
+      dims = lst size > 0 ifTrue: [
+        {lst size}, (lst at: 1) dimensions
+      ] ifFalse: [
+        {}
+      ]. |
+    ^Tensor dimensions: dims contents: lst
+  ].
+  typ = 'number' ifTrue: [^Tensor dimensions: {} contents: {thing}].
+  Error signal: ('unexpected js object of type ', typ)
+)
+public tensorToTf: tensor <Tensor> ^<TfTensor> = (
+  ^tf tensor: (tensorToJsArray: tensor)
+)
+public mnistModel = (
+  | model = tf sequential.
+    layers = tf at: #layers. |
+  model add: (layers conv2d: (assocListToJsObj: {
+    {#inputShape. listToJsArray: {28. 28. 1}}.
+    {#filters. 32}.
+    {#kernelSize. 3}.
+    {#activation. 'relu'}
+  })).
+  model add: (layers conv2d: (assocListToJsObj: {
+    {#filters. 32}.
+    {#kernelSize. 3}.
+    {#activation. 'relu'}
+  })).
+  model add: (layers conv2d: (assocListToJsObj: {
+    {#filters. 64}.
+    {#kernelSize. 3}.
+    {#activation. 'relu'}
+  })).
+  model add: (layers maxPooling2d: (assocListToJsObj: {
+    {#poolSize. listToJsArray: {2. 2}}
+  })).
+  model add: (layers flatten).
+  model add: (layers dropout: (assocListToJsObj: {
+    {#rate. 0.25 asFloat}
+  })).
+  model add: (layers dense: (assocListToJsObj: {
+    {#units. 512}.
+    {#activation. 'relu'}
+  })).
+  model add: (layers dropout: (assocListToJsObj: {
+    {#rate. 0.5 asFloat}
+  })).
+  model add: (layers dense: (assocListToJsObj: {
+    {#units. 10}.
+    {#activation. 'softmax'}
+  })).
+
+  model compile: (assocListToJsObj: {
+    {#optimizer. 'rmsprop'}.
+    {#loss. 'categoricalCrossentropy'}.
+    {#metrics. listToJsArray: {'accuracy'}}
+  }).
+
+  ^model
+)
+public mnistWithEpochs: epochs batchSize: batchSize = (
+  | data = api require: './mnist-data'.
+    model = mnistModel. |
+  ((data loadData then: [ :v |
+    | trainData = data getTrainData.
+      trainImages = trainData at: #images.
+      trainLabels = trainData at: #labels.
+      validationSplit = 0.15 asFloat.
+      numTrainExamplesPerEpoch = ((trainImages at: #shape) at: 0) * (1 - validationSplit).
+      numTrainBatchesPerEpoch = (numTrainExamplesPerEpoch / batchSize) ceiling. |
+    model summary.
+    model fit: trainImages labels: trainLabels options: (assocListToJsObj: {
+      {#epochs. epochs}.
+      {#batchSize. batchSize}.
+      {#validationSplit. validationSplit}
+    })
+  ]) then: [ :v | data getTestData ]) then: [ :testData |
+    | testImages = testData at: #images.
+      testLabels = testData at: #labels.
+      evalOutput = model evaluate: testImages onLabels: testLabels.
+      loss = ((evalOutput at: 0) dataSync at: 0) asStringFixed: 3.
+      acc = ((evalOutput at: 1) dataSync at: 0) asStringFixed: 3.
+      report = 'Evaluation result: \n', '  Loss = ', loss, '; Accuracy = ', acc. |
+      report out.
+  ].
+  ^model
+)
+) : (
+)

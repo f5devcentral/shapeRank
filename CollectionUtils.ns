@@ -1,0 +1,37 @@
+Newspeak3
+'Root'
+public class CollectionUtils usingPlatform: platform = (
+(*
+Collection utility functions.
+*)
+| private List = platform collections List. |
+) (
+public valueHashOf: ls <List[T]> ^<Integer> = (
+  ^(ls collect: [:ast | ast hash]) reduce: [:acc :t | acc bitXor: t]
+)
+public zip: a <List[T]> with: b <List[T]> ^<List[{T.T}]> = (
+  | size <Int> = (a size < b size) ifTrue: [a size] ifFalse: [b size].
+    result <List[{T.T}]> = List new: size. |
+  1 to: size do: [:i | result add: {(a at: i). (b at: i)}].
+  ^result
+)
+public sets: a <Set[T]> eq: b <Set[T]> ^<Boolean> = (
+  (a size = b size) ifFalse: [^false].
+  a do: [:v | (b includes: v) ifFalse: [^false]].
+  ^true
+)
+public maps: a <Map[K,V]> eq: b <Map[K,V]> ^<Boolean> = (
+  (sets: a keys eq: b keys) ifFalse: [^false].
+  a keysAndValuesDo: [:k :v | v = (b at: k) ifFalse: [^false]].
+  ^true
+)
+public valueMapHashOf: m <Map[K,V]> ^<Integer> = (
+  | hash ::= 732419. | (* arbitrary starting value *)
+  m keysAndValuesDo: [:k :v | hash:: (hash bitXor: k hash) bitXor: v hash ].
+  ^hash
+)
+public lists: a <List[T]> eq: b <List[T]> ^<Boolean> = (
+  ^a size = b size & ((zip: a with: b) allSatisfy: [:v | (v at: 1) = (v at: 2)])
+)
+) : (
+)

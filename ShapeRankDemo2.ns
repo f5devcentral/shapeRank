@@ -1,0 +1,84 @@
+Newspeak3
+'ShapeRank'
+class ShapeRankDemo2 packageUsing: manifest = (
+(*
+Quick and dirty demo of ShapeRank in the browser.
+
+Copyright 2014-2017 Google Inc.
+*)
+|
+        private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.
+	  private Embedder = manifest ShapeRankEmbedder.
+	  private HopscotchIDE = manifest HopscotchWebIDE packageUsing: manifest.
+        private ShapeRankASTs = manifest ShapeRankASTs.
+        private ShapeRankScopes = manifest ShapeRankScopes.
+        private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private CombinatorialParsing = manifest CombinatorialParsing.
+        private ShapeRankGrammar = manifest ShapeRankGrammar.
+        private ShapeRankParser = manifest ShapeRankParser.
+        private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
+        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration.
+        private ShapeRankTypecheckerTests = manifest ShapeRankTypecheckerTests.
+        private ShapeRankTypecheckerTestsConfiguration = manifest ShapeRankTypecheckerTestsConfiguration.
+        private ShapeRankTestData = manifest ShapeRankTestData.
+        private CollectionUtils = manifest CollectionUtils.
+        private Tensorflow = manifest Tensorflow.
+        private NodeAPI = manifest NodeAPI.
+|) (
+populateNamespace: namespace = (
+	namespace at: #ShapeRankDemo2 put: self class.
+	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
+	namespace at: #ShapeRankScopes put: ShapeRankScopes.
+	namespace at: #ShapeRankTypechecker put: ShapeRankTypechecker.
+	namespace at: #ShapeRankInterpreter put: ShapeRankInterpreter.
+	namespace at: #ShapeRankGrammar put: ShapeRankGrammar.
+	namespace at: #ShapeRankParser put: ShapeRankParser.
+	namespace at: #ShapeRankEmbedder put: Embedder.
+	namespace at: #ShapeRankInterpreterTests put: ShapeRankInterpreterTests.
+	namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration.
+	namespace at: #ShapeRankTypecheckerTests put: ShapeRankTypecheckerTests.
+	namespace at: #ShapeRankTypecheckerTestsConfiguration put: ShapeRankTypecheckerTestsConfiguration.
+	namespace at: #ShapeRankTestData put: ShapeRankTestData.
+        namespace at: #CollectionUtils put: CollectionUtils.
+)
+public main: platform args: args = (
+	|
+	namespace
+	embedder
+	ide
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+    utils
+	Scopes
+	Typechecker
+	interpreter
+	hopscotchPlatform
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+	Scopes::
+	 (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+        Typechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.
+        interpreter:: ShapeRankInterpreter usingPlatform: platform
+	                                    asts: Typechecker
+                                        collectionUtils: utils.
+        Evaluator:: interpreter Evaluator.
+        parsers:: CombinatorialParsing usingPlatform: platform.
+        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+	hopscotchPlatform:: hopscotchRuntime using: platform.
+	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
+      namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
+	hopscotchPlatform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
+)
+) : (
+)

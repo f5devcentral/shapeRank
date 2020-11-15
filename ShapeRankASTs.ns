@@ -1,0 +1,980 @@
+Newspeak3
+'Root'
+class ShapeRankASTs usingPlatform: platform collectionUtils: collectionUtils = (
+(*
+AST module for ShapeRank.
+*)
+|
+	    private List = platform collections List.
+        private Map = platform collections Map.
+        private Set = platform collections Set.
+        private Utils = collectionUtils.
+        private operatorChars = Set withAll: ({"!". "#". "$". "%". "&". "*". "+". ".". "/". "<". "=". ">". "?". "@". "\". "^". "|". "-". "~"} collect: [:c | c first]).
+        private MessageNotUnderstood = platform kernel MessageNotUnderstood.
+|
+) (
+public class AST position: p <{Integer. Integer}> = (
+(* An abstract syntax tree. An AST knows where in the source code the corresponding construct is. The slots start and end are indices into the source code marking that position. *)
+|
+public start <Integer> ::= p at: 1. (* Note that 0 is out-of-bounds in a Newspeak string. *)
+public end <Integer> ::= p at: 2.
+|) (
+public = other <Object> ^<Boolean> = (
+  subclassResponsibility
+)
+public hash ^<Integer> = (
+  subclassResponsibility
+)
+public isKindOfAST ^<Boolean> = (
+	^true
+)
+public position ^ <{Integer. Integer}> = (
+  ^{start. end}
+)
+public prettyPrint ^ <String> = (
+  ^printString
+)
+public do: f <[TypeAST | nil ]> = (
+  subclassResponsibility
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  subclassResponsibility
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  subclassResponsibility
+)
+public with: t <TypeAST> do: f <[TypeAST TypeAST | nil]> = (
+  self with: t collect: [:a :b |
+    f value: a value: b.
+    {}
+  ]
+)
+) : (
+)
+public class BlockAST body: e <ExprAST> position: p <{Integer. Integer}> = ExprAST position: p (
+(*
+Blocks are designed to express delayed evaluation; for example, if expressions take two blocks, for the then and else branches.
+The expressions in each branch are not evaluated , but passed unevaluated to the higher-order primitive function #if.
+At this time, blocks have no corresponding concrete syntax. They are inserted by the parser within if expressions.
+Making them explicit introduces a form of nullary closure; the type system still prevents the use of these except in select primitives, because there is no concrete syntax for expressing the type of a first class function. Thus, we could choose to introduce a syntax for blocks, allowing more uniform replication on arguments to #if. TBD.
+*)
+|
+	public body <ExprAST> = e.
+|
+) (
+public isKindOfBlockAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^body prettyPrint
+)
+) : (
+public = other <Object> ^<Boolean> = (
+  other isKindOfBlockAST ifFalse: [^false].
+  ^body = other body
+)
+public hash ^<Integer> = (
+  ^body hash
+)
+public body: e <ExprAST> ^ <Instance> = (
+  ^body: e position: e position
+)
+)
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = ExprAST position: p (
+| public val = v. |
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfBoolAST ifFalse: [^false].
+  ^val = other val
+)
+public hash ^<Integer> = (
+  ^val hash
+)
+public isKindOfBoolAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^val printString
+)
+) : (
+)
+public class StringAST value: v <String> position: p <{Integer. Integer}> = ExprAST position: p (
+  | public val = v. |
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfStringAST ifFalse: [^false].
+  ^val = other val
+)
+public hash ^<Integer> = (
+  ^val hash
+)
+public isKindOfStringAST ^<Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^val printString
+)
+) : (
+)
+public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public functionName <Symbol> = f.
+	public arguments <List[ExprAST]> = as.
+|
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfCallAST ifFalse: [^false].
+  ^functionName = other functionName &
+    (Utils lists: arguments eq: other arguments)
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty arguments *)
+  | argHash = arguments isEmpty ifTrue: [46828919]
+                                ifFalse: [Utils valueHashOf: arguments]. |
+  ^functionName hash bitXor: argHash
+)
+public isKindOfCallAST ^ <Boolean> = (
+  ^true
+)
+prettyPrintIf ^ <String> = (
+  | else <String> = (arguments size = 3) ifTrue: [' else ',  arguments last prettyPrint] ifFalse: ['']. |
+  ^'if ', arguments first prettyPrint,  ' then ', (arguments at: 2) prettyPrint, else
+)
+prettyPrintOperator ^ <String> = (
+  ^ '(', arguments first prettyPrint, ') ', functionName, ' (',  arguments last prettyPrint, ')'
+)
+public prettyPrint ^ <String> = (
+  | args <String> ::= ''. |
+  functionName = 'if' ifTrue: [^prettyPrintIf].
+  (operatorChars includes: functionName first) ifTrue: [^prettyPrintOperator].
+  arguments do: [:a <Integer> |
+    args:: args, a prettyPrint
+  ] separatedBy: [args:: args, ', '].  
+  ^functionName, '(', args,  ')'
+)
+) : (
+)
+public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public expr1 <ExprAST> = e1.
+	public ident <Symbol> = id.
+        public expr2 <ExprAST> = e2.
+|
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfWhereAST ifFalse: [^false].
+  ^expr1 = other expr1 & ident = other ident & expr2 = other expr2.
+)
+public hash ^<Integer> = (
+  ^(expr1 hash bitXor: ident hash) bitXor: expr2 hash.
+)
+public isKindOfWhereAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^expr1 prettyPrint, ' where ', ident, ' = ', expr prettyPrint
+)
+) : (
+)
+public class StructLiteralAST data: data <Map[Symbol, ExprAST]> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public contents <Map[Symbol, ExprAST]> = data.
+|
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfStructLiteralAST ifFalse: [^false].
+  ^(Utils maps: contents eq: other contents)
+)
+public hash ^<Integer> = (
+  ^(Utils valueMapHashOf: contents)
+)
+public isKindOfStructLiteralAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  | fields <String> ::= ''. |
+  contents keysAndValuesDo: [:k :v | fields:: fields, k,  ' : ', v prettyPrint, ', '].
+  fields isEmpty ifFalse: [fields:: fields copyStringFrom: 1 to: fields size -2].
+  ^'{', fields, '}'
+)
+) : (
+)
+public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = ExprAST position: p (
+  | public expr <ExprAST> = expr.
+    public label <Symbol> = label. |
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfStructDotAST ifFalse: [^false].
+  ^expr = other expr & label = other label
+)
+public isKindOfStructDotAST ^<Boolean> = (
+  ^true
+)
+public hash ^<Integer> = (
+  ^expr hash bitXor: label hash
+)
+public prettyPrint ^ <String> = (
+  ^expr prettyPrint, '.', label
+)
+) : (
+)
+class DimensionAST position: p <{Integer. Integer}> = BaseTypeAST position: p (
+) (
+public = other <Object> ^<Boolean> = (
+  ^other isKindOfDimensionAST
+)
+public isKindOfDimensionAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^f value: self value: t.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^f value: self
+)
+public hash ^<Integer> = (
+   ^class hash
+)
+) : (
+)
+public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> = DimensionAST position: p (
+|
+	public dimension <Integer> = n.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfDimensionNumberAST ifFalse: [^false].
+  ^dimension = other dimension
+)
+public hash ^<Integer> = (
+  ^dimension hash
+)
+public isKindOfDimensionNumberAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class DimensionSumAST of: a <DimensionAST> and: b  <DimensionAST> position: p <{Integer. Integer}> = 
+  DimensionAST position: p (
+|
+	public left <DimensionAST> = a.
+	public right <DimensionAST> = b.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfDimensionSumAST ifFalse: [^false].
+  ^left = other left & right = other right
+)
+public hash ^<Integer> = (
+  ^left hash bitXor: right hash
+)
+public isKindOfDimensionSumAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  left do: f.
+  right do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  t isKindOfDimensionSumAST ifFalse: [^{}].
+  ^(f value: left value: t left), (f value: right value: t right)
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^DimensionSumAST of: (f value: left) and: (f value: right) position: position
+)
+) : (
+)
+public class DimensionVariableAST position: p <{Integer. Integer}> = DimensionAST position: p (
+|
+	name <String>
+|
+) (
+public id ^ <String> = (
+  ^name
+)
+public id: n <String> = (
+  name isNil ifTrue: [name:: n] ifFalse: [Error signal: 'Attempt to reset name of dimension variable '. name, ' to ', id]
+)
+public isKindOfDimensionVariableAST ^ <Boolean> = (
+  ^true
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfDimensionVariableAST ifFalse: [^false].
+  ^name = other name
+)
+public hash ^<Integer> = (
+  ^name hash
+)
+) : (
+public named: n <String> position: p <{Integer. Integer}> = (
+ ^ (position: p) id: n
+)
+)
+public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = DimensionAST position: p (
+|
+	public id <Symbol> = '$', n.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfDimensionVariableReferenceAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public isKindOfDimensionVariableReferenceAST ^ <Boolean> = (
+  ^true
+)
+public printOn: stream <CharOutputStream> = (
+   (*  '$', id printOn: stream *)
+   stream nextPutAll:  id
+)
+public printString ^ <String> = (
+  ^ id
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  binding do: f.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^binding collect: f
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^binding with: t collect: f
+)
+) : (
+)
+public class DynamicTypeAST position: p <{Integer. Integer}> = TypeAST position: p(
+) (
+public = other <Object> ^ <Boolean> = (
+  ^other isKindOfDynamicTypeAST
+)
+public asTensorType = (
+  (* I act as a tensor type *)
+  ^self
+)
+public isKindOfDynamicTypeAST ^ <Boolean> = (
+  ^true
+)
+public hash ^<Integer> = (
+  ^51547 (* arbitrarily chosen number for DynamicTypeAST *)
+)
+) : (
+)
+class ExprAST position: p <{Integer. Integer}> = AST position: p (
+  | public isShape ::= false. |
+) (
+public = other <Other> ^ <Boolean> = (
+  ^other isKindOfExprAST
+)
+public hash ^<Integer> = (
+  ^795147 (* arbitrarily chosen number for ExprAST *)
+)
+public isKindOfExprAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = AST position: p (
+|
+  public id <String> = n.
+  public parameters <List[ParameterAST]> = ps.
+  public returnTypeSlot <TypeAST> ::= t.
+  public body  <ExprAST> = b.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfFunctionAST ifFalse: [^false].
+  ^id = other id & (Utils lists: parameters eq: other parameters) &
+    returnTypeSlot = other returnTypeSlot &
+    body = other body
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty parameters*)
+  | pHash = parameters isEmpty ifTrue: [194873]
+                               ifFalse: [Utils valueHashOf: parameters]. |
+  ^((id hash bitXor: pHash) bitXor: returnTypeSlot hash) bitXor: body hash
+)
+public isKindOfFunctionAST ^ <Boolean> = (
+  ^true
+)
+public returnType ^ <TypeAST> = (
+  subclassResponsibility
+)
+public printString ^ <String> = (
+  | result <String> ::= 'func ', id, '('. |
+  parameters do: [:p <ParameterAST> | 
+	result:: result,  (p type isKindOfFunctionAST ifTrue: [
+		'(', p type printTypeString, ')'.
+		] ifFalse: [p type printString]).
+	] separatedBy: [result:: result,  ', '].
+   result:: result, ') : ', returnType printString, ' = ', body printString.
+  ^result
+)
+public prettyPrint ^ <String> = (
+  | result <String> ::= 'func ', id, '('. |
+  parameters do: [:p <ParameterAST> | 
+	result:: result,  (p type isKindOfFunctionAST ifTrue: [
+		'(', p prettyPrint, ')'.
+		] ifFalse: [p prettyPrint]).
+	] separatedBy: [result:: result,  ', '].
+   result:: result, ') : ', returnType printString, ' = ', body prettyPrint.
+  ^result
+)
+) : (
+)
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public id <String> = n.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfIdentifierAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public isKindOfIdentifierAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^id
+)
+) : (
+)
+public class LetAST named: n <Symbol> expression: e <ExprAST> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+    public id <Symbol> = n.
+	public expression <ExprAST> = e.
+    typeSlot <TypeAST>
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfLetAST ifFalse: [^false].
+  ^id = other id & expression = other expression
+)
+public hash ^<Integer> = (
+  ^id hash bitXor: expression hash
+)
+public isKindOfLetAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^'let ', id, ' = ', expression prettyPrint
+)
+) : (
+)
+public class NumAST value: n <Integer> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public val <Integer> = n.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfNumAST ifFalse: [^false].
+  ^val = other val
+)
+public hash ^<Integer> = (
+  ^val hash
+)
+public isKindOfNumAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^val printString
+)
+) : (
+)
+public class ParameterAST named: n <String> type: t <TypeAST> position: p <{Integer. Integer}> = AST  position: p (
+|
+	public id <String> = n.
+	public type <TypeAST> = t.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfParameterAST ifFalse: [^false].
+  ^id = other id & type = other type
+)
+public hash ^<Integer> = (
+  ^id hash bitXor: type hash
+)
+public isKindOfParameterAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^id, ' : ', type prettyPrint
+)
+) : (
+)
+public class ProgramAST declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
+  AST position: p (
+|
+	public declarations <List[FunctionAST | LetAST]> = ds.
+	public expression <ExprAST> = e.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfProgramAST ifFalse: [^false].
+  ^(Utils lists: declarations eq: other declarations) &
+    expression = other expression
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty declarations *)
+  | decHash = declarations isEmpty ifTrue: [653992]
+                                   ifFalse: [Utils valueHashOf: declarations]. |
+  ^decHash bitXor: expression hash
+)
+public isKindOfProgramAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class RerankAST reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public fun <String> = fn.
+	public ranks <List[Integer]> = rs.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfRerankAST ifFalse: [^false].
+  ^fun = other fun & (Utils lists: ranks eq: other ranks)
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty ranks *)
+  | rankHash = ranks isEmpty ifTrue: [73923822] ifFalse: [Utils valueHashOf: ranks]. |
+  ^fun hash bitXor: rankHash
+)
+public isKindOfRerankAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  | ranking ::= ''. |
+  ranks do: [:r <Integer> |
+    ranking:: ranking, r printString
+  ] separatedBy: [ranking:: ranking, ', '].
+  ^'rerank ', fun, ' to ', ranking
+)
+) : (
+)
+class ShapeAST position: p <{Integer. Integer}> = AST position: p (
+|
+
+|
+) (
+public isKindOfShapeAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^f value: self value: t.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^f value: self.
+)
+) : (
+)
+public class ShapeAppendAST shape: s1 <ShapeAST>  to: s2 <ShapeAST> position: p <{Integer. Integer}> = ShapeAST position: p (
+|
+	public first <ShapeAST> = s1.
+	public second <ShapeAST> = s2.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfShapeAppendAST ifFalse: [^false].
+  ^first = other first & second = other second
+)
+public hash ^<Integer> = (
+  ^first hash bitXor: second hash
+)
+public isKindOfShapeAppendAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  first do: f.
+  second do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  t isKindOfShapeAppendAST ifFalse: [^{}].
+  ^(f value: first value: t first), (f value: second value: t second).
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^ShapeAppendAST shape: (f value: first) to: (f value: second) position: position
+)
+) : (
+)
+public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+public expression <ExprAST> = e.
+public shape <ShapeAST> = s.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfShapeCastAST ifFalse: [^false].
+  ^expression = other expression & shape = other shape
+)
+public hash ^<Integer> = (
+  ^expression hash bitXor: shape hash
+)
+public isKindOfShapeCastAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> = ShapeAST position: p (
+|
+	public id <String> = n.
+|
+) (
+public = other <ShapeVariableAST> ^ <Boolean> = (
+  other isKindOfShapeVariableAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public asTensorType ^ <TensorTypeAST> = (
+  (* A Shape variable used as a type is sugar for the shape vector it represents, in other words @S Int *)
+  ^TensorTypeAST shape: self type: (TypeIdAST named: #Int position: {0. 0}) position: position
+)
+public isKindOfShapeVariableAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = ShapeAST position: p (
+|
+	public id <Symbol> = '@', n.
+|
+) (
+public isKindOfShapeVariableReferenceAST ^ <Booelan> = (
+  ^true
+)
+public printOn: stream <CharOutputStream> = (
+   stream nextPutAll:  id
+)
+public printString ^ <String> = (
+  ^ id
+)
+public = other <Object> ^<Boolean> = (
+  other isKindOfShapeVariableReferenceAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  binding do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^binding with: t collect: f.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^binding collect: f
+)
+) : (
+)
+public class ShapeVectorAST dimensions: ds <List[DimensionAST]> position: p <{Integer. Integer}> = ShapeAST  position: p (
+|
+	public dimensions <List[DimensionAST]> = ds.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfShapeVectorAST ifFalse: [^false].
+  ^(Utils lists: dimensions eq: other dimensions)
+)
+public isKindOfShapeVectorAST ^ <Boolean> = (
+  ^true
+)
+public hash ^<Integer> = (
+  (* arbitrary number chosen for empty dimensions *)
+  dimensions isEmpty ifTrue: [^45569809].
+  ^Utils valueHashOf: dimensions 
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  dimensions do: [:d | d do: f].
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  | ret ::= {}. |
+  t isKindOfShapeAST ifFalse: [^{}].
+  rank = t rank ifFalse: [^{}].
+  dimensions with: t dimensions do: [:d <DimensionAST> :e <DimensionAST> | ret:: ret, (f value: d value: e)].
+  ^ret
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^ShapeVectorAST dimensions: (dimensions collect: [:d | f value: d]) position: position
+)
+) : (
+)
+public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = ExprAST position: p (
+|
+	public expressions <List[ExprAST]> = es.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfTensorAST ifFalse: [^false].
+  ^(Utils lists: expressions eq: other expressions)
+)
+public hash ^<Integer> = (
+  (* arbitrary number chosen for empty expressions *)
+  expressions isEmpty ifTrue: [^24390821].
+  ^Utils valueHashOf: expressions
+)
+public isKindOfTensorAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  | exprs ::= ''. |
+  expressions do: [:e | exprs:: exprs, e prettyPrint] separatedBy: [exprs:: exprs, ', '].
+  ^'[', exprs, ']'
+)
+) : (
+)
+public class TensorTypeAST shape: s <ShapeAST>  type: t <TypeAST> position: p <{Integer. Integer}> = TypeAST position: p (
+| public shape <ShapeAST> = s.
+  public baseType <TypeAST> = t isKindOfBaseTypeAST ifTrue: [t] ifFalse: [t baseType]. |
+  assert: [
+    ([baseType shape] on: MessageNotUnderstood do: [:e | emptyShape]) = emptyShape
+  ] message: 'using tensor type as base type'.
+) (
+public hash ^<Integer> = (
+  ^shape hash bitXor: baseType hash
+)
+public asTensorType = (
+)
+public isKindOfTensorTypeAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  shape do: f.
+  baseType do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^(f value: shape value: t shape), (f value: baseType value: t baseType)
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^TensorTypeAST shape: (f value: shape) type: (f value: baseType) position: position
+)
+public = o <Object> ^ <Boolean> = (
+  o isKindOfTensorTypeAST ifFalse: [^false]. 
+  ^o shape = shape and: [o baseType = baseType]
+)
+) : (
+)
+class TypeAST position: p <{Integer. Integer}> = AST position: p (
+) (
+public isKindOfTypeAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class BaseTypeAST position: p <{Integer. Integer}> = TypeAST position: p (
+) (
+public asTensorType = (
+  (* For base types, the following holds *)
+  (* Viewed as a type, I am a scalar tensor with myself as  base type *)
+  ^TensorTypeAST shape: emptyShape type: self position: position
+)
+public isKindOfBaseTypeAST ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^f value: self value: t
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^f value: self
+)
+) : (
+)
+public class TypeIdAST named: n <String> position: p <{Integer. Integer}> = BaseTypeAST position: p (
+|
+	public id <String> = n.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfTypeIdAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public isKindOfTypeIdAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class TypeStructAST table: table <Map[Symbol, TypeAST]> position: p <{Integer. Integer}> = BaseTypeAST position: p (
+  | public table = table. |
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfTypeStructAST ifFalse: [^false].
+  ^(Utils maps: table eq: other table)
+)
+public isKindOfTypeStructAST ^<Boolean> = (
+  ^true
+)
+public hash ^<Integer> = (
+  ^(Utils valueMapHashOf: table)
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  table do: [:v | v do: f].
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  | ret ::= {}. |
+  t isKindOfTypeStructAST ifTrue: [
+    t table keys do: [:k |
+      (table includesKey: k) ifTrue: [
+        ret:: ret, (f value: (table at: k) value: (t table at: k)).
+      ].
+    ].
+  ].
+  ^ret
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  | newTable = Map new. |
+  table keys do: [:k | newTable at: k put: (f value: (table at: k))].
+  ^TypeStructAST table: newTable position: position
+)
+) : (
+)
+public class FunctionTypeAST parameterTypes: ps <List[TypeAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = BaseTypeAST position: p (
+  | public parameterTypes <List[TypeAST]> = ps.
+    public returnType = t. |
+) (
+public = other <Object> ^<Boolean> = (
+  other isKindOfFunctionTypeAST ifFalse: [^false].
+  ^(Utils lists: parameterTypes eq: other parameterTypes) & returnType = other returnType
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty parameters *)
+  | pt = parameterTypes isEmpty ifTrue: [847104113]
+                                ifFalse: [Utils valueHashOf: parameterTypes]. |
+  ^pt bitXor: returnType hash
+)
+public isKindOfFunctionTypeAST = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  parameterTypes do: [:p | p do: f].
+  returnType do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  | ret ::= {}. |
+  t isKindOfFunctionTypeAST ifFalse: [^{}].
+  parameterTypes with: t parameterTypes do: [:a :b | ret:: ret, (f value: a value: b)].
+  ret:: ret, (f value: returnType value: t returnType).
+  ^ret
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^FunctionTypeAST parameterTypes: (parameterTypes collect: f) returnType: (f value: returnType) asTensorType position: position
+)
+) : (
+)
+public class BoundedTypeAST base: s <TypeVariableReferenceAST> bound: t <TypeAST> position: p = BaseTypeAST position: p (
+  | 
+  public base <TypeVariableReferenceAST> = s.
+  public bound <TypeAST> = t. 
+  |
+) (
+public = other <Object> ^ <Boolean> = (
+  other isKindOfBoundedTypeAST ifFalse: [^false].
+  ^base = other base & bound = other bound.
+)
+public hash ^<Integer> = (
+  ^base hash bitXor: bound hash
+)
+public isKindOfBoundedTypeAST ^ <Boolean> = (
+  ^true
+)
+public printOn: stream <CharOutputStream> = (
+  base printOn: stream.
+  stream nextPutAll: ' < '.
+  bound printOn: stream.
+)
+public printString ^ <String> = (
+  ^base printString, ' < ', bound printString
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  base do: f.
+  bound do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^base with: t collect: f
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^BoundedTypeAST base: (f value: base) bound: (f value: bound) position: position
+)
+) : (
+)
+public class TypeVariable named: n <String> = (
+  (* TypeVariable uses object identity to resolve different type variables
+     with the same names. It's also not an AST, it can never be output from the parser. *)
+  | public id <String> = n. |
+) (
+public isKindOfTypeVariable ^ <Boolean> = (
+  ^true
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^f value: self value: t
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^f value: self
+)
+) : (
+)
+public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = BaseTypeAST position: p (
+|
+	public id <Symbol> = '$', n.
+|
+) (
+public isKindOfTypeVariableReferenceAST ^ <Boolean> = (
+  ^true
+)
+public printOn: stream <CharOutputStream> = (
+   stream nextPutAll:  id
+)
+public printString ^ <String> = (
+  ^ id
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfTypeVariableReferenceAST ifFalse: [^false].
+  ^id = other id
+)
+public hash ^<Integer> = (
+  ^id hash
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+  binding do: f.
+)
+public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
+  ^binding with: t collect: f.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^binding collect: f
+)
+) : (
+)
+emptyShape ^ <ShapeVectorAST> = (
+  ^ShapeVectorAST dimensions: {} position: {0. 0}
+)
+) : (
+)

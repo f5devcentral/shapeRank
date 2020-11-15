@@ -1,0 +1,29 @@
+Newspeak3
+'Root'
+class ShapeRankInferenceTestsConfiguration packageTestsUsing: manifest = (
+|
+	private ShapeRankInferenceTests = manifest ShapeRankInferenceTests.
+	private ShapeRankASTs = manifest ShapeRankASTs.
+	private ShapeRankScopes = manifest ShapeRankScopes.
+	private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+	private CombinatorialParsing  = manifest CombinatorialParsing.
+	private ShapeRankGrammar = manifest ShapeRankGrammar.
+	private ShapeRankParser = manifest ShapeRankParser.
+	private ShapeRankTestData = manifest ShapeRankTestData.
+    private CollectionUtils = manifest CollectionUtils.
+    private Tensorflow = manifest Tensorflow.
+    private NodeAPI = manifest NodeAPI.
+|
+) (
+public testModulesUsingPlatform: platform minitest: minitest = (
+  |
+  utils = CollectionUtils usingPlatform: platform.
+  Scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+  Typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils) Typechecker.
+  Inference = (Typechecker usingPlatform: platform collectionUtils: utils ) ShapeRankInference.
+  InferenceEngine = Inference new InferenceEngine.
+  |
+  ^{ShapeRankInferenceTests usingPlatform: platform asts: Typechecker engine: InferenceEngine collectionUtils: utils minitest: minitest}
+)
+) : (
+)

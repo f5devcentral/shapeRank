@@ -1,0 +1,281 @@
+Newspeak3
+'Root'
+class ShapeRankInferenceTests usingPlatform: platform asts: ASTClass engine: Engine collectionUtils: utils minitest: minitest = (
+  (* TODO: check if this persists state between tests *)
+  | private asts = ASTClass usingPlatform: platform collectionUtils: utils.
+    private TestContext = minitest TestContext.
+    private DimensionVariableAST = asts DimensionVariableAST.
+    private DimensionSumAST = asts DimensionSumAST.
+    private DimensionNumberAST = asts DimensionNumberAST.
+    private ShapeVariableAST = asts ShapeVariableAST.
+    private ShapeAppendAST = asts ShapeAppendAST.
+    private ShapeVectorAST = asts ShapeVectorAST.
+    private Engine = Engine.
+    private Set = platform collections Set. |
+) (
+public class InferenceTests = TestContext (
+) (
+class ContextMock unknownVariables: unk = (
+  | unknown = Set withAll: unk. |
+) (
+public isUnknown: var = (
+  ^unknown includes: var
+)
+) : (
+)
+class ContextAllUnknown = (
+) (
+public isUnknown: var = (
+  ^true
+)
+) : (
+)
+dimVar: name = (
+  | d = DimensionVariableAST position: {0. 0}. |
+  d id: name.
+  ^d
+)
+dimSum: a with: b = (
+  ^DimensionSumAST of: a and: b position: {0. 0}.
+)
+dimNum: n = (
+  ^DimensionNumberAST number: n position: {0. 0}
+)
+shVar: name = (
+  ^ShapeVariableAST named: name position: {0. 0}
+)
+shApp: a with: b = (
+  ^ShapeAppendAST shape: a to: b position: {0. 0}
+)
+shVec: ds = (
+  ^ShapeVectorAST dimensions: ds position: {0. 0}
+)
+engine: unknownVars = (
+  ^Engine context: (ContextMock unknownVariables: unknownVars)
+)
+engine = (
+  ^Engine context: (ContextAllUnknown new)
+)
+assert: ctx at: v equals: w = (
+  assert: (ctx inferMap at: v) equals: w.
+)
+assert: ctx hasNoEntryFor: v = (
+  assert: [(ctx inferMap includesKey: v) not]
+    description: 'ctx has key ', v printString, ' incorrectly'.
+)
+assert: ctx makesTheseVarsEqual: vars = (
+  | arbitraryMappedVar = vars detect: [:v | ctx inferMap includesKey: v].
+    mappedValue = ctx inferMap at: arbitraryMappedVar. |
+  vars do: [:v |
+    v = mappedValue ifTrue: [
+      assert: ctx hasNoEntryFor: v.
+    ] ifFalse: [
+      assert: ctx at: v equals: mappedValue.
+    ]
+  ]
+)
+public testDimensionSimpleEquality = (
+  | d = dimVar: '$d'.
+    e = dimVar: '$e'.
+    f = dimVar: '$f'.
+    eng ::= engine. |
+  eng registerDimension: d equals: e.
+  eng registerDimension: d equals: f.
+  assert: eng hasSolutions.
+  eng all do: [:ctx | assert: ctx makesTheseVarsEqual: {d. e. f} ].
+)
+public testDimensionAppends = (
+  | d = dimVar: '$d'.
+    e = dimVar: '$e'.
+    f = dimVar: '$f'.
+    g = dimVar: '$g'.
+    ef = dimSum: e with: f.
+    eg = dimSum: e with: g.
+    eng = engine. |
+  eng registerDimension: ef equals: d.
+  eng registerDimension: f equals: eg.
+  eng registerDimension: g equals: f.
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    assert: ctx at: e equals: (dimNum: 0) canonicalForm.
+    assert: ctx makesTheseVarsEqual: {d. f. g}
+  ].
+)
+public testDimensionUnknowns = (
+  | d = dimVar: '$d'.
+    e = dimVar: '$e'.
+    f = dimVar: '$f'.
+    eng = engine: {d. e}. |
+  (* this test correctly specifies that f should be the target instead of using makesTheseVarsEqual *)
+  eng registerDimension: e equals: d.
+  eng registerDimension: f equals: d.
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    assert: ctx at: d equals: f.
+    assert: ctx at: e equals: f.
+    assert: ctx hasNoEntryFor: f.
+  ].
+)
+public testDimensionHiddenVars = (
+  | d = dimVar: '$d'.
+    e = dimVar: '$e'.
+    five = dimNum: 5.
+    de = dimSum: d with: e.
+    eng = engine.|
+  eng registerDimension: de equals: five.
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    (ctx inferMap includesKey: d) ifTrue: [
+      assert: ctx at: d equals: (five canonicalForm - e canonicalForm).
+      assert: ctx hasNoEntryFor: e.
+    ] ifFalse: [
+      assert: ctx at: e equals: (five canonicalForm - d canonicalForm).
+      assert: ctx hasNoEntryFor: d.
+    ]
+  ].
+)
+public testDimensionConflicts = (
+  | d = dimVar: '$d'.
+    e = dimVar: '$e'.
+    two = dimNum: 2.
+    three = dimNum: 3.
+    eng = engine. |
+    eng registerDimension: d equals: two.
+    eng registerDimension: d equals: e.
+    eng registerDimension: e equals: three.
+    assert: eng hasSolutions not.
+)
+public testDimensionConflicts2 = (
+  | d = dimVar: '$d'.
+    two = dimNum: 2.
+    three = dimNum: 3.
+    d2 = dimSum: d with: two.
+    d3 = dimSum: d with: three.
+    eng = engine. |
+    eng registerDimension: d2 equals: d3.
+    assert: eng hasSolutions not.
+)
+public testShapeSimpleEquality = (
+  | s1 = shVar: 's1'.
+    s2 = shVar: 's2'.
+    v = shVec: {dimNum: 2. dimNum: 2}.
+    eng = engine. |
+  eng registerShape: v equals: s1.
+  eng registerShape: s1 equals: s2.
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    assert: ctx at: s1 equals: v.
+    assert: ctx at: s2 equals: v.
+  ].
+)
+public testShapeAppendEquality = (
+  | s = shVar: 's'.
+    eng = engine. |
+    eng registerShape: (shVec: {dimNum: 2. dimNum: 3}) equals: (shApp: s with: (shVec: {dimNum: 3})).
+    assert: eng hasSolutions.
+    eng all do: [:ctx |
+      assert: ctx at: s equals: (shVec: {dimNum: 2}).
+    ].
+)
+public testShapeAppendInequality = (
+  | s = shVar: 's'.
+    eng = engine. |
+
+  eng registerShape: (shVec: {dimNum: 2}) equals: (shApp: s with: (shVec: {dimNum: 2})).
+  eng registerShape: (shVec: {dimNum: 2}) equals: (shApp: s with: (shVec: {})).
+  assert: eng hasSolutions not.
+)
+public testShapeAmbiguousVectorEquality = (
+  | s1 = shVar: 's1'.
+    s2 = shVar: 's2'.
+    v = shVec: {dimNum: 2. dimNum: 3. dimNum: 4}.
+    eng = engine. |
+  eng registerShape: v equals: (shApp: s1 with: s2).
+  assert: eng hasSolutions.
+  assert: eng all size equals: 4.
+  eng all do: [:ctx |
+    | s1v = ctx inferMap at: s1.
+      s2v = ctx inferMap at: s2. |
+    assert: s1v, s2v equals: v.
+  ].
+
+  eng registerShape: s2 equals: (shVec: {dimNum: 4}).
+  assert: eng hasSolutions.
+  assert: eng all size equals: 1.
+  eng all do: [:ctx |
+    assert: ctx at: s1 equals: (shVec: {dimNum: 2. dimNum: 3}).
+    assert: ctx at: s2 equals: (shVec: {dimNum: 4}).
+  ].
+)
+public testShapeAmbiguousAppendEquality = (
+  | a = shVar: 'a'.
+    b = shVar: 'b'.
+    c = shVar: 'c'.
+    d = shVar: 'd'.
+    eng = engine.
+    tmp ::= nil. |
+  eng registerShape: (shApp: a with: b) equals: (shApp: c with: d).
+
+  eng registerShape: a equals: (shVec: {dimNum: 1. dimNum: 2}).
+  eng registerShape: c equals: (shVec: {dimNum: 1}).
+
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    assert: ctx at: a equals: (shVec: {dimNum: 1. dimNum: 2}).
+    assert: ctx at: c equals: (shVec: {dimNum: 1}).
+    assert: (ctx inferMap at: b) printString equals: 'drop(@d, 1)'.
+    assert: ctx hasNoEntryFor: d.
+  ].
+
+  eng registerShape: (shApp: a with: (shApp: c with: d)) equals: (shVec: {dimNum: 1. dimNum: 2. dimNum: 1. dimNum: 2}).
+  assert: eng hasSolutions.
+  eng all do: [:ctx |
+    assert: ctx at: a equals: (shVec: {dimNum: 1. dimNum: 2}).
+    assert: ctx at: c equals: (shVec: {dimNum: 1}).
+    assert: ctx at: b equals: (shVec: {}).
+    assert: ctx at: d equals: (shVec: {dimNum: 2}).
+  ].
+)
+public testShapeAmbiguousAppendInequality = (
+  | a = shVar: 'a'.
+    b = shVar: 'b'.
+    c = shVar: 'c'.
+    d = shVar: 'd'.
+    eng = engine.
+    tmp ::= nil. |
+  eng registerShape: (shApp: a with: b) equals: (shApp: c with: d).
+
+  eng registerShape: a equals: (shVec: {dimNum: 1. dimNum: 2}).
+  eng registerShape: c equals: (shVec: {dimNum: 2. dimNum: 2}).
+
+  assert: eng hasSolutions not.
+)
+public badTestShapeAmbiguousAppendInequality2 = (
+  (* we could pass this test right now, but it requires simplifying:
+                take([2]::@d, 2) = [2]::take(@d, 1)
+     this is not difficult to do, but it means putting a lazy shape op in a place where
+     a LOT of other code is expecting a ShapeAST, which suggests errors.
+     If I was around for longer, I'd absolutely jump into implementing the Lazy objects such that they
+     could actually masquerade here, but it's a large enough change that I'm not going to do it here. *)
+  | a = shVar: 'a'.
+    b = shVar: 'b'.
+    c = shVar: 'c'.
+    d = shVar: 'd'.
+    eng = engine.
+    tmp ::= nil. |
+  eng registerShape: (shApp: a with: b) equals: (shApp: c with: d).
+
+  eng registerShape: a equals: (shVec: {dimNum: 1. dimNum: 2}).
+  eng registerShape: c equals: (shVec: {dimNum: 2}).
+
+  assert: eng hasSolutions not.
+)
+public testAaaaaInitial = (
+(* work around for bug in testing framework or UI *)
+  assert: true.
+)
+) : (
+TEST_CONTEXT = ()
+)
+) : (
+)

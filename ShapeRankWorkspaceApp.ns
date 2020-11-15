@@ -1,0 +1,36 @@
+Newspeak3
+'Root'
+class ShapeRankWorkspaceApp packageUsing: manifest = (
+  |
+  private CombinatorialParsing = manifest CombinatorialParsing.
+  private CollectionUtils = manifest CollectionUtils.
+  private NodeAPI = manifest NodeAPI.
+  private Tensorflow = manifest Tensorflow.
+  private ShapeRankASTs = manifest ShapeRankASTs.
+  private ShapeRankScopes = manifest ShapeRankScopes.
+  private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+  private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+  private ShapeRankGrammar = manifest ShapeRankGrammar.
+  private ShapeRankParser = manifest ShapeRankParser.
+  private ShapeRankWorkspace = manifest ShapeRankWorkspace.
+  
+  private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.  
+  |
+) (
+public main: platform args: args = (
+  |
+  utils = CollectionUtils usingPlatform: platform.
+  scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+  typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
+  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils) Evaluator.
+  parsers = CombinatorialParsing usingPlatform: platform.
+  grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
+  parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
+  hopscotchPlatform = hopscotchRuntime using: platform.  
+  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform engine: evaluator  parser: parsing.
+  |
+  
+  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
+)
+) : (
+)

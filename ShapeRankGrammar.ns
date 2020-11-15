@@ -1,0 +1,165 @@
+Newspeak3
+'Root'
+class ShapeRankGrammar usingPlatform: p parsers: parsers = (
+(* Grammar module for ShapeRank *)
+|
+private List = p collections List.
+
+private ExecutableGrammar = parsers ExecutableGrammar.
+private CombinatorialParser = parsers CombinatorialParser.
+private TokenizingParser = parsers TokenizingParser.
+private Token = parsers Token.
+public ParserError = parsers ParserError.
+|
+) (
+public class Grammar = ExecutableGrammar (
+(*
+An executable grammar for the simplest possible typed rank polymorphic language.
+See https://docs.google.com/document/d/10KMJ2B6dTWTnivhIwJOrfJl-WVhi0arjMpVLo4FP5Rw/edit?usp=sharing .
+
+
+*)
+|
+whitespace = super whitespace. (* cache whitespace parser *)
+atSign = tokenFromChar: "@".
+colon = tokenFromChar: ":".
+comma = tokenFromChar: ",".
+dollar = tokenFromChar: "$".
+dot = tokenFromChar: ".".
+equalSign = tokenFromChar: "=".
+lbracket = tokenFromChar: "[".
+lcurly = tokenFromChar: "{".
+lparen = tokenFromChar: "(".
+minus = tokenFromChar: "-".
+plusSign = tokenFromChar: "+".
+rbracket = tokenFromChar: "]".
+rcurly = tokenFromChar: "}".
+rparen = tokenFromChar: ")".
+semicolon = tokenFromChar: ";".
+notSym = tokenFromSymbol: 'not'.
+asterisk = tokenFromChar: "*".
+slash = tokenFromChar: "/".
+percent = tokenFromChar: "%".
+eq = tokenFromSymbol: '=='.
+notEq = tokenFromSymbol: '!='.
+leq = tokenFromSymbol: '<='.
+geq = tokenFromSymbol: '>='.
+lt = tokenFromChar: "<".
+gt = tokenFromChar: ">".
+ltdot = tokenFromSymbol: '<:'.
+dotdot = tokenFromSymbol: '..'.
+andSym = tokenFromSymbol: 'and'.
+orSym = tokenFromSymbol: 'or'.
+whereSym = tokenFromSymbol: 'where'.
+
+digit = charBetween: "0" and: "9".
+digits = digit plus.
+integer = (char: "-") opt, digits.
+underscore = char: "_".
+int = tokenFor: integer.	
+uppercaseLetter = charBetween: "A" and: "Z".
+letter = uppercaseLetter | (charBetween: "a" and: "z").
+(* this is the haskell list of allowed symbols in operators, modulo unicode *)
+printableSymChar = (char: "!") | (char: "#") | (char: "$") | (char: "%") |
+                   (char: "&") | (char: "*") | (char: "+") | (char: ".") |
+                   (char: "/") | (char: "<") | (char: "=") | (char: ">") |
+                   (char: "?") | (char: "@") | (char: "\") | (char: "^") |
+                   (char: "|") | (char: "-") | (char: "~").
+id = letter, ((letter | digit | underscore)) star wrapper:
+		[:first :second | String fromRunes: {first}, second asArray].
+Id = uppercaseLetter, ((letter | digit)) star wrapper:
+		[:first :second | String fromRunes: {first}, second asArray].
+operator = printableSymChar, (letter | digit | underscore | printableSymChar) star
+                wrapper: [:a :as | String fromRunes: {a}, as asArray].
+
+(* printable ascii characters without " or \ *)
+unescapedChar = (charBetween: " " and: "!") |
+                (charBetween: "#" and: "[") |
+                (charBetween: "]" and: "~").
+escapedChar = (char: "\"), ((char: "\") | (char: '"')). (* for now *)
+stringChar = escapedChar | unescapedChar.
+stringLiteral = (tokenFromChar: '"'),
+                stringChar star,
+                (TokenizingParser withSubparser: (char: '"')).
+                (* we want a token for positions, but we don't want
+                   the default behaviour of stripping whitespace *)
+
+alphaNumId = tokenFor: id.
+operatorId = tokenFor: operator.
+public identifier = alphaNumId | operatorId.
+public Identifier = tokenFor: Id.
+doublecolon = tokenFromSymbol: #'::'.
+trueToken = tokenFromSymbol: #true.
+falseToken = tokenFromSymbol: #false.
+func = tokenFromSymbol: #func.
+if = tokenFromSymbol: #if.
+then = tokenFromSymbol: #then.
+else = tokenFromSymbol: #else.
+dynamic = tokenFromSymbol: #dynamic.
+rerank = tokenFromSymbol: #rerank.
+to = tokenFromSymbol: #to.
+shapeCast = tokenFromSymbol: #shapeCast.
+let = tokenFromSymbol: #let.
+
+program = declarationSection opt, expr, eoi.
+declaration = function | letBinding.
+declarationSection = declaration plus, semicolon.
+function = func, identifier,  lparen, params, rparen, (colon , type) opt,  equalSign, expr.
+letBinding = let, identifier, equalSign, expr.
+params = param plusSeparatedBy: comma.
+param = identifier, colon,  type.
+typeVariable = dollar, Identifier.
+tensorType = shape, baseType.
+typeId = Identifier.
+boundedType = typeVariable, ltdot, baseType.
+structTypeProperty = identifier, colon, type.
+structType = lcurly, (structTypeProperty starSeparatedBy: comma), rcurly.
+baseType = boundedType | typeId | typeVariable | dimension | structType.
+type = tensorType | dynamic | baseType.
+shapeVectorElement = lbracket, dimension opt, rbracket.
+shapeVector = shapeVectorElement plus.
+shapeVariable = atSign, identifier.
+shapeSuffix = doublecolon, shape.
+shape = (shapeVector | shapeVariable), shapeSuffix opt.
+shapeIndex =  shape, lbracket, int, rbracket.
+dimensionNumber = int.
+dimensionVariable = dollar, identifier.
+dimensionOp = plusSign | minus.
+dimensionSumSuffix = dimensionOp,  dimension.
+dimension = (dimensionNumber | dimensionVariable  | shapeIndex), dimensionSumSuffix opt.
+intConst = int.
+boolConst = trueToken | falseToken.
+floatConst = int, dot, (tokenFor: digits).
+variableReference = identifier.
+parenExpr = lparen, expr, rparen.
+ifExpr = if, expr, then, expr, else, expr.
+rerankExpr = rerank, identifier, to,  (intConst plusSeparatedBy: comma).
+shapeCastExpr = shapeCast, expr, to, shape.
+term = struct | ifExpr | call | tensor | floatConst | intConst | boolConst | stringLiteral | rerankExpr | shapeCastExpr | variableReference | parenExpr.
+dotExpr = term, (dot, alphaNumId) star.
+unaryTerm = (minus | notSym), dotExpr.
+unaryExpr = unaryTerm | dotExpr.
+mulExpr = oneStepBinary: {asterisk. slash. percent} on: unaryExpr.
+addExpr = oneStepBinary: {plusSign. minus. dotdot} on: mulExpr.
+relExpr = oneStepBinary: {eq. notEq. leq. geq. lt. gt} on: addExpr.
+andExpr = oneStepBinary: {andSym} on: relExpr.
+orExpr = oneStepBinary: {orSym} on: andExpr.
+whereId = (whereSym, identifier, equalSign) wrapper: [:s :id :e | id].
+whereExpr = oneStepBinary: {whereId} on: orExpr.
+expr = atSign opt, whereExpr.
+tensor = lbracket, exprs, rbracket.
+exprs = expr plusSeparatedBy: comma.
+call = identifier, lparen, exprs, rparen.
+property = identifier, colon, expr.
+struct = lcurly, (property starSeparatedBy: comma), rcurly.
+|
+) (
+oneStepBinary: ops <List[CombinatorialParser[O]]> on: base <CombinatorialParser[T]> ^<CombinatorialParser[{T. List[{O. T}]}]> = (
+  | opsAlt |
+  opsAlt:: ops reduce: [:acc :op | (acc | op)]. (* this doesn't parse inside the |local variable| bars *) 
+  ^(base, (opsAlt, base) star)
+)
+) : (
+)
+) : (
+)

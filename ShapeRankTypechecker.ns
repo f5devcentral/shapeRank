@@ -1,0 +1,2501 @@
+Newspeak3
+'Root'
+class ShapeRankTypechecker usingPlatform: platform asts: asts <ShapeRankAST> collectionUtils: utils = (
+(*
+The typechecker module for ShapeRank. 
+
+The actual typechecker is the nested class Typechecker. 
+*)
+|
+	private ASTClass <ShapeRankAST class> = asts.
+	private Map = platform collections OrderedMap.
+	private List = platform collections List.
+	private Set = platform collections OrderedSet.
+	private Utils = utils.
+|
+) (
+public class Typechecker usingPlatform: p <Platform> collectionUtils: c = ASTClass usingPlatform: p collectionUtils: c (
+(*
+Traditionally, we would separate the typechecker from the AST, probably writing it as a visitor. Here, we choose to extend the AST classes with typechecking code, demonstrating how we can solve the expression problem using class hierarchy inheritance.
+
+The effect is as intuitive and "obvious" as the traditional misdesign where the AST contains all the typechecking functionality, but without the modularity issues that give that approach its bad reputation.
+
+The class contains (indirect) subclasses of ExprAST, which represent expressions and therefore have types.
+We also have subclasses of ShapeAST, that are extended to support computing their normal form, rank, subtraction, equality and isPrefix.
+
+Subclasses of DimensionAST support equality as well.
+
+We overload the TypeASTs (including the the ShapeASTs, DimensionASTs) to represent semantic types. 
+
+*)
+|
+cachedSyntheticVariables <Map[ShapeAST, Map[Integer, DimensionVariableAST]]> = Map new.
+currentFunction <FunctionAST>
+scopeStack <List[ScopeAST]> = List new.
+|
+) (
+public class ShapeRankInference = (
+(* 
+  Module for local type inference in ShapeRank.
+  
+  This module encapsulates the local type inference algorithm. 
+
+  The inference algorithm is a consumer of constraints, and outputs a substitution map
+  (a map from type variables to inferred bindings for them). 
+  It places no requirements on the order in which constraints are provided to it.
+  In particular, it does not require dimension/shape/type constraints to be provided in that order.
+  It's an online algorithm; i.e., its state after consuming a constraint is a valid end state, though that
+  may not include solutions for all variables.
+  
+  There are certain cases during shape and type inference,
+  where we have to make choices without knowing all the  information needed.
+  We handle this by allowing our engine to fork, making multiple choices; tracking these by having
+  InferenceEngine contain multiple InferenceStates.
+  
+  To run the inference algorithm, one instantiates class InferenceEngine and notifies the resulting engine instance of any constraints.  Fundamentally, constraints have the form T <: S, and are registered via InferenceState>>registerType:subtypeOf:.
+  From these we can extract more basic constraints, which take the following forms:
+  
+  Subtype constraints on base types: B1 <: B2 (InferenceState>>registerBaseType:subtypeOf:).
+  Shape equality constraints: S1 = S2. (InferenceState>>registerShape:equals:).
+  Dimension equality constraints: d1 = d2. (InferenceState>>registerDimension:equals:).
+  
+  Each of these has a corresponding public method in InferenceEngine, which accepts such a constraint and infers as much shape/dimension information as possible from it, updating the set of possible solutions accordingly.
+  
+  Base types may be inferred at any time after all top level constraints have been provided.
+
+  If an InferenceState finds a conflicting assignment, we just cut that state from the set of states under consideration.
+  We can request an arbitrary satisfying state for our constraints, or we can try to find minimal constraint sets. 
+  *)
+) (
+class LazyOp = (
+) (
+public run ^<LazyOp | T> = (
+  subclassResponsibility
+)
+) : (
+)
+class LazyShapeOp shape: s <ShapeAST> = LazyOp (
+  | shape <ShapeAST> = s. |
+) (
+public isKindOfLazyShapeOp = (
+  ^true
+)
+public map: f <[ShapeAST | ShapeAST]> = (
+  subclassResponsibility
+)
+public substitute: ctx = (
+  ^(self map: [:s | (s substitute: ctx) normalForm]) run
+)
+public normalForm = (
+  ^(self map: [:s | s normalForm]) run
+)
+) : (
+)
+class LazyShapeTakeOp shape: s <ShapeAST> take: n <Integer> = LazyShapeOp shape: s (
+  | n <Integer> = n. |
+) (
+public printString ^<String> = (
+  ^'take(', shape printString, ', ', n printString, ')'
+)
+public run = (
+  shape hasRank ifTrue: [
+    n >= 0 ifTrue: [^shape take: n]
+           ifFalse: [^shape drop: (shape rank + n)]
+  ].
+  n = 0 ifTrue: [^emptyShape].
+  shape isKindOfShapeAppendAST ifTrue: [
+    (n > 0 and: [shape first hasRank]) ifTrue: [
+      | rst |
+      shape first rank >= n ifTrue: [^shape first take: n].
+      rst:: (LazyShapeTakeOp shape: shape second take: (n - shape first rank)) run.
+      rst isKindOfShapeAST ifTrue: [^shape first, rst].
+    ].
+    (n < 0 and: [shape last hasRank]) ifTrue: [
+      | shapeLast rst |
+      shapeLast:: shape last.
+      shapeLast rank >= (-1*n) ifTrue: [^shapeLast drop: (shapeLast rank + n)].
+      rst:: (LazyShapeTakeOp shape: shape dropLast take: (shapeLast rank + n)) run.
+      rst isKindOfShapeAST ifTrue: [^rst, shapeLast].
+    ].
+  ].
+  ^self.
+)
+public map: f <[:ShapeAST | ShapeAST]> = (
+  ^LazyShapeTakeOp shape: (f value: shape) take: n
+)
+) : (
+)
+class LazyShapeDropOp shape: s <ShapeAST> drop: n <Integer> = LazyShapeOp shape: s (
+  | n <Integer> = n. |
+  run.
+) (
+public printString ^<String> = (
+  ^'drop(', shape printString, ', ', n printString, ')'
+)
+public run = (
+  shape hasRank ifTrue: [
+    n >= 0 ifTrue: [^shape drop: n]
+           ifFalse: [^shape take: (shape rank + n)]
+  ].
+  n = 0 ifTrue: [^shape].
+  shape isKindOfShapeAppendAST ifTrue: [
+    (n > 0 and: [shape first hasRank]) ifTrue: [
+      n = shape first rank ifTrue: [^shape second].
+      shape first rank > n ifTrue: [^shape mapFirst: [:first | first drop: n]].
+      ^(LazyShapeDropOp shape: shape second drop: (n - shape first rank)) run
+    ].
+    (n < 0 and: [shape last hasRank]) ifTrue: [
+      | shapeLast = shape last. |
+      n = shapeLast rank ifTrue: [^shape dropLast].
+      shapeLast rank > (-1*n) ifTrue: [^shape mapLast: [:last | last take: (last rank + n)]].
+      ^(LazyShapeDropOp shape: shape dropLast drop: (shapeLast rank + n)) run
+    ].
+  ].
+  ^self.
+)
+public map: f <[:ShapeAST | ShapeAST]> = (
+  ^LazyShapeDropOp shape: (f value: shape) drop: n
+)
+) : (
+)
+class FreshVariable index: i = (
+  | public id = '__f', i asString. |
+) (
+public isKindOfFreshVariable = (
+  ^true
+)
+) : (
+)
+public class RankMismatchError a: a b: b = Error (
+  self messageText: a printString, ' and ', b printString,
+                    ' have mismatching ranks (', a rank printString, ' vs ', b rank printString, ')'.
+) (
+) : (
+)
+public class DimensionInequalityError a: a b: b = Error (
+  self messageText: a printString, ' and ', b printString, ' must be equal'.
+) (
+) : (
+)
+public class InferenceState context: context <CallAST> engine: eng <InferenceEngine> = (
+  | 
+  public inferMap <Map[Variable, AST]> = Map new.
+    (* The only methods of ShapeAST we rely on below 
+         substitute: <CallAST> ^  <ShapeAST> and
+         normalForm ^ <ShapeAST>
+        *)
+   public deferredShapeConstraints <List[{ShapeAST. ShapeAST}]> ::= List new.
+   ctx  <CallAST> = context.
+   engine <InferenceEngine> = eng. 
+   public lowerBounds <Map[TypeVariable, Bound]> = Map new.
+   public upperBounds <Map[TypeVariable, Bound]> = Map new.
+   public inferred  <Map[TypeVariable, TypeAST]> = Map new.
+   |
+) (
+class Bound = (
+	|
+	public concrete <TypeAST>
+    public symbolic <Set[TypeVariableAST]> = Set new.
+	|
+) (
+public isSymbolic ^ <Boolean> = (
+  ^symbolic isEmpty not
+)
+public isConcrete ^ <Boolean> = (
+  ^concrete isNil not and: [symbolic isEmpty]
+)
+public addUpperBound: b <TypeAST> = (
+  (isUnknownTypeVariable: b) ifTrue: [symbolic include: b asTypeVariable. ^self].
+  concrete isNil ifTrue: [concrete:: b. ^ self].
+  concrete:: concrete gcs: b
+)
+public addLowerBound: b <TypeAST> = (
+  (isUnknownTypeVariable: b) ifTrue: [symbolic include: b asTypeVariable. ^self].
+  concrete isNil ifTrue: [concrete:: b. ^ self].
+  concrete:: concrete lcs: b
+)
+) : (
+)
+public dimVarMap = (
+  ^inferMap
+)
+public shapeVarMap = (
+  ^inferMap
+)
+equateAppend: a <ShapeAppendAST> withAppend: b <ShapeAppendAST> ^ <Set[InferenceState]> = (
+  (* PAPERNOTE: this captures the intuition from the paper of cases we can make progress vs when we can't
+                  note that both instances of 3ci in the paper seem to have an invalid assumption
+                  --how do we know the var is fixed? what other cases are capturing it? *)
+
+
+  (* We have a::b = c::d for arbitrary a,b,c,d. 
+       This implies equality amongst its dimensions, of course, but we have no idea where the a/b split
+       is relative to the c/d split. 
+       However, what is true is take(a::b, n) = take(c::d, n)  (and correspondingly drop(a::b, -n) = drop(c::d, -n)). 
+       This is true for all n, (including -n, if you extend -n to mean taking/dropping from the end). 
+       
+       So, in cases where either append starts with or ends with a vector, we can make progress. 
+       But of course we don't _actually_ know what taking/dropping that many elements will result in,
+       so we have to treat this constraint symbolically.
+       We need to have a datastructure that represents take(a::b, n), hence we use lazy take/drop classes here. 
+       How do we keep track of these lazy classes? We hang onto them until we can instantiate them >_> 
+       Unfortunately, these are situations in which we can't be fully online, because this constraint
+       just doesn't mean anything to us right now. 
+       However, we can guarantee that we evaluate it as soon as it does mean something; 
+       deferredShapeConstraints is the implementation here. *)
+
+  | aFirst aLast bFirst bLast |
+  aFirst:: a first.
+  bFirst:: b first.
+  (aFirst hasRank and: [bFirst hasRank]) ifTrue: [
+    ^split: a equate: b at: (aFirst rank min: bFirst rank)
+  ].
+  aFirst hasRank ifTrue: [
+    ^split: a equate: b at: aFirst rank
+  ].
+  bFirst hasRank ifTrue: [
+    ^split: a equate: b at: bFirst rank
+  ].
+
+  aLast:: a last.
+  bLast:: b last.
+  (aLast hasRank and: [bLast hasRank]) ifTrue: [
+    ^split: a equate: b at: -1 * (aLast rank min: bLast rank)
+  ].
+  aLast hasRank ifTrue: [
+    ^split: a equate: b at: -1 * (aLast rank)
+  ].
+  bLast hasRank ifTrue: [
+    ^split: a equate: b at: -1 * (bLast rank)
+  ].
+
+  (* No progress can be made, so we just have to defer this entire constraint *)
+  ^deferShapeConstraint: a equals: b.
+)
+solve: eq <CanonicalDimension> withRespectTo: var <DimensionVariableAST> ^ <CanonicalDimension | Nil> = (
+  | c <Integer> = eq variables at: var. |
+  (* if c = 0 then this equation doesn't imply any constraints on var *)
+  (* we signal this by returning nil *)
+  c = 0 ifTrue: [^nil].
+  ^eq * (-1/c) + var canonicalForm
+)
+public registerShape: ap <ShapeAST> equals: bp <ShapeAST> ^ <Set[InferenceState]> = (
+  | a <ShapeAST> = (ap substitute: self) normalForm.
+    b <ShapeAST> = (bp substitute: self) normalForm. |
+
+  (* cases 1, 2b, and 3b in the paper *)
+  (a isKindOfShapeVariableAST and: [ctx isUnknown: a]) ifTrue: [
+    ^equateShapeVariable: a to: b.
+  ].
+  (b isKindOfShapeVariableAST and: [ctx isUnknown: b]) ifTrue: [
+    ^equateShapeVariable: b to: a.
+  ].
+
+  (* case 2a *)
+  (a isKindOfShapeVectorAST and: [b isKindOfShapeVectorAST]) ifTrue: [
+    ^equateVector: a toVector: b.
+  ].
+
+  (* cases 2c/3a *)
+  (b isKindOfShapeVectorAST and: [a isKindOfShapeAppendAST]) ifTrue: [
+    ^equateAppend: a toVector: b.
+  ].
+  (a isKindOfShapeVectorAST and: [b isKindOfShapeAppendAST]) ifTrue: [
+    ^equateAppend: b toVector: a.
+  ].
+
+  (* case 3c *)
+  (a isKindOfShapeAppendAST and: [b isKindOfShapeAppendAST]) ifTrue: [
+    ^equateAppend: a withAppend: b.
+  ].
+
+  (* we substitute at the top, so if we have a lazy op here then we necessarily
+     don't have enough information to make progress *)
+  (a isKindOfLazyShapeOp or: [b isKindOfLazyShapeOp]) ifTrue: [
+    ^deferShapeConstraint: a equals: b.
+  ].
+
+  Error signal: 'Sentinel error; remove once all cases are dealt with'
+)
+public attemptDeferred ^ <Set[InferenceState]> = (
+  | tmpS <List[{ShapeSubstitutableAST. ShapeSubstitutableAST}]> = deferredShapeConstraints.
+    states <Set[InferenceState]> ::= Set withAll: {self}. |
+  deferredShapeConstraints:: List new.
+  tmpS do: [:tup <{ShapeSubstitutableAST. ShapeSubstitutableAST}> |
+    states:: flatMap: states with: [:st | st registerShape: (tup at: 1) equals: (tup at: 2)].
+  ].
+  ^states
+)
+public substitute = (
+  inferMap keysAndValuesDo: [:k :v |
+    inferMap at: k put: (v substitute: self)
+  ].
+  deferredShapeConstraints do: [:tup <{ShapeSubstitutableAST. ShapeSubstitutableAST}> |
+    tup at: 1 put: ((tup at: 1) substitute: self).
+    tup at: 2 put: ((tup at: 2) substitute: self).
+  ].
+)
+deferShapeConstraint: a equals: b ^ <Set[InferenceState]> = (
+  | ret <InferenceState> = self clone. |
+  ret deferredShapeConstraints add: {a. b}.
+  ^Set withAll: {ret}
+)
+take: shape <ShapeAST> n: n <Integer> ^ <LazyShapeTakeOp> = (
+  ^(LazyShapeTakeOp shape: shape take: n) run
+)
+drop: shape <ShapeAST> n: n <Integer> ^ <LazyShapeDropOp> = (
+  ^(LazyShapeDropOp shape: shape drop: n) run
+)
+public infer: tv <TypeVariable> ^ <TypeAST> = (
+  ^infer: tv lset: Set new uset: Set new
+)
+public registerType: t <TypeAST> subtypeOf: b <TypeAST> ^ <Set[InferenceState]> = (
+  | states ::= Set withAll: {clone}. |
+  states:: flatMap: states with: [:st | st registerShape: t shape equals: b shape].
+  ^flatMap: states with: [:st | st registerBaseType: t baseType subtypeOf: b baseType].
+)
+public clone ^ <InferenceState> = (
+  | ret <InferenceState> = InferenceState context: ctx engine: engine. |
+  inferMap keysAndValuesDo: [:k :v |
+    ret inferMap at: k put: v.
+  ].
+  lowerBounds keysAndValuesDo: [:k :v |
+    ret lowerBounds at: k put: v.
+  ].
+  upperBounds keysAndValuesDo: [:k :v |
+    ret upperBounds at: k put: v.
+  ].  
+  inferred keysAndValuesDo: [:k :v |
+    ret inferred at: k put: v.
+  ].  
+  ret deferredShapeConstraints addAll: deferredShapeConstraints.
+  ^ret
+)
+equateShapeVariable: v <ShapeVariableAST> to: shape <ShapeAST> ^ <Set[InferenceState]> = (
+  | existing <AST | Nil> = inferMap at: v ifAbsent: []. |
+  (ctx isUnknown: v) ifTrue: [engine unknownShapeVars add: v].
+  existing = shape ifTrue: [
+    (* nothing to do *)
+    ^Set withAll: {self}
+  ].
+
+  existing isNil ifTrue: [
+    | ret <InferenceState> = self clone. |
+    ret inferMap at: v put: shape.
+    ret substitute.
+    ^ret attemptDeferred
+  ] ifFalse: [
+    ^registerShape: existing equals: shape.
+  ].
+)
+public typeVarMap = (
+  ^inferred
+)
+isUnknownTypeVariable: t <TypeAST> ^ <Boolean> = (
+  ^(t isKindOfTypeVariableReferenceAST or: [
+    t isKindOfBoundedTypeAST or: [
+    t isKindOfTypeVariable
+    ]
+  ]) and: [ctx isUnknown: t asTypeVariable]
+)
+assertTypeVariable: t <TypeVariable> supertypeOf: b <TypeAST> ^ <Set[InferenceState]> = (
+  | lb <Bound> = lowerBounds at: t ifAbsent: [Bound new]. |
+  (ctx isUnknown: t) ifTrue: [engine unknownBaseTypeVars add: t].
+  lowerBounds at: t put: (lb addLowerBound: b).
+  (isUnknownTypeVariable: b) ifTrue: [
+    | ub <Bound> = upperBounds at: b asTypeVariable ifAbsent: [Bound new]. |
+    upperBounds at: b asTypeVariable put: (ub addUpperBound: t).
+  ].  
+  ^Set withAll: {self}
+)
+assertTypeVariable: t <TypeVariable> subtypeOf: b <TypeAST> ^ <Set[InferenceState]> = (
+  | ub <Bound> = upperBounds at: t ifAbsent: [Bound new]. |
+  (ctx isUnknown: t) ifTrue: [engine unknownBaseTypeVars add: t].
+  upperBounds at: t put: (ub addUpperBound: b).
+  (isUnknownTypeVariable: b) ifTrue: [
+    | lb <Bound> = lowerBounds at: b asTypeVariable ifAbsent: [Bound new]. |
+    lowerBounds at: b asTypeVariable put: (lb addLowerBound: t).
+  ].  
+  ^Set withAll: {self}
+)
+isUnknownDimensionVariable: d <TypeAST> ^ <Boolean> = (
+  ^(d isKindOfDimensionVariableReferenceAST or: [
+    d isKindOfDimensionVariableAST
+  ]) and: [ctx isUnknown: d asDimensionVariable]
+)
+public isKindOfInferenceState ^ <Boolean> = (
+  ^true
+)
+computeUpperBoundOf: tv <TypeVariable> lset: l <Set[TypeVariable]> uset: u <Set[TypeVariable]> ^ <TypeAST | Nil> = (
+  | 
+  ub <Bound> = upperBounds at: tv ifAbsent: [^nil]. 
+  bounds <Set[TypeAST]>
+  |
+  ub isConcrete ifTrue: [^ub concrete].
+  ub isSymbolic not ifTrue: [^nil].
+  (u includes: tv) ifTrue: [
+    equateElementsOf: u to: tv. 
+    u remove: tv ifAbsent: []. 
+    ^infer: tv lset: l uset: u
+  ].
+  u add: tv.
+  bounds:: ub symbolic collect: [:bv <TypeVariable> | infer: bv lset: l uset: u].
+  u remove: tv ifAbsent: []. 
+  bounds do: [:b <TypeAST> | ub addUpperBound: b concrete].
+  ^ub concrete
+)
+split: a <ShapeAST> equate: b <ShapeAST> at: r ^ <Set[InferenceState]> = (
+  | states <Set[InferenceState]> |
+  r = 0 ifTrue: [^Set withAll: {self clone}]. 
+  states:: registerShape: (take: a n: r) equals: (take: b n: r).
+  ^flatMap: states with: [:st | st registerShape: (drop: a n: r) equals: (drop: b n: r) ]
+)
+computeLowerBoundOf: tv <TypeVariable> lset: l <Set[TypeVariable]> uset: u <Set[TypeVariable]> ^ <TypeAST | Nil> = (
+  | 
+  lb <Bound> = lowerBounds at: tv ifAbsent: [^nil]. 
+  bounds <Set[TypeAST]>
+  |
+  lb isConcrete ifTrue: [^lb concrete].
+  lb isSymbolic not ifTrue: [^nil].
+  (l includes: tv) ifTrue: [
+    equateElementsOf: l to: tv. 
+    l remove: tv ifAbsent: []. 
+    ^infer: tv lset: l uset: u
+  ].
+  l add: tv. 
+  bounds:: lb symbolic collect: [:bv <TypeVariable> | infer: bv lset: l uset: u].
+  l remove: tv ifAbsent: [].
+  bounds do: [:b <TypeAST> | lb addLowerBound: b].
+  ^lb concrete
+)
+equateVector: a <ShapeVectorAST> toVector: b <ShapeVectorAST> ^ <Set[InferenceState]> = (
+  | ret <Set[InferenceState]> |
+  a rank ~= b rank ifTrue: [
+    registerError: (RankMismatchError a: a b: b).
+    ^Set new
+  ].
+
+  ret:: Set withAll: {self clone}.
+  a with: b do: [:d :e |
+    ret:: flatMap: ret with: [:st | st registerDimension: d equals: e].
+  ].
+
+  ret do: [:st | st substitute].
+  ^flatMap: ret with: [:st | st attemptDeferred]
+)
+public registerBaseType: t <BaseTypeAST> subtypeOf: b <BaseTypeAST> ^ <Set[InferenceState]> = (
+  (isUnknownTypeVariable: b) ifTrue: [^assertTypeVariable: b asTypeVariable supertypeOf: t].
+  (isUnknownTypeVariable: t) ifTrue: [^assertTypeVariable: t asTypeVariable subtypeOf: b].
+  b isKindOfDimensionAST ifTrue: [
+     t isKindOfDimensionAST ifFalse: [registerError: (DimensionExpectedError a: b b: t) ].
+     ^registerDimension: b equals: t
+     ].
+  t isKindOfFunctionTypeAST ifTrue: [^assertFunctionType: t subtypeOf: b].
+  b isKindOfFunctionTypeAST ifTrue: [registerError: (SubtypeError sub: t super: b). ^Set new].
+  t isKindOfTypeStructAST ifTrue: [^assertStructType: t subtypeOf: b].
+  b isKindOfTypeStructAST ifTrue: [registerError: (SubtypeError sub: t super: b). ^Set new]. 
+ (* No type vars involved; nothing to infer *)
+   ^Set withAll: {self}
+)
+computeBindingFor: tv <TypeVariable> lset: l <Set[TypeVariable]> uset: u <Set[TypeVariable]> ^ <TypeAST> = (
+  | 
+  lb <TypeAST | Nil> = computeLowerBoundOf: tv asTypeVariable lset: l uset: u. 
+  ub <TypeAST | Nil> 
+  |
+  lb isNil not ifTrue: [^lb].
+  ub:: computeUpperBoundOf: tv asTypeVariable lset: l uset: u. 
+  ub isNil not ifTrue: [^ub].
+  registerError: (NoBindingError for: tv)
+)
+equateAppend: app <ShapeAppendAST> toVector: vec <ShapeVectorAST> ^ <Set[InferenceState]> = (
+  | ret <Set[InferenceState]> |
+  (* the first two cases are the deterministic strategies we can follow from the paper *)
+
+  (* PAPERNOTE: This code differs slightly from the formulation in the paper:
+     a. it notes that if the vector element of the append is larger than the vector, we necessarily have an error
+     b. thus, if either of these cases trigger, we can either simplify the append one step or we have an error
+     c. thus, it doesn't try to do both at once. We check if app first is a vector, and only if it's not do we check app last *)
+  app first isKindOfShapeVectorAST ifTrue: [
+    app first isEmpty ifTrue: [^registerShape: app second equals: vec].
+    app first rank <= vec rank ifTrue: [
+      ^split: app equate: vec at: (app first rank)
+    ] ifFalse: [
+      registerError: (RankMismatchError a: app first b: vec).
+      ^Set new
+    ].
+  ].
+
+  app last isKindOfShapeVectorAST ifTrue: [
+    | al = app last. |
+    al isEmpty ifTrue: [^registerShape: app dropLast equals: vec].
+    al rank <= vec rank ifTrue: [
+      ^split: app equate: vec at: (-1 * al rank)
+    ] ifFalse: [
+      registerError: (RankMismatchError a: al b: vec).
+      ^Set new
+    ].
+  ].
+
+  (* okay, so we don't have a deterministic strategy to follow anymore *)
+  (* so we have to fork, and we're forking on where the breakpoint of the append fits into the vector *)
+  (* that is, we have vec rank + 1 forks *)
+  ret:: Set new.
+  0 to: vec rank do: [:breakpoint |
+    | vecHead = vec take: breakpoint.
+      vecTail = vec drop: breakpoint.
+      states ::= Set withAll: {self}. |
+    states:: flatMap: states with: [:st | st registerShape: app first equals: vecHead].
+    states:: flatMap: states with: [:st | st registerShape: app second equals: vecTail].
+    ret addAll: states.
+  ].
+  ^ret
+)
+assertStructType: t <TypeStructAST> subtypeOf: b <TypeAST> ^ <Set[InferenceState]> = (
+  | states ::= Set withAll: {clone}. |
+
+  b isKindOfTypeStructAST ifFalse: [registerError: (SubtypeError sub: t super: b). ^Set new].
+  b table keysAndValuesDo: [:k :v |
+     states:: flatMap: states with: [:st | st registerType: (t table at: k ifAbsent: [registerError: (MissingFieldError fieldName: k printString). ^Set new]) subtypeOf: v]
+  ].
+  ^states
+)
+assertFunctionType: t <FunctionType> subtypeOf: b <TypeAST>  ^ <Set[InferenceState]> = (
+  | states ::= Set withAll: {clone}. |
+
+   b isKindOfFunctionTypeAST ifFalse: [registerError: (SubtypeError sub: t super: b). ^Set new].
+    (* decompose domain and range *)
+    t parameterTypes with: b parameterTypes do: [:t1 :t2 |
+       states:: flatMap: states with: [:st | st registerType: t2 subtypeOf: t1].
+    ].
+    ^flatMap: states with: [:st | st registerType: t returnType subtypeOf: b returnType].
+)
+public registerDimension: a <DimensionAST> equals: b <DimensionAST> ^ <Set[InferenceState]> = (
+  | eq0 <CanonicalDimension> unknownVars <Set[DimensionVariableAST]> someVar <DimensionVariableAST> |
+
+  (isUnknownDimensionVariable: a) ifTrue: [
+    ^equateDimensionVariable: a to: b.
+  ].
+  (b isKindOfDimensionVariableAST and: [ctx isUnknown: b]) ifTrue: [
+    ^equateDimensionVariable: b to: a.
+  ].
+
+  (* At this point, none of the directly visible variables are unknown. 
+      This doesn't mean that there aren't any unknown variables within a more complex shape on one side, though,
+      e.g., 5 = a + b where a/b/both are unknown. So let's find _some_ unknown dimvar in this constraint.
+      TODO: it might be correct to try all unknown dimvars as root in separate states 
+      but  dimension variable solving shouldn't need forking *)
+  eq0:: a canonicalForm - b canonicalForm.
+  unknownVars:: eq0 getShapeVariables select: [:v | ctx isUnknown: v].
+  unknownVars size = 0 ifTrue: [
+    (* No unknown vars means this constraint doesn't actually help infer anything;
+        it could be a conflict, though. *)
+    eq0 isKnownNonZero ifTrue: [
+       registerError: (DimensionInequalityError a: a b: b).
+       ^Set new
+    ].
+    ^Set withAll: {self}
+  ].
+  someVar:: unknownVars asArray first.
+  ^equateDimensionVariable: someVar to: (solve: eq0 withRespectTo: someVar).
+)
+public equateDimensionVariable: var <DimensionVariableAST> to: valueRaw <DimensionAST> ^ <Set[InferenceState]> = (
+  | existing <AST | Nil> = inferMap at: var ifAbsent: [].
+    value <DimensionAST> = valueRaw substitute: self.
+    vars <Set[DimensionVariableAST]> ::= nil.
+    unknownVars <Set[DimensionVariableAST]> ::= nil.
+    eq0  <CanonicalDimension> ::= nil.
+    ret <Set[InferenceState] | Nil> ::= nil. |
+
+  engine unknownDimVars add: var.
+  existing = value ifTrue: [
+    (* nothing to do *)
+    ^Set withAll: {self}
+  ].
+
+  (* We have a constraint of the form v = e, which implies new constraints not only on
+         v, but on all variables involved in e.
+        The new equality is either v = e or oldv = e, depending on whether we had
+        something for v or not.
+     1. For all unknown variables in this new equality,
+        we can rearrange the equation to get a solution for that variable.
+     2. Then we apply this new equation as a new constraint for that variable *)
+  vars:: existing isNil ifTrue: [Set new] ifFalse: [existing getShapeVariables].
+  vars:: vars addAll: (value getShapeVariables).
+  unknownVars:: vars select: [:v | ctx isUnknown: v].
+  eq0:: existing isNil ifTrue: [var canonicalForm - value canonicalForm]
+                       ifFalse: [existing canonicalForm - value canonicalForm]. (* this equals 0 *)
+  ret:: Set withAll: {self clone}.
+
+  eq0 isKnownNonZero ifTrue: [
+     | a = existing isNil ifTrue: [var] ifFalse: [existing]. |
+     registerError: (DimensionInequalityError a: a b: value).
+     ^Set new
+  ].
+
+  (* solution is nil when this equation doesn't actually constrain that variable *)
+  existing isNil ifTrue: [
+    | solution = solve: eq0 withRespectTo: var. |
+    solution isNil ifFalse: [ret do: [:st | st inferMap at: var put: solution. ]].
+  ].
+
+  (* This is step (2) from above.
+   A subtle point here: equateDimensionVariable does an early substitute into the new constraint. 
+   That means that these calls here are _not_ parallel, nor are they "parallel" with
+       the existing isNil clause above.
+   This is how we avoid infinite-looping; later equateDimensionVariable calls that are redundant
+     with a previous one actually do get detected as such when we notice that e = d substitutes to e = e. 
+  Need a proof that this works in all cases, but it seems to work *)
+  unknownVars do: [:v |
+    | solution = solve: eq0 withRespectTo: v. |
+    solution isNil ifFalse: [ret:: flatMap: ret with: [:st | st equateDimensionVariable: v to: solution]].
+  ].
+
+  ^flatMap: ret with: [:st | st substitute. st attemptDeferred].
+)
+registerError: err <Exception> = (
+(* Problems: 
+    We don't discontinue processing on states when an error is detected.
+    We don't even associate errors we record with the states that gave rise to them.
+    We don't filter out bad states.  It may be that it is not essential to do so. If a state fails to
+    infer all type variables, subsequent processing of the call should fail as well.
+*)
+  engine addBadState: self error: err
+)
+equateElementsOf: tvs <Set[TypeVariable]>  to: t <TypeVariable> = (
+  (* Mark all elements of tvs as equal to t.  *)
+  | lubt = lowerBounds at: t ifAbsent: []. glbt = upperBounds at: t ifAbsent: []. |
+  tvs do: [:v <TypeVariable> | t = v ifFalse: [equate: v to: t]].
+  tvs do: [:v <TypeVariable> |  (* can't rely on equate:to: removing v, since others variables may add it. *)
+    lubt isNil not ifTrue: [lubt symbolic remove: v ifAbsent: []].
+    glbt isNil not ifTrue: [glbt symbolic remove: v ifAbsent: []].
+    ].
+)
+equate: s <TypeVariable>  to: t <TypeVariable> = (
+  | 
+  glbt <Bound> = lowerBounds at: t. 
+  lubt = upperBounds at: t.  (* these two are always the same in practice; could pass them in from equateElementsOf:to: *)
+  glbs <Bound> = lowerBounds at: s. 
+  lubs = upperBounds at: s.  
+  |
+  (* set lower bound of s & t to lcs(lub(s), lub(t)) *)
+  glbt concrete: (glbt concrete isNil ifTrue: [glbs concrete] ifFalse: [
+     glbs concrete isNil ifFalse: [glbt concrete lcs: glbs concrete]
+     ]).
+  glbs symbolic do: [:b | b = t ifFalse: [glbt symbolic add: b]].
+  glbt symbolic remove: s ifAbsent: []. (* redundant with equateElementsOf:to: ? *)
+  lowerBounds at: s put: glbt.
+  (* set upper bound of s & t to gcs(glb(t), glb(s)) *)
+  lubt concrete: (lubt concrete isNil ifTrue: [lubs concrete] ifFalse: [lubt concrete gcs: lubs concrete]).  
+  lubs symbolic do: [:b | b = t ifFalse: [lubt symbolic add: b]].
+  lubt symbolic remove: s ifAbsent: []. (* redundant with equateElementsOf:to: ? *)
+  upperBounds at: s put: lubt.  
+  (* mark s as solved, with value t *)
+  inferred at: s put: t.  
+)
+public solve = (
+  engine unknownBaseTypeVars do: [:tv <TypeVariable> | infer: tv].
+)
+public infer: tv <TypeVariable> lset: l <Set[TypeVariable]> uset: u <Set[TypeVariable]> ^ <TypeAST> = (
+   | b = inferred at: tv ifAbsent: []. |
+   b isNil ifFalse: [^b].
+   ^inferred at: tv put: (computeBindingFor: tv lset: l uset: u).
+)
+) : (
+)
+public class InferenceEngine context: context <CallAST> = (
+  | 
+  states <Set[InferenceState]>::= Set withAll: {InferenceState context: context engine: self}.
+  ctx <CallAST> = context.
+  errors <List[Error]> = List new.
+  badStates <List[BadState]> = List new.
+  public unknownBaseTypeVars <Set[TypeVariable]> = Set new.
+  public unknownDimVars <Set[DimensionVariableAST]> = Set new.
+  public unknownShapeVars <Set[ShapeVariableAST]> = Set new.
+  |
+) (
+public arbitrary ^ <InferenceState> = (
+  ^states asArray first
+)
+public hasSolutions ^ <Boolean> = (
+  ^states size > 0
+)
+public all ^ <Set[InferenceState]> = (
+  ^states
+)
+runForkingMethod: blk <[InferenceState | Set[InferenceState]]> = (
+  states:: flatMap: states with: blk.
+)
+public registerDimension: a <DimensionAST> equals: b <DimensionAST> = (
+  runForkingMethod: [:st <InferenceState> | st registerDimension: a equals: b]
+)
+public registerShape: a <ShapeAST> equals: b <ShapeAST> = (
+  ^runForkingMethod: [:st <InferenceState> | st registerShape: a equals: b]
+)
+public addEquation: eq <CanonicalDimension> = (
+(* Emulate existing protocol *)
+  registerDimension: eq equals: (DimensionNumberAST number: 0 position: {0. 0})
+)
+public typeVarMap = (
+  ^states asArray first typeVarMap
+)
+public dimVarMap = (
+  ^states asArray first dimVarMap
+)
+public shapeVarMap = (
+  ^states asArray first shapeVarMap
+)
+public registerType: t <BaseTypeAST> subtypeOf: b <BaseTypeAST> = (
+    runForkingMethod: [:st <InferenceState> | st registerType: t subtypeOf: b]
+)
+public addBadState: a <InferenceState> error: e <Exception> = (
+(* Problems: 
+    We don't discontinue processing on states when an error is detected.
+    We don't even associate errors we record with the states that gave rise to them.
+    We don't filter out bad states.  It may be that it is not essential to do so. If a state fails to
+    infer all type variables, subsequent processing of the call should fail as well.
+*)
+  badStates add: (BadState state: a error: e).
+  e signal.
+)
+public solve = (
+  states do: [:st | 
+    [st solve] on: Error do: [:e <Exception> |
+      (*swallow silently and try next state. The bad state is recorded with the error it signaled.*)
+    ]].
+  (* If there are no good states, then pik the first failure and report it. *)
+  hasSolutions ifFalse: [Error signal: 'Inference failed for call ', ctx prettyPrint, '. ', badStates first exception messageText].
+  (* If we have multiple non-erroneous states, call that an error for now.  We could try them all, choose the 
+      ones that worked (i.e.,  actuals were subtypes of inferred formals), and among the return types produced by
+      these, see if there was a unique specific one.  If not, there is true ambiguity. Otherwise, choose the most specific
+      type is the type of the call.
+  *)
+  states size > 1 ifTrue: [Error signal: 'Inference failed. Ambiguous constraints for call ', ctx prettyPrint].
+)
+) : (
+)
+public class SubtypeError sub: a super: b = Error (
+  self messageText: a printString, ' is not a subtype of ', b printString.
+) (
+) : (
+)
+public class MissingFieldError fieldName: n = Error (
+  self messageText: 'Missing field ', n printString.
+) (
+) : (
+)
+public class NoBindingError for: v = Error (
+  self messageText: ' No binding found for type variable ', v printString.
+) (
+) : (
+)
+public class DimensionExpectedError a: a b: b = Error (
+  self messageText: 'Tryingto equate dimension', a printString, ' with non-dimension ', b printString
+) (
+) : (
+)
+class BadState state: s <InferenceState> error: e <Exception> = (
+	|
+	public state <InferenceState> = s.
+	public exception <Exception> = e.
+	|
+) (
+) : (
+)
+flatMap: as <Set[A]> with: f <[A | Set[B]]> ^ <Set[B]> = (
+  | ret  <Set[B]> = Set new. |
+  as do: [:a <A> |  
+  (* If the processing of a fails, we don't add it to the result. *)
+    [ret addAll: (f value: a)] on: Error do: [:e | ]
+  ].
+  ^ret
+)
+) : (
+)
+public class NoSubstitutionFound variable: name <Symbol> type: typ <Symbol> = Error (
+  self messageText: 'Type Error: no value inferrable for ', typ, ' variable: ', name.
+) (
+) : (
+public signalForVariable: name <Symbol> ofType: typ = (
+  ^(self variable: name type: typ) signal
+)
+)
+public class AST position: p <{Integer. Integer}> = super AST position: p (
+) (
+public computeType ^ <TensorTypeAST> = (
+  subclassResponsibility
+)
+public userType  ^ <TensorTypeAST> = (
+  | t <TensorTypeAST> = computeType. |
+  t isKindOfFunctionTypeAST ifTrue: [Error signal: 'Functions are not values unless passed to predefined HOFs' ].
+  ^t
+)
+) : (
+)
+public class BlockAST body: e <ExprAST> position: p <{Integer. Integer}> = super BlockAST body: e position: p (
+) (
+public computeType ^ <TensorTypeAST> = (
+  | T <TensorTypeAST> = body computeType.
+    unit <TensorTypeAST> = (TypeIdAST named: #Unit position: {0. 0}) asTensorType. |
+  ^(FunctionTypeAST parameterTypes: {unit} returnType: T position: position) asTensorType
+)
+) : (
+public body: e <ExprAST> ^ <Instance> = (
+(* sigh, we should find a solution for class method inheritance *)
+  ^body: e position: e position
+)
+)
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
+) (
+public computeType ^ <TensorTypeAST> = (
+  ^(TypeIdAST named: #Bool  position: {0. 0}) asTensorType
+)
+) : (
+)
+public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
+) (
+public computeType ^<TensorTypeAST> = (
+  ^(TypeIdAST named: #String position: {0. 0}) asTensorType
+)
+) : (
+)
+public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
+|
+lookedUpArgumentsSlot ::= nil.
+public inferencer = ShapeRankInference new InferenceEngine context: self.
+|  
+) (
+class RestartInference = Error () (
+public isKindOfRestartInference = (
+  ^true
+)
+) : (
+)
+computeArgumentTypes ^ <List[TensorTypeAST]> = (
+  callee isHOF ifTrue: [^computeArgumentsTypesForHOF].
+  ^arguments collect: [:a <ExprAST> | a computeType].
+)
+computeArgumentsTypesForHOF  ^ <TensorTypeAST> = (
+  ^argumentsForHOF collect: [:a <ExprAST> | a computeType]
+)
+argumentsForHOF ^<List[Tensor]> = (
+  lookedUpArgumentsSlot isNil ifTrue: [
+    lookedUpArgumentsSlot:: arguments collect: [:a <ExprAST> |
+      a isKindOfIdentifierAST ifTrue: [
+        | hof = (outer Typechecker programScope lookup: a id ifAbsent: []). |
+        hof isNil ifTrue: [a] ifFalse: [hof at: #ast]
+      ] ifFalse: [a]
+    ].
+  ].
+  ^lookedUpArgumentsSlot
+)
+inferCellTypeFor: p <ParameterAST> from: a <TensorTypeAST> ^ <TensorTypeAST> = (
+  p type hasRank ifFalse: [^a].
+  a hasRank ifFalse: [^Error signal: 'Incompatible shapes']. 
+  ^a drop: a rank - p type rank
+)
+public registerBound: s <TypeAST> leq: t <TypeAST> = (
+  inferencer registerBound: s leq: t
+)
+public typeVarMap = (
+  (* expose inferencer's conclusions so substitutions work *)
+  ^inferencer typeVarMap
+)
+public shapeVarMap = (
+  (* expose inferencer's conclusions so substitutions work *)
+  ^inferencer shapeVarMap
+)
+public isUnknown: v <TypeVariable | ShapeVariable | DimensionVariable> = (
+(*  (dimVarMap includesKey: v) ifTrue: [^false].*)
+  ^(callee scope hasValue: v) or: [
+    callee isHOF and: [
+      argumentsForHOF anySatisfy: [:arg | arg isKindOfFunctionAST and: [arg scope hasValue: v]]
+    ]
+  ]
+)
+public computeType  ^ <TensorTypeAST> = (
+  |
+  callTypes = computeCallTypes.
+  argTypes <List[TensorTypeAST]> = callTypes at: 1.
+  paramTypes  <List[TensorTypeAST]> = callTypes at: 2.
+  frameShapes <List[ShapeAST]> = List new: arguments size.
+  maxShape <ShapeAST> ::= emptyShape.
+  |
+  argTypes with: paramTypes do: [:actual <TensorTypeAST> :formal <TensorTypeAST> |  | s  <Shape> |
+	(actual baseType subtypeOf: formal baseType) ifFalse: [
+		reportError: 'Incompatible types: ', actual baseType printString, ' does not match ', formal baseType printString
+		].
+      actual rank >= formal rank ifFalse: [reportError: 'Rank of formal parameter ', formal name, ' exceeds rank of actual'].
+	s:: actual shape - formal shape.
+	frameShapes add: s.
+	maxShape:: s max: maxShape.
+	].
+  frameShapes do: [:s <ShapeAST> | (s isPrefixOf: maxShape) ifFalse: [reportError: 'Shape of argument frame is not a prefix']].
+  ^replicate: ((*self substituteWithShortcuts:*) callee returnType substitute: self) using: maxShape
+)
+computeCallTypes ^<{List[TensorTypeAST]. List[TensorTypeAST]}> = (
+  | argTypes = computeArgumentTypes.
+    paramTypes = inferSignatureFrom: argTypes. (* this sets substitutions in self *)
+    subst = [:typ | [(*self substituteWithShortcuts:*)  typ substitute: self] on: NoSubstitutionFound do: [:e | typ] ]. |
+  ^{argTypes collect: subst. paramTypes collect: subst}
+)
+inferSignatureFrom: argTypes <List[TensorTypeAST]> ^  <List[TensorTypeAST]> = (
+  | argVariables = Set new. |
+  callee parameters with: argTypes do: [:p <ParameterAST> :a <TensorTypeAST> | 
+    | cellType <TensorTypeAST> = inferCellTypeFor: p from: a. |
+    inferencer registerType: cellType subtypeOf: p type
+    (*p type upperBounds: cellType inContext: self.*)
+  ].
+  (*argTypes do: [:a | argVariables addAll: a getTypeVariables ].
+  tySet setExternalVariables: argVariables.*)
+  inferencer solve.
+  ^callee parameters collect: [:p <ParameterAST> | p type].
+)
+public dimVarMap ^ <Map[DimensionVariableAST,  CanonicalDimension]> = (
+  ^inferencer dimVarMap
+)
+) : (
+)
+class CanonicalDimension dimVars: m <SetOfDimensionVariables> constant: c <Integer> = (
+|
+      public variables <SetOfDimensionVariables> = m.
+	public constant <Integer> = c.
+|
+) (
+public isEmpty = (
+  ^variables keys size = 0
+)
+public isKnownNonZero = (
+  ^isEmpty & (constant ~= 0)
+)
+public * x  <Integer> = (
+  | m <SetOfDimensionVariables> = SetOfDimensionVariables new. |
+  variables keysAndValuesDo: [:k <DimensionVariableAST> :v <Integer>  | m at: k put: v * x.].
+  ^CanonicalDimension dimVars: m constant: constant * x
+)
+public + c  <CanonicalDimension> = (
+  | m <SetOfDimensionVariables> = SetOfDimensionVariables new. |
+  variables keysAndValuesDo: [:k <DimensionVariableAST> :v <Integer>  | m at: k put: v.].
+  c variables keysAndValuesDo: [:k <DimensionVariableAST> :v <Integer>  | 
+	m at: k put: (m at: k) + v
+	].
+  ^CanonicalDimension dimVars: m constant: constant + c constant
+)
+public - c  <CanonicalDimension> = (
+   | m <SetOfDimensionVariables> = SetOfDimensionVariables new. |
+  variables keysAndValuesDo: [:k <DimensionVariableAST> :v <Integer>  | m at: k put: v.].
+  c variables keysAndValuesDo: [:k <DimensionVariableAST> :v <Integer>  | 
+	m at: k put: (m at: k) - v
+	].
+  ^CanonicalDimension dimVars: m constant: constant - c constant
+)
+public = d <Object> ^ <Boolean>  = (
+  d isKindOfDimensionAST ifFalse: [^false].
+  ^constant = d constant and: [variables = d variables]
+)
+public asShape ^ <ShapeAST> = (
+ (* Viewed as a shape, a dimension is a shape vector with a single entry, that entry denoting the dimension itself *)
+  ^ShapeVectorAST dimensions: {self} position: {0. 0}
+)
+public baseType ^ <TypeIdAST> = (
+ (* Viewed as a type, a dimension is a integer scalar *)
+  ^TypeIdAST named: #Int position: {0. 0}
+)
+public canonicalForm = (
+)
+public addDimensionVariablesTo: scope = (
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public hash ^ <integer> = (
+  ^constant hash bitXor: variables hash
+)
+public isKindOfCanonicalDimension ^ <Boolean> = (
+  ^true
+)
+public isKindOfDimensionAST ^ <Boolean> = (
+  ^true
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+  ^variables at: v
+)
+public position ^ <{Integer. Integer}> = (
+  ^{0. 0}
+)
+public printOn: stream <CharOutputStream> = (
+     | lastWasPrinted <Boolean> ::= false. |
+     variables map keysAndValuesDo: [:k :v |
+          (lastWasPrinted & v > 0) ifTrue: [stream nextPutAll: ' + '].
+          (v < 0) ifTrue: [stream nextPutAll: ' - '].
+          (v abs ~= 1) ifTrue: [(v abs) printOn: stream].
+          k printOn: stream.
+          lastWasPrinted:: true.
+	].
+      constant ~= 0 ifTrue: [
+		lastWasPrinted ifTrue: [stream nextPutAll: ' + '].
+		lastWasPrinted:: true.
+		constant printOn: stream
+		]
+)
+public rank ^ <Integer> = (
+(* A dimension has no rank as such; but it can be used as a type, 
+   indicating some subset of the natural numbers, and in that 
+   context acts as a scalar type, and thus has rank 0.
+*)
+  ^0
+)
+public shape ^ <ShapeAST> = (
+ (* Viewed as a type, a dimension is a scalar, with 0 dimensions *)
+  ^ShapeVectorAST dimensions: {} position: {0. 0}
+)
+public subtypeOf: t <TypeAST> ^ <Boolean> = (
+  ^self = t
+)
+public printString ^ <String> = (
+     | lastWasPrinted <Boolean> ::= false.  result <String> ::= ''.  |
+     variables map keysAndValuesDo: [:k :v |
+          v ~= 0 ifTrue: [
+            (lastWasPrinted & (v > 0)) ifTrue: [result:: result, ' + '].
+            (v < 0) ifTrue: [result:: result, ' - '].
+            (v abs ~= 1) ifTrue: [result:: result, (v abs) printString].
+            result:: result, k printString.
+            lastWasPrinted:: true.
+          ].
+	].
+      constant ~= 0 ifTrue: [
+		lastWasPrinted ifTrue: [result:: result, ' + '].
+		lastWasPrinted:: true.
+		result:: result, constant printString
+		].
+     ^result
+)
+public do: f <[TypeAST | nil ]> = (
+  f value: self.
+)
+public with: t <TypeAST> do: f <[TypeAST TypeAST | nil ]> = (
+  f value: self with: t.
+)
+public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
+  ^f value: self
+)
+public getShapeVariables ^ <Set[DimensionVariableAST]> = (
+  ^variables keys
+)
+public substitute: substitution <CallAST> ^ <DimensionAST> = (
+  ^variables keys inject: (CanonicalDimension dimVars: SetOfDimensionVariables new constant: constant)
+                  into: [:acc :d |
+                          | c = occurrencesOf: d. |
+                          acc + ((d substitute: substitution) canonicalForm * c)
+                        ]
+)
+) : (
+)
+class DimensionAST position: p <{Integer. Integer}> = super DimensionAST position: p (
+) (
+public = d <Object> ^ <Boolean>  = (
+  d isKindOfDimensionAST ifFalse: [^false].
+  ^constant = d constant and: [variables = d variables]
+)
+public asShape ^ <ShapeAST> = (
+ (* Viewed as a shape, a dimension is a shape vector with a single entry, that entry denoting the dimension itself *)
+  ^ShapeVectorAST dimensions: {self} position: {0. 0}
+)
+public baseType ^ <TypeAST> = (
+ (* dimension types double as regular types *)
+  ^self
+)
+public canonicalForm ^ <CanonicalDimension> = (
+  subclassResponsibility
+)
+public constant ^ <Integer> = (
+  subclassResponsibility
+)
+public clone ^<TypeAST> = (
+  ^self
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+ subclassResponsibility
+)
+public substitute: substitution <CallAST> ^ <DimensionAST> = (
+  ^self collect: [:d | d substitute: substitution]
+)
+public variables ^ <SetOfDimensionVariables> = (
+   subclassResponsibility
+)
+public getShapeVariables ^<Set[ShapeVariable | DimensionVariable]> = (
+  ^variables getShapeVariables
+)
+public hash ^ <integer> = (
+  ^constant hash bitXor: variables hash
+)
+) : (
+)
+public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> = 
+  super DimensionNumberAST number: n position: p (
+) (
+public canonicalForm ^ <CanonicalDimension> = (
+  ^CanonicalDimension dimVars: SetOfDimensionVariables new constant: constant
+)
+public constant ^ <Integer> = (
+  ^dimension
+)
+public lcs: t <TypeAST> ^ <TypeAST> = (
+  t isKindOfDimensionNumberAST ifTrue: [
+    ^TypeIdAST named: #Int position: {0. 0}
+  ].
+  ^super lcs: t
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+  ^0
+)
+public printOn: stream <CharOutputStream> = (
+      dimension printOn: stream.
+)
+public printString ^ <String> = (
+  ^dimension printString
+)
+public substitute: substitution <CallAST> ^ <DimensionNumberAST> = (
+  ^self 
+)
+public subtypeOf: t <TypeAST> ^ <Boolean> = (
+  t isKindOfTypeIdAST ifTrue: [^{#Int. #Float. #Num} includes: t id].
+  ^super subtypeOf: t
+)
+public variables ^ <SetOfDimensionVariables> = (
+   ^SetOfDimensionVariables new
+)
+public hash ^ <integer> = (
+  ^constant hash bitXor: variables hash
+)
+public = d <Object> ^ <Boolean>  = (
+  d isKindOfDimensionAST ifFalse: [^false].
+  ^constant = d constant and: [variables = d variables]
+)
+) : (
+)
+public class DimensionSumAST of: a <DimensionAST> and: b  <DimensionAST> position: p <{Integer. Integer}> = 
+  super DimensionSumAST of: a and: b position: p (
+) (
+public canonicalForm ^ <CanonicalDimension> = (
+  ^left canonicalForm + right canonicalForm
+)
+public constant ^ <Integer> = (
+  ^left constant + right constant
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+  ^(left occurrencesOf: v) + (right occurrencesOf: v)
+)
+public printOn: stream <CharOutputStream> = (
+      (*left printOn: stream.
+      stream nextPutAll: ' + '.
+      right printOn: stream*)
+      canonicalForm printOn: stream
+)
+public printString ^ <String> = (
+  (*^ left printString, ' + ', right printString*)
+  ^canonicalForm printString
+)
+public variables ^ <SetOfDimensionVariables> = (
+   | 
+   vars <SetOfDimensionVariables> = SetOfDimensionVariables new. 
+   myKeys <Set[DimensionVariable]> = Set new.
+   |
+   myKeys addAll: left variables elements; addAll: right variables elements.
+   myKeys do: [:v <DimensionVariable> | vars at: v put: (occurrencesOf: v)].  
+   ^vars
+)
+messageSelector = (
+)
+public = d <Object> ^ <Boolean>  = (
+  d isKindOfDimensionAST ifFalse: [^false].
+  ^constant = d constant and: [variables = d variables]
+)
+public hash ^ <integer> = (
+  ^constant hash bitXor: variables hash
+)
+) : (
+)
+public class DimensionVariableAST position: p <{Integer. Integer}> = super DimensionVariableAST position: p (
+) (
+public canonicalForm ^ <CanonicalDimension> = (
+  ^CanonicalDimension dimVars: variables constant: 0
+)
+public constant ^ <Integer> = (
+  ^0
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+  ^v = self ifTrue: [1] ifFalse: [0]
+)
+public printOn: stream <CharOutputStream> = (
+   stream nextPutAll:  id
+)
+public printString ^ <String> = (
+  ^ id
+)
+public substitute: substitution <CallAST> ^ <DimensionAST> = (
+  | subd = substitution dimVarMap at: self ifAbsent: [self]. |
+  subd = self ifTrue: [^subd].
+  subd isKindOfCanonicalDimension ifTrue: [^subd].
+  ^subd substitute: substitution
+)
+public variables ^ <SetOfDimensionVariables> = (
+   ^SetOfDimensionVariables new at: self put: 1; yourself
+)
+public = d <Object> ^ <Boolean> = (
+  d isKindOfDimensionAST ifFalse: [^false].
+  d isKindOfDimensionVariableAST ifTrue: [^d == self].
+  ^d canonicalForm = self canonicalForm
+)
+public asDimensionVariable = (
+)
+) : (
+public named: n <String> position: p <{Integer. Integer}> = (
+ ^ (position: p) id: n
+)
+)
+public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+  super DimensionVariableReferenceAST named: n position: p  (
+) (
+public = d <Object> ^ <Boolean> = (
+  ^binding = d
+)
+binding ^ <DimensionVariableAST> = (
+  bindingSlot isNil ifTrue: [
+     bindingSlot:: (currentScope lookup: id) at: #ast.
+  ].
+  ^bindingSlot
+)
+public canonicalForm ^ <CanonicalDimension> = (
+  ^binding canonicalForm
+)
+public constant ^ <Integer> = (
+  ^0
+)
+public occurrencesOf: v <DimensionVariableAST> ^ <Integer> = (
+  ^binding occurrencesOf: v
+)
+public printOn: stream <CharOutputStream> = (
+   stream nextPutAll:  id
+)
+public printString ^ <String> = (
+  ^ id
+)
+public variables ^ <SetOfDimensionVariables> = (
+  ^binding variables
+)
+public asDimensionVariable ^<DimensionVariableAST> = (
+  ^binding
+)
+public hash ^ <integer> = (
+  ^binding hash
+)
+) : (
+)
+public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicTypeAST position: p (
+) (
+public addDimensionVariablesTo: scope = (
+)
+public baseType ^ <TypeAST> = ( 
+)
+public drop: n <Integer> = (
+)
+public printOn: stream = (
+  stream nextPutAll: 'dynamic'
+)
+public printString ^ <String> = (
+  ^'dynamic'
+)
+public clone ^<TypeAST> = (
+  ^self
+)
+public shape ^ <ShapeAST> = (
+  unimplemented (* Have a dedicated shape variable? *)
+)
+public substitute: substitution <CallAST> ^ <TypeAST> = (
+  ^self
+)
+public subtypeOf: t <TypeAST> ^ <Boolean> = (
+  (* Dynamic is not a subtype of anything but itself. It will need to be cast *)
+  ^t isKindOfDynamicTypeAST
+)
+) : (
+)
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b position: p (
+(*
+Even though ShapeRank has no user-defined HOFs, we need to typecheck the built-in HOFs, such as reduce.
+Calls to such HOFs take functions are arguments, and the calls must be checked.  In such a call,
+the function-valued arguments are identifers that name ordinary functions. These need to have an associated
+tensor type, which should be a scalar, with a base type that is a conventional function type.
+
+Thus, the type of a function is a rank 0 tensor. At the same time, the function itself acts as a type (crude, I know).
+As such, it implements the standard subtype rule, and acts as a scalar tensor with rank 0 and empty shape.
+
+One problem with this setup is that it does not disallow the use of functions as arguments to conventional functions.
+While there is little one could do with such a function, we want to catch such errors early.
+*)
+) (
+computeReturnType ^ <TypeAST> = (
+  | result  <TypeAST> |
+   ^currentScope = scope
+     ifTrue: [body computeType]
+     ifFalse: [
+       pushScope: scope.
+       result:: body computeType.
+       popScope.
+       result
+     ]
+)
+public computeType ^ <TensorTypeAST> = (
+  ^(FunctionTypeAST
+    parameterTypes: (parameters collect: [:p | p type])
+    returnType: self returnType
+    position: {0. 0}) asTensorType
+)
+public returnType ^ <TypeAST> = (
+  returnTypeSlot isNil ifTrue: [
+    returnTypeSlot:: computeReturnType.
+    returnTypeSlot addTypeVariablesTo: scope.
+  ].
+  ^returnTypeSlot
+)
+public type = (
+  ^self computeType
+)
+public typecheckDeclaration = (
+  | bodyType |
+  pushScope: scope.
+  bodyType:: body computeType.
+  popScope.
+  returnTypeSlot isNil
+    ifTrue: [returnTypeSlot:: bodyType]
+    ifFalse: [
+      (bodyType subtypeOf: returnType) ifFalse: [
+        Error signal: 'Type error: body of function ', id, ' has type ',
+        bodyType printString, ' which is not compatible with its declared return type ',
+        returnType printString
+      ]
+    ]
+)
+) : (
+)
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+) (
+public computeType ^ <TensorTypeAST> = (
+  | decl = (currentScope lookup: id) at: #ast. t = decl type. |
+  t isKindOfFunctionType ifTrue: [Error signal: 'Type error: cannot use a function in an expression'].
+  ^t
+)
+public clone ^ <IdentifierAST> = (
+  ^IdentifierAST named: id position: position
+)
+) : (
+)
+public class LetAST named: n <Symbol> expression: e <ExprAST> position: p <{Integer. Integer}> = 
+  super LetAST named: n expression: e position: p (
+) (
+public computeType ^<TensorTypeAST> = (
+  ^expression computeType
+)
+public type ^ <TensorTypeAST> = (
+  typeSlot isNil ifTrue: [typeSlot:: expression computeType].
+  ^typeSlot
+)
+public typecheckDeclaration = (
+  ^typeSlot isNil 
+      ifTrue: [typeSlot:: expression computeType]
+      ifFalse: [
+        | etype <TypeAST> = expression computeType. |
+       (etype subtypeOf: typeSlot) ifFalse: [
+          Error signal: 'The of body of ', id,  ' has type ', etype printString, ' which is not a subtype of its declared type ',  typeSlot printString.
+          ].
+       ^typeSlot
+    ].
+)
+) : (
+)
+public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = super WhereAST expr1: e1 ident: id expr2: e2 position: p (
+  | expr2Type |
+) (
+public type ^<TensorTypeAST> = (
+  ^expr2Type
+)
+public computeType ^<TensorTypeAST> = (
+  | result
+    localScope = Scope new. |
+  expr2Type:: expr2 computeType.
+  localScope at: ident putNode: self.
+  pushScope: localScope.
+  result:: expr1 computeType.
+  popScope.
+  ^result
+)
+) : (
+)
+public class StructLiteralAST data: data <Map[Symbol, ExprAST]> position: p <{Integer. Integer}> = super StructLiteralAST data: data position: p (
+) (
+public computeType ^<TensorTypeAST> = (
+  | table = contents collect: [:ast | ast computeType]. |
+  ^(TypeStructAST table: table position: {0. 0}) asTensorType
+)
+) : (
+)
+public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
+) (
+public computeType ^<TensorTypeAST> = (
+  | ty = expr computeType. |
+  (* TODO: what should go in these #BOGUS slots? *)
+  ty isKindOfTensorTypeAST ifTrue: [^ty map: [:t | t at: label ifAbsent: #BOGUS]].
+  ^ty at: label ifAbsent: #BOGUS. 
+)
+) : (
+)
+public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p (
+) (
+public computeType ^ <TensorTypeAST> = (
+  val isKindOfInteger
+    ifTrue: [^(DimensionNumberAST number: val  position: {0. 0}) asTensorType]
+    ifFalse: [^(TypeIdAST named: #Float position: {0. 0}) asTensorType]
+)
+) : (
+)
+public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 
+  super RerankAST reranking: fn to: rs  position: p (
+  |  
+  eta1_slot  <FunctionAST>
+  canonicalDims <Map[DimensionVariableAST, DimensionAST]> = Map new.
+  unknowns <Set[DimensionVariableAST]> = Set new. 
+  knowns <Set[DimensionVariableAST]> = Set new. 
+  |
+) (
+class DimensionEquationSet = (
+(*
+A set of linear equations defining the values of the dimension variables of a function for a given call.
+These are solved by a form of Gaussian elimination.  Since the right-hand sides of the equations are dimension types, 
+which may not have known constant values, we have to solve these equations symbolically. 
+
+Initially equations are provided via #addEquation: as pairs of dimensions {p. a}, each pair defining an equation p = a, where p
+ is the formal dimension type and a is the actual dimension type.  The actual equation is computed as p-a (implicitly = 0).
+
+The set of unknowns - the dimension variables we need to infer - is given in th enclosing CallAST object. 
+It gets computed along with the initial constraints via #upperBounds:inContext: .
+
+Next, in #allocateEquations we choose an equation for each unknown; our choice ensures that each unknown gets a valid 
+equation, i.e.,  one where the unknown has a non-zero coefficient. 
+
+At this point we have n unknowns and m equations. If m > n  we ignore the extra equations, as they cannot add any
+information, unless they are inconsistent. Any inconsistencies can be detected later, when we compare the inferred 
+signature to the actual types of the arguments.
+
+An alternative would be to consolidate the existing equations into n equations by associating each unassigned 
+equation, u, with a variable d (again, ensuring that u has a non-zero coefficient for d), and adding u to the equation 
+for d. Unclear if there is any benefit in this. 
+
+We could also check that subtracting the normalized equations for u yields 0, as another form of consistency check.
+Again, still unclear what the benefit is.
+
+We then go through all the unknowns and eliminate them from all the other equations.  This is much like 
+Gaussian elimination, but we do this for all the equations rather than compute an upper-triangular matrix and back propagate.
+This is less efficient, but we have more pressing problems.
+*)
+|
+	equations <List[CanonicalDimension]> = List new. (* The initial equations as given in the call *)
+	public unknownMap <Map[DimensionVariableAST,  CanonicalDimension]> = Map new.
+	vals <[ListDimensionAST]> = List new. (* The vector of "constants" *)
+|
+) (
+public addEquation: eq <CanonicalDimension> = (
+  equations add: eq
+)
+allocateEquationFor: d <DimensionVariableAST> = (
+  | eq <CanonicalDimension> |
+  eq:: equations detect: [:e  <CanonicalDimension> | 
+	(e variables at: d) ~= 0
+	].
+  eq isNil ifFalse: [
+	unknownMap at: d put: eq.
+      equations remove: eq.
+  ]
+)
+allocateEquations = (
+  unknowns do: [:d <DimensionVariableAST> | allocateEquationFor: d]
+)
+eliminate = (
+  unknowns do: [:d1 <DimensionVariableAST> |
+	unknowns do: [:d2 <DimensionVariableAST> |
+		d1 ~= d2 ifTrue: [eliminate: d1 fromEquationFor: d2]
+		]
+	]
+)
+eliminate: d1 <DimensionVariableAST> fromEquationFor: d2 <DimensionVariableAST> = (
+  | 
+  eq1 = unknownMap at: d1.
+  eq2 = unknownMap at: d2.
+  coeff1 <Integer> = eq1 variables at: d1. 
+  coeff2 <Integer> = eq2 variables at: d1.
+  |
+   unknownMap at: d2 put: (eq2 * coeff1) - (eq1 * coeff2)
+)
+solutionFor: d <DimensionVariableAST> = (
+  |  eq0 <CanonicalDimension> = unknownMap at: d.   c <Integer> = eq0 variables at: d.  |
+  ^eq0 * (-1/c) + d canonicalForm.
+)
+public solve = (
+  allocateEquations.
+  eliminate.
+  unknowns do: [:d <DimensionVariableAST> | unknownMap at: d put: (solutionFor: d)].
+  unknownMap keys do: [:d <DimensionVariableAST> | unknowns remove: d ifAbsent: []].
+  vals do: [:v <DimensionAST> | (maybeNegative: v) ifTrue: [reportError: 'Dimension might be negative!']].
+)
+) : (
+)
+class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
+(*
+Special Call AST node for use inside rerank-generated eta-expansions. 
+When reranking, we need to determine the signature of the eta-expansion. This entails inferring the 
+constraints on the dimensions of the eta-expansion's parameters. To do this, the inferencer must treat
+them as unknowns when calling the original function being reranked. This node differs in how it
+decides if a dimension variable is unknown, so that the enclosing function's dimension variables
+are still considered unknown as required.
+*)
+) (
+public isUnknown: d <TypeAST> ^ <Boolean> = (
+  d isKindOfDimensionVariableAST ifTrue: [^true].
+  ^super isUnknown: d
+)
+) : (
+)
+revisedRerankParam: p <ParameterAST> ^ <ParameterAST> = (
+  ^ParameterAST named: p id type: (revisedRerankType: p type) position: {0. 0}
+)
+eta1 = (
+  eta1_slot isNil ifTrue: [eta1_slot:: etaExpansion].
+  ^eta1_slot
+)
+revisedRerankType: t <TensorTypeAST> ^ <TensorTypeAST> = (
+  | 
+  ds <List[DimensionAST]> = t shape dimensions collect: [:d |  canonicalDims at: d].
+  s <ShapeVectorAST> = ShapeVectorAST dimensions: ds position: {0. 0}.
+  |
+
+  ^TensorTypeAST shape: s type: t baseType clone position: {0. 0}
+)
+revisedRerankParams ^ <List[ParamAST]> = (
+    computeDimVars.
+    ^eta1 parameters collect: [:p <ParameterAST> |  revisedRerankParam: p].
+)
+public revisedEtaExpansion  ^ <FunctionAST> = (
+  | 
+  newParams <List[ParameterAST]> = revisedRerankParams. 
+  args <List[ExprAST]> = eta1 body arguments collect: [:a <ExprAST> | a clone].
+  revisedBody <CallAST> = 
+    CallAST function: eta1 body functionName arguments: args position: eta1 body position.
+  |
+  ^FunctionAST 
+      named: 'rerank', fun 
+      parameters: newParams 
+      returnType: nil 
+      body: revisedBody
+      position: {0. 0}.
+)
+constrains: eq <CanonicalDimension> dimension: d <DimensionVariableAST> ^ <Boolean> = (
+  ^(eq variables at: d) ~= 0
+)
+public computeType ^ <TensorTypeAST> = (
+  (* should be revisedEtaExpnasion computeType, once we compute a valid revised expansion *)
+  #BOGUS yourself.
+  ^eta1 computeType
+)
+computeDimVars = (
+(*
+We are seeking to establish the dependencies among the eta dim vars. If we take our initial equations and try
+and seek the dependencies for each eta dimvar as follows:
+
+We can mark those that don't appear in the sum of the equations as known.
+dependenciesOf: d for a known d is empty.
+For the remainder: for each such dimvar u, we find an equation in which u occurs; and solve for u. 
+If the immediate solution is u, then u is added to the known vars and its
+depencies are empty. Otherwise, if it is a constant, u is actually equal to that constant.
+Otherwise, for each variable term c*v in the solution:
+
+We compute v's dependencies recursively. If these are empty,
+v is a known eta dimvar, u is unknown and we add  c*v to u's dependencies.
+Otherwise, v is unknown and we multiply its dependencies by c and the results to u's dependencies. 
+If we end up revisiting a variable we are examining already,
+that is an error (and should never happen?)
+
+At the end, we have for each unknown eta dimvar a solution in terms of known dim vars.
+
+All this is good, but not enough. The base types themselves may involve
+shape or dim vars of the callee (for example if the callee is a HOF like reduce or
+fold, the function argument uses shape vars in its base type). Thus, we need to
+figure out bindings for those as well and substitute them into the base types of the
+reranked function.
+*)
+  | 
+  (* The dimension variables introduced by the eta expansion *)
+  eta_dims <Set[DimensionVariableAST]> =  Set new.
+  eqs <DimensionEquationSet>  = DimensionEquationSet new.
+  |
+  (* Typecheck the unconstrained eta expansion to get the constraints *)
+  eta1 typecheckDeclaration.
+  (* Collect the eta expansion's dimension variables *)
+  eta1 body scope keysAndValuesDo: [:k :v | 
+    (v at: 'ast') isKindOfDimensionVariableAST ifTrue: [eta_dims add: (v at: 'ast')]
+  ].
+  #TODO yourself.
+  (* Do further type variable unification as required by prefix constraint *)
+)
+) : (
+)
+class SetOfDimensionVariables = (
+|
+	public map <Map[DimensionVariableAST, Integer]> = Map new.
+|
+) (
+public = vs = (
+  vs isKindOfSetOfDimensionVariables ifFalse: [^false].
+  vs keys size = keys size ifFalse: [^false].
+  keys do: [:k | (map at: k) = (vs map at: k ifAbsent: []) ifFalse: [^false]].
+  ^true
+)
+public at: d <DimensionVariable> ^ <Integer> = (
+  ^map at: d ifAbsent: [0]
+)
+public at: d <DimensionVariableAST> put: n <Integer> = (
+  n = 0 ifTrue: [map removeKey: d ifAbsent: []].
+  map at: d put: n
+)
+public elements ^ <List[DimensionVariableAST]> = (
+  ^map keys
+)
+public hash ^ <Integer> = (
+  ^map hash
+)
+public isKindOfSetOfDimensionVariables ^ <Boolean> = (
+  ^true
+)
+public keysAndValuesDo:  blk <[:DimensionVariableAST :Integer]> = (
+  map keysAndValuesDo:  blk
+)
+public keys ^ <Set[DimensionVariableAST]> = (
+  ^map keys select: [:k <DimensionVariableAST> | (map at: k) ~= 0 ]
+)
+public getShapeVariables ^<Set[DimensionVariableAST]> = (
+  ^keys
+)
+) : (
+)
+class ShapeAST position: p <{Integer. Integer}>  = super ShapeAST position: p (
+  | normalForm_slot <ShapeAST> ::= nil.
+    forceIsNormalForm <Boolean> ::= false.  |
+) (
+public at: i <Integer> = (
+  subclassResponsibility
+)
+isInNormalForm ^ <Boolean> = (
+  ^forceIsNormalForm or: [normalForm = self]
+)
+public max: s <ShapeAST> ^ <ShapeAST> = (
+  subclassResponsibility
+)
+public normalForm ^ <ShapeAST> = (
+  normalForm_slot isNil ifTrue: [
+    normalForm_slot:: normalize.
+    normalForm_slot setIsInNormalForm.
+  ].
+  ^normalForm_slot
+)
+public setIsInNormalForm = (
+  normalForm_slot:: self
+  forceIsNormalForm:: true.
+)
+public substitute: substitution <CallAST> ^ <ShapeAST> = (
+  ^self collect: [:s | s substitute: substitution]
+)
+public getTypeVariables ^<Set[TypeVariable]> = (
+  ^Set new
+)
+) : (
+)
+public class ShapeAppendAST shape: s1 <ShapeAST>  to: s2 <ShapeAST> position: p <{Integer. Integer}>  = 
+  super ShapeAppendAST shape: s1 to: s2  position: p (
+) (
+public - s <ShapeAST> = (
+  isInNormalForm ifTrue: [
+	| snf = s normalForm. |
+	snf = second ifTrue: [^first].
+	snf = self ifTrue: [^emptyShape].
+	^false.
+	] ifFalse: [normalForm - s]
+)
+public at: i <Integer> = (
+  i <= first rank ifTrue: [^left at: i].
+  ^second at: i - first rank
+)
+public last ^<ShapeAST> = (
+  | nf = self normalForm. |
+  nf second isKindOfShapeAppendAST ifTrue: [^nf second last] ifFalse: [^nf second]
+)
+public dropLast ^<ShapeAST> = (
+  | nf = self normalForm. |
+  nf second isKindOfShapeAppendAST ifTrue: [^ShapeAppendAST shape: nf first to: nf second dropLast position: {0. 0}]
+                                   ifFalse: [^nf first]
+)
+public mapFirst: f <[ShapeAST | ShapeAST]> = (
+  ^ShapeAppendAST shape: (f value: first) to: second position: position
+)
+public mapLast: f <[ShapeAST | ShapeAST]> = (
+  | nf = self normalForm. |
+  nf second isKindOfShapeAppendAST
+    ifTrue: [^ShapeAppendAST shape: nf first to: (nf second mapLast: f) position: {0. 0}]
+    ifFalse: [^ShapeAppendAST shape: nf first to: (f value: nf second) position: {0. 0}]
+)
+breakVectorSymbolic: v <ShapeVectorAST> ^<{ShapeAST. ShapeAST}> = (
+  v hasRank ifFalse: [Error signal: 'no implementation for completely symbolic breaking'].
+  v rank = 0 ifTrue: [^{emptyShape. emptyShape}].
+  Error signal: 'no way to choose a breakpoint here without inference'.
+)
+breakVector: v  <ShapeVectorAST> ^ <{ShapeVectorAST. ShapeVectorAST}> = (
+  |
+  symbolicBranch = (first hasRank or: [second hasRank]) ifFalse: [^breakVectorSymbolic: v].
+  rank1 <Integer> = first isKindOfShapeVectorAST ifTrue: [first rank] ifFalse: [v rank - second rank].
+  v1dims <List[DimensionAST]> = v dimensions copyFrom: 1 to: rank1.
+  v2dims <List[DimensionAST]> = v dimensions copyFrom: rank1 + 1 to: v dimensions size.
+  v1 <ShapeVectorAST> = ShapeVectorAST dimensions: v1dims position: {0. 0}.
+  v2 <ShapeVectorAST> = ShapeVectorAST dimensions: v2dims position: {0. 0}.
+  |
+  ^ {v1. v2}
+)
+public dimensions ^  <List[Integer]> = (
+  ^first dimensions, second dimensions
+)
+public hasRank ^ <Boolean> = (
+   ^first hasRank and: [second hasRank]
+)
+public isPrefixOf: s <ShapeAST> ^ <Boolean> = (
+  ^isInNormalForm ifTrue: [
+	s isKindOfShapeAppendAST ifTrue: [
+		s normalForm first  = first and: [second isPrefixOf: s normalForm second]
+		] ifFalse: [false].
+	] ifFalse: [normalForm isPrefixOf: s]
+)
+public max: s <ShapeAST> ^ <ShapeAST> = (
+  | snf = s normalForm. |
+  ^isInNormalForm ifTrue: [
+	snf isKindOfShapeAppendAST ifTrue: [
+		self = snf ifTrue: [self]  ifFalse: [reportError: 'Undefined maximal shape']
+		] ifFalse: [snf = (first maxShape: snf) 
+		                 ifTrue: [self] ifFalse: [reportError: 'Undefined maximal shape'] ].
+	] ifFalse: [normalForm max: snf] 
+)
+normalize ^ <ShapeAST> = (
+  |
+  s1 <ShapeAST> = first normalForm.
+  s2 <ShapeAST> = second normalForm.
+  |
+  (s1 isKindOfShapeVectorAST and: [s2 isKindOfShapeVectorAST]) ifTrue: [
+	^ShapeVectorAST dimensions: s1 dimensions, s2 dimensions position: {0. 0}
+	].
+  ^ShapeAppendAST shape: s1 to: s2 position: {start. end}
+)
+public printOn: stream <CharOutputStream> = (
+   first printOn: stream.
+   stream nextPutAll: '::'.
+   second printOn: stream.
+)
+public printString ^ <String> = (
+  ^first printString, '::', second printString
+)
+public rank ^ <Integer> = (
+  ^first rank
+)
+) : (
+)
+public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <{Integer. Integer}> = 
+  super ShapeCastAST expression: e to: s position: p (
+) (
+public computeType ^ <TensorTypeAST> = (
+  | 
+  etype = expression computeType. 
+  result = TensorTypeAST shape: shape type: etype baseType position: {0. 0}.  
+  dyn = etype shape dimensions detect: [:d | d isKindOfDynamicTypeAST] ifNone: [].
+  |
+  dyn isNil ifTrue: [Error signal: 'Pointless cast  of non-dynamic tensor type.'].
+  (etype hasRank and: [etype rank  ~= shape rank]) ifTrue: [
+	Error signal: 'Type error: ', etype printString, ' can never be a subtype of ', result printString.
+	].
+  etype shape dimensions with: shape dimensions do: [:d1 :d2 |
+	(d1 isKindOfDynamicTypeAST not and: [d1 ~= d2]) ifTrue: [
+		Error signal: 'Type error: ', etype printString, ' can never be a subtype of ', result printString.
+		]
+	].
+  ^result
+)
+public getShapeVariables ^<Set[ShapeVariable | DimensionVariable]> = (
+  ^shape getShapeVariables
+)
+) : (
+)
+public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> = super ShapeVariableAST  named: n position: p (
+) (
+public - s <ShapeAST> = (
+  self = s ifTrue: [^emptyShape].
+  Error signal: 'Cannot subtract from shape variable'.
+)
+public at: i <Integer> = (
+  ^indexVariable: i for: self
+)
+public hasRank ^ <Boolean> = (
+   ^false
+)
+public isPrefixOf: s <ShapeAST> ^ <Boolean> = (
+  ^s = self or: [s normalForm IsKindOfShapeAppendAST and: [s normalForm first = self]]
+)
+public max: s <ShapeAST> ^ <ShapeAST> = (
+  s = self ifTrue: [^self].
+  s isEmpty ifTrue: [^self].
+  reportError: 'Unsafe use of shape variable'
+)
+normalize ^ <ShapeVariableAST> = (
+  ^self
+)
+public printOn: stream <CharOutputStream> = (
+      stream nextPutAll: '@', id
+)
+public printString ^ <String> = (
+  ^ '@', id
+)
+public rank = (
+  Error signal: 'rank of shape variable is always unknown; attempted to access rank of @', id
+)
+public substitute: substitution <CallAST> ^ <ShapeAST> = (
+  | subd = substitution shapeVarMap at: self ifAbsent: [self]. |
+  subd = self ifTrue: [^subd] ifFalse: [^subd substitute: substitution]
+)
+public = s <Object>  = (
+  s isKindOfShapeVariableReferenceAST ifTrue: [^self = s binding].
+  ^s == self
+)
+public hash ^ <Integer> = (
+  ^identityHash
+)
+) : (
+)
+public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+  super ShapeVariableReferenceAST named: n position: p  (
+) (
+public - s <ShapeAST> = (
+  ^binding - s
+)
+public = d <Object> ^ <Boolean> = (
+  ^binding = d
+)
+public at: i <Integer> = (
+  ^binding at: i
+)
+public isPrefixOf: s <ShapeAST> ^ <ShapeAST> = (
+  ^binding isPrefixOf: s
+)
+public max: s <ShapeAST> ^ <ShapeAST> = (
+  ^binding max: s
+)
+normalize ^ <ShapeVariableAST> = (
+  ^self
+)
+public addShapeVariablesTo: scope <Scope>  = (
+  | s |
+  bindingSlot:: (scope lookup: id ifAbsent: [
+	s:: ShapeVariableAST named: id position: position.
+	scope add: s.
+	scope lookup: id.
+	]) at: #ast
+)
+public hasRank = (
+  ^false
+)
+binding ^ <ShapeVariableAST> = (
+  bindingSlot isNil ifTrue: [
+     bindingSlot:: (currentScope lookup: id) at: #ast.
+  ].
+  ^bindingSlot
+)
+public hash ^ <integer> = (
+  ^binding hash
+)
+) : (
+)
+public class ShapeVectorAST dimensions: ds <List[DimensionAST]> position: p <{Integer. Integer}> = super ShapeVectorAST dimensions: ds position: p (
+) (
+public , s <ShapeVectorAST> = (
+  ^ShapeVectorAST dimensions: dimensions, s dimensions position: {0 .0}
+)
+public - s <ShapeAST> = (
+  | snf = s normalForm. k <Integer> |
+  snf isKindOfShapeVectorAST ifTrue: [
+	k:: dimensions size - snf dimensions size.
+	k >= 0 and: [
+		1 to: snf dimensions size do: [:i <Integer> |
+			(dimensions at: k + i) = (snf dimensions at: i) ifFalse: [Error signal: 'Mismatched dimensions']
+			].
+		 ^ShapeVectorAST dimensions: (dimensions copyFrom: 1 to: k) position: {0. 0}
+		]
+	].
+  Error signal: 'Subtracting non-shape vector'.
+)
+public = s = (
+  | snf ::= nil. |
+  s isKindOfShapeAST ifFalse: [^false].
+  snf:: s normalForm.
+  snf isKindOfShapeVectorAST ifFalse: [^false].
+  snf dimensions size = dimensions size ifFalse: [^false].
+   dimensions with: snf dimensions do: [:d :ds | d = ds ifFalse: [^false]].
+  ^true
+)
+public at: i <Integer> = (
+  ^dimensions at: i
+)
+public take: n <Integer> = (
+  ^ShapeVectorAST dimensions: (dimensions copyFrom: 1 to: n) position: {0. 0}
+)
+public drop: n <Integer> = (
+  ^ShapeVectorAST dimensions: (dimensions copyFrom:  n +1 to: rank) position: {0. 0}
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public isEmpty ^ <Boolean> = (
+  ^dimensions isEmpty
+)
+public isPrefixOf: s <ShapeAST> ^ <Boolean> = (
+  isEmpty ifTrue: [^true].
+  s normalForm isKindOfShapeVectorAST ifTrue: [
+	^dimensions size <= s dimensions size and: [
+		1 to: dimensions size do: [: i <Integer> | (dimensions at: i) = (s dimensions at: i) ifFalse: [^false]].
+		 true
+		]
+	].
+  s normalForm isKindOfShapeAppendAST ifTrue: [^isPrefixOf: s first].
+  ^false
+)
+public max: s <ShapeAST> ^ <ShapeAST> = (
+  s normalForm isKindOfShapeVectorAST ifTrue: [
+	^dimensions size < s dimensions size ifTrue: [s] ifFalse: [self].
+	].
+  ^s max: self
+)
+normalize ^ <ShapeVectorAST> = (
+  ^self
+)
+public printOn: stream <CharOutputStream> = (
+      dimensions do: [:d <DimensionAST> |
+	      stream nextPutAll: '['.
+		d printOn: stream.
+		stream nextPutAll: ']'.
+	].    
+)
+public printString ^ <String> = (
+      ^dimensions inject: '' into:  [:acc <String> :d <DimensionAST>  |
+	     acc,  '[', d printString,  ']'.
+	].   
+)
+public rank ^ <Integer> = (
+  ^isInNormalForm ifTrue: [dimensions size] ifFalse: [normalForm rank]
+)
+public shape = (
+  (* When viewed an independent type, I am my own shape *)
+)
+public baseType ^ <TypeAST> = (
+  ^TypeIdAST  named: #Int position: {0. 0}
+)
+) : (
+public empty ^ <Instance> = (
+  ^dimensions: {} position: {0. 0}
+)
+)
+public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
+) (
+appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
+  e isKindOfTensorAST ifTrue: [
+	ds add: e expressions size.
+	appendDimensionsOf: e expressions first to: ds
+	].
+   ^ds
+)
+public dimensions ^  <List[Integer]> = (
+  ^appendDimensionsOf: self to: List new
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public rank ^ <Integer> = (
+  ^dimensions size
+)
+public computeTensorType ^ <TensorTypeAST> = (
+  | 
+  elementTypes <List[TypeAST]> = expressions collect: [:e  <ExprAST> | e computeType]. 
+  base <TypeAST> = elementTypes reduce: [:a :b | a lcs: b ].
+  majorDimension = DimensionNumberAST number: expressions size position: {0. 0}.
+  bt = base baseType isKindOfDimensionNumberAST
+         ifTrue: [base baseType baseType] (* this is weird, but it gets us Int *)
+         ifFalse: [base baseType].
+  |
+  elementTypes do: [:t <TypeAST> |
+    (t baseType subtypeOf: base baseType) ifFalse:
+      [ reportError: 'elements of tensor must have same type.' ].
+    (t shape = base shape) ifFalse:
+      [ reportError: 'elements of tensor must have same shape.' ].
+  ].
+  ^TensorTypeAST shape: majorDimension asShape, elementTypes first shape type: bt position: {0. 0}
+)
+public computeShapeType ^ <ShapeVectorAST> = (
+  | elementTypes <List[TypeAST]> = expressions collect: [:e  <ExprAST> | e computeType]. |
+  elementTypes allSatisfy: [:e | e baseType isKindOfDimensionAST].
+  ^ShapeVectorAST dimensions: elementTypes position: {0. 0}
+)
+public computeType ^ <TensorTypeAST> = (
+  ^isShape ifFalse: [computeTensorType] ifTrue: [computeShapeType]
+)
+) : (
+)
+public class TensorTypeAST shape: s <ShapeAST>  type: t <TypeAST> position: p <{Integer. Integer}> = 
+  super TensorTypeAST shape: s  type: t position: p (
+) (
+public clone ^<TypeAST> = (
+  ^TensorTypeAST shape: shape type: baseType clone position: position
+)
+public isScalarType ^<Boolean> = (
+  ^shape = emptyShape
+)
+doesNotUnderstand: message <Message> = (
+  (shape hasRank and: [shape rank = 0]) ifTrue: [
+    ^message sendTo: baseType.
+  ].
+  ^super doesNotUnderstand: message
+)
+public subtypeOf: t <TypeAST> ^<Boolean> = (
+  (shape = t shape) ifFalse: [^false].
+  ^baseType subtypeOf: t baseType
+)
+public map: block = (
+  | mapped = block value: baseType. |
+  mapped isKindOfTensorTypeAST
+    ifTrue: [
+      ^TensorTypeAST shape: (shape, mapped shape) type: (mapped baseType) position: {0. 0}
+    ] ifFalse: [
+      ^TensorTypeAST shape: shape type: mapped position: {0. 0}
+    ]
+)
+public drop: n <integer> ^ <TensorTypeAST> = (
+  ^TensorTypeAST shape: (shape drop: n) type: baseType position: position
+)
+public gcs: t <TypeAST> ^ <TensorTypeAST> = (
+  shape = t shape ifTrue: [
+    ^TensorTypeAST shape: shape type: (baseType gcs: t baseType) position: {0. 0}
+  ].
+  ^super gcs: t
+)
+public lcs: t <TypeAST> ^ <TensorTypeAST> = (
+  shape = t shape ifTrue: [
+    ^TensorTypeAST shape: shape type: (baseType lcs: t baseType) position: {0. 0}
+  ].
+  ^super lcs: t
+)
+public printOn: stream <CharOutputStream> = (
+      shape printOn: stream.
+      baseType printOn: stream.
+)
+public printString ^ <String> = (
+  ^shape printString, ' ', baseType printString
+)
+) : (
+)
+class TypeAST position: p <{Integer. Integer}> = super TypeAST position: p (
+) (
+public baseType ^ <TypeAST> = (
+(* all types must emulate the TensorType protocol *)
+  subclassResponsibility  
+)
+public drop: n <Integer> = (
+  subclassResponsibility
+)
+public gcs: t <TypeAST> ^ <TypeAST> = (
+  self = t ifTrue: [^self].
+  (t subtypeOf: self) ifTrue: [^t].
+  (self subtypeOf: t) ifTrue: [^self].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+public hasRank ^ <Boolean> = (
+   ^shape hasRank
+)
+public rank ^ <Integer> = (
+  ^shape rank
+)
+public shape ^ <ShapeAST> = (
+(* all types must emulate the TensorType protocol *)
+  subclassResponsibility
+)
+public getTypeVariables ^<Set[TypeVariable]> = (
+  | ret = Set new. |
+  self do: [:t <TypeAST | ShapeAST | DimensionAST> |
+    t isKindOfTypeVariable ifTrue: [ret add: t].
+  ].
+  ^ret
+)
+public getShapeVariables ^<Set[ShapeVariable | DimensionVariable]> = (
+  | ret = Set new. |
+  self do: [:t <TypeAST | ShapeAST | DimensionAST> |
+    t isKindOfShapeVariableAST ifTrue: [ret add: t].
+    t isKindOfCanonicalDimension ifTrue: [ret add: t].
+    t isKindOfDimensionVariableAST ifTrue: [ret add: t].
+  ].
+  ^ret
+)
+public substitute: substitution <CallAST> ^ <TypeAST> = (
+  ^self collect: [:t | t substitute: substitution]
+)
+public subtypeOf: t <TypeAST> ^ <Boolean> = (
+  subclassResponsibility
+)
+public clone ^<TypeAST> = (
+  subclassResponsibility
+)
+public lcs: t <TypeAST> ^ <TypeAST> = (
+  self = t ifTrue: [^self].
+  (t subtypeOf: self) ifTrue: [^self].
+  (self subtypeOf: t) ifTrue: [^t].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+) : (
+)
+class BaseTypeAST position: p = super BaseTypeAST position: p (
+) (
+public clone ^<TypeAST> = (
+  ^self
+)
+public baseType ^<TypeAST> = (
+  ^self
+)
+public drop: n <Integer> = (
+  (* My rank is 0 so I can only return self; *)
+  ^self
+)
+public hasRank ^<Boolean> = (
+  ^true
+)
+public rank ^ <Integer> = (
+  ^0
+)
+public shape ^ <ShapeAST> = (
+  ^emptyShape
+)
+public subtypeOf: t <TypeAST> = (
+  t isKindOfBoundedTypeAST ifTrue: [^self subtypeOf: t bound].
+  t isKindOfBaseTypeAST ifTrue: [^self = t].
+  t isKindOfTensorTypeAST ifTrue: [
+    t isScalarType ifFalse: [^false].
+    ^self subtypeOf: (t baseType).
+  ].
+  ^self = t.
+)
+) : (
+)
+public class TypeStructAST table: t <Map[Symbol, TypeAST]> position: p <{Integer. Integer}> = super TypeStructAST table: t position: p (
+) (
+public clone ^<TypeAST> = (
+  ^TypeStructAST table: (table collect: [:t | t clone]) position: position
+)
+public at: k <Symbol> ifAbsent: block ^<TypeAST> = (
+  ^table at: k ifAbsent: block
+)
+public printString ^ <String> = (
+  | str ::= '{ '. first ::= true. |
+  table keysAndValuesDo: [:k :v |
+    first ifTrue: [first:: false] ifFalse: [str:: str, ', '].
+    str:: str, k, ': ', v printString
+  ].
+  str:: str, ' }'.
+  ^str
+)
+public gcs: t <TypeAST> ^<TypeAST> = (
+  t isKindOfTypeStructAST ifTrue: [
+    | union = Set new addAll: table keys; addAll: t table keys; yourself.
+      gcsTable = Map new. |
+      union do: [:k |
+        | a = table at: k ifAbsent: [].
+          b = t table at: k ifAbsent: [].
+          ab = (a isNil | b isNil)
+                 ifTrue: [a isNil ifTrue: [b] ifFalse: [a]]
+                 ifFalse: [a gcs: b]. |
+        gcsTable at: k put: ab.
+      ].
+      ^TypeStructAST table: gcsTable position: {0. 0}.
+  ].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+public lcs: t <TypeAST> ^<TypeAST> = (
+  t isKindOfTypeStructAST ifTrue: [
+    | lcsTable = Map new. |
+    table keysAndValuesDo: [:k :v |
+      (t table includesKey: k) ifTrue: [
+        lcsTable at: k put: (v lcs: (t table at: k))
+      ].
+    ].
+    ^TypeStructAST table: lcsTable position: {0. 0}.
+  ].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+public subtypeOf: t <TypeAST> ^<Boolean> = (
+  t isKindOfTypeStructAST ifTrue: [
+    t table keys do: [:k |
+      (table includesKey: k) ifFalse: [^false].
+      ((table at: k) subtypeOf: (t table at: k)) ifFalse: [^false].
+    ].
+    ^true.
+  ].
+  ^super subtypeOf: t.
+)
+) : (
+)
+public class TypeIdAST named: n <String> position: p <{Integer. Integer}> = super TypeIdAST named: n position: p (
+) (
+public = x <Object> = (
+  x isKindOfTypeIdAST ifFalse: [^false].
+  ^x id = id
+)
+public subtypeOf: t <TypeAST> ^<Boolean> = (
+  t isKindOfTypeIdAST ifTrue: [
+    (id = #Int) & ((t id = #Num) | (t id = #Float)) ifTrue: [^true].
+    (id = #Float) & (t id = #Num) ifTrue: [^true].
+  ].
+  ^super subtypeOf: t.
+)
+public printOn: stream <CharOutputStream> = (
+      stream nextPutAll: id
+)
+public printString ^ <String> = (
+  ^id
+)
+public substitute: substitution <CallAST> ^ <TypeAST> = (
+  ^self
+)
+) : (
+)
+public class FunctionTypeAST parameterTypes: ps <List[TypeAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = super FunctionTypeAST parameterTypes: ps returnType: t position: p (
+) (
+public gcs: t <TypeAST> ^ <TypeAST> = (
+  | ps <List[TypeAST]> = List new.
+    rt  <TensorTypeAST> |
+  t isKindOfFunctionTypeAST ifFalse: [Error signal: 'Inconsistent bindings for type variable ', printString, ' vs. ', t printString].
+  ps:: parameterTypes with: t parameterTypes do: [:p :tp | ps add: (p lcs: tp) ].
+  rt:: returnType gcs: t returnType.
+  ^FunctionTypeAST parameterTypes: ps returnType: rt position: {0. 0}
+)
+public lcs: t <TypeAST> ^ <TypeAST> = (
+  | ps <List[TypeAST]> = List new.
+    rt  <TensorTypeAST> |
+  t isKindOfFunctionTypeAST ifFalse: [Error signal: 'Inconsistent bindings for type variable ', printString, ' vs. ', t printString].
+  ps:: parameterTypes with: t parameterTypes do: [:p :tp | ps add: (p gcs: tp) ].
+  rt:: returnType lcs: t returnType.
+  ^FunctionTypeAST parameterTypes: ps returnType: rt position: {0. 0}
+)
+public printOn: stream <CharOutputStream> = (
+  parameterTypes do: [:p <TypeAST> |
+    p isKindOfFunctionTypeAST ifTrue: [
+      stream nextPutAll: '('.
+      p printOn: stream.
+      stream nextPutAll: ')'.
+    ] ifFalse: [p printOn: stream].
+  ] separatedBy: [stream nextPutAll: '->'].
+  stream nextPutAll: '->'.
+  returnType printOn: stream
+)
+public subtypeOf: t <TypeAST> ^<Boolean>  = (
+  t isKindOfBoundedTypeAST ifTrue: [^self subtypeOf: t bound].
+  t isKindOfFunctionTypeAST ifFalse: [^false].
+  self parameterTypes with: t parameterTypes do: [:p1 <TypeAST> :p2 <TypeAST> |
+    (p2 subtypeOf: p1) ifFalse: [^false].
+  ].
+  ^returnType subtypeOf: t returnType
+)
+public printString ^ <String> = (
+  | result <String> ::= ''. |
+  parameterTypes do: [:p <TypeAST> |
+    result:: result,  (p isKindOfFunctionTypeAST ifTrue: [
+      '(', p printString, ')'.
+    ] ifFalse: [p printString]).
+  ] separatedBy: [result:: result,  '->'].
+  result:: result, '->', returnType printString.
+  ^result
+)
+public clone ^<TypeAST> = (
+  ^FunctionTypeAST
+    parameterTypes: (parameterTypes collect: [:p | p clone])
+    returnType: (returnType clone)
+    position: position
+)
+) : (
+)
+public class TypeVariable named: n <String> = super TypeVariable named: n (
+) (
+public baseType ^<TypeAST> = (
+  ^self
+)
+public drop: n <Integer> = (
+  (* My rank is 0 so I can only return self; *)
+  ^self
+)
+public hasRank ^<Boolean> = (
+  ^true
+)
+public rank ^ <Integer> = (
+  ^0
+)
+public shape ^ <ShapeAST> = (
+  ^emptyShape
+)
+public subtypeOf: t <TypeAST> = (
+  ^self = t.
+)
+public asTensorType ^<TensorTypeAST> = (
+  ^TensorTypeAST shape: emptyShape type: self position: {0. 0}
+)
+public printOn: stream <CharOutputStream> = (
+     stream nextPutAll:  '$' , id.
+)
+public substitute: substitution <CallAST> ^ <TypeAST> = (
+  | subd = substitution typeVarMap at: self ifAbsent: [self]. |
+  subd = self ifTrue: [^subd] ifFalse: [^subd substitute: substitution].
+)
+public printString ^ <String> = (
+  ^id
+)
+public asTypeVariable ^ <TypeVariable> = (
+  ^self
+)
+public gcs: t <TypeAST> ^ <TypeAST> = (
+  self = t ifTrue: [^self].
+  (t subtypeOf: self) ifTrue: [^t].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+public lcs: t <TypeAST> ^ <TypeAST> = (
+  self = t ifTrue: [^self].
+  (t subtypeOf: self) ifTrue: [^self].
+  Error signal: 'Inconsistent bindings for type variable ', printString, ' ', t printString
+)
+public = t <Object>  = (
+(* We get by with the inherited hash method, because when a type var, tv, is equal to an object t, either t == tv
+as assumed by the default hash, or t is a type var reference whose binding is equal to tv; the hash of such a reference is the hash of its binding, so if the binding equals tv, the hashes are equal. *)
+  t isKindOfTypeVariableReferenceAST ifTrue: [^self = t binding].
+  ^t == self
+)
+) : (
+)
+public class BoundedTypeAST base: bs bound: bd position: p = super BoundedTypeAST base: bs bound: bd position: p (
+) (
+public clone ^<TypeAST> = (
+  ^BoundedTypeAST base: base clone bound: bound clone position: position
+)
+public substitute: substitution <CallAST> ^ <TypeAST> = (
+  | subd = super substitute: substitution. |
+  (subd base subtypeOf: subd bound)
+    ifTrue: [^subd base]
+    ifFalse: [^subd]
+)
+public = t <Object>  = (
+  t isKindOfTypeVariableReferenceAST ifTrue: [^t = self].
+  t isKindOfTypeVariable ifFalse: [^false].
+  ^t == self
+)
+public subtypeOf: t <TypeAST> ^<Boolean> = (
+  (bound subtypeOf: t) ifTrue: [^true].
+  t isKindOfBoundedTypeAST ifTrue: [^base = t base & (bound subtypeOf: t bound)].
+  t isKindOfTypeVariableReferenceAST ifTrue: [^subtypeOf: t binding].
+  t isKindOfTypeVariable ifTrue: [^base = t].
+  ^super subtypeOf: t
+)
+public asTypeVariable ^ <TypeVariable> = (
+  ^base asTypeVariable
+)
+) : (
+)
+public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+  super TypeVariableReferenceAST named: n position: p  (
+   | n = n. p = p. |
+) (
+public = d <Object> ^ <Boolean> = (
+  ^binding = d
+)
+public clone ^<TypeAST> = (
+  (* don't persist the binding in a clone *)
+  ^TypeVariableReferenceAST named: n position: p
+)
+public asTypeVariable ^ <TypeVariable> = (
+  ^binding asTypeVariable
+)
+public binding ^ <TypeVariableAST> = (
+  bindingSlot isNil ifTrue: [
+     bindingSlot:: (currentScope lookup: id) at: #ast.
+  ].
+  ^bindingSlot
+)
+public hash ^ <integer> = (
+  ^binding hash
+)
+) : (
+)
+public class ProgramAST declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = super ProgramAST declarations: ds expression: e position: p (
+) (
+public computeType ^<TypeAST> = (
+   cachedSyntheticVariables = Map new.
+   declarations do: [:d <FunctionAST | LetAST> | d typecheckDeclaration].
+  ^expression computeType
+)
+) : (
+)
+public ParameterAST ^ <ParameterAST class> = (
+  ^super ParameterAST
+)
+Scope = (
+  ^super Scope
+)
+currentScope ^  <Scope> = (
+  scopeStack isEmpty ifTrue: [^programScope].
+  ^scopeStack last
+)
+emptyShape ^ <ShapeAST> = (
+  ^super emptyShape
+)
+indexVariable: i <Integer> for: s <ShapeAST> = (
+  | vs = cachedSyntheticVariables at: s ifAbsentPut: [Map new].|
+  ^vs at: i ifAbsentPut: [DimensionVariableAST named: '$', s printString, '_', i printString position: {0. 0}]
+)
+popScope  = (
+  scopeStack removeLast
+)
+programScope ^ <Scope> = (
+  ^super programScope
+)
+pushScope: s <Scope> = (
+  scopeStack add: s
+)
+replicate: t <Type> using: frame <Shape> = (
+  ^TensorTypeAST shape: frame, t shape type: t baseType position: {0. 0}
+)
+reportError: msg <String> = (
+  Error signal: 'Type error: ', msg
+)
+public typecheckExpr: e <ExprNode> = (
+     cachedSyntheticVariables = Map new.
+     pushScope: programScope.
+     e type.
+     popScope.
+)
+public typecheckFunction: f <FunctionTypeAST> = (
+  pushScope: f scope.
+  f body type
+  popScope.
+)
+) : (
+)
+) : (
+)

@@ -1,0 +1,31 @@
+Newspeak3
+'Root'
+class CheckHashMaps ide: webide platform: p = (
+  |
+  public ide = webide.
+  public Map = p collections Map.
+  public map = Map new.
+  |
+  
+) (
+public class HashKey slotVal: x <Integer> = (
+	|
+	public val  <Integer> = x.
+	|
+) (
+public = other = (
+  other isKindOfHashKey ifFalse: [^false].
+  ^val = other val
+)
+public isKindOfHashKey = (
+  ^true
+)
+) : (
+)
+public fillMap = (
+  1 to: 20 do: [:i | 
+    map at: (HashKey slotVal: i) put: i
+  ]
+)
+) : (
+)

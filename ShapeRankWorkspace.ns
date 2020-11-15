@@ -1,0 +1,473 @@
+Newspeak3
+'Root'
+class ShapeRankWorkspace 
+   usingPlatform: platform <Platform> 
+   engine: engine <ShapeRankTypechecker>
+   parser: parsingModule <ShapeRankParser>
+   code: code <String>
+   = (
+	|
+    (* imports *)
+    private List = platform collections List.
+    private Presenter = platform hopscotch Presenter.
+    private Subject = platform hopscotch Subject.
+    private Color = platform graphics Color. 
+    private Gradient = platform hopscotch Gradient.
+    private ObjectMirror = platform mirrors ObjectMirror.
+    
+    (* module variables *)
+    parser <ShapeRankParser> = parsingModule Parser new.
+    program <ProgramAST> = parser program parseString: standardPrelude,  code.
+	|
+) (
+class DeclarationPresenter onSubject: s <DeclarationSubject> =  Presenter onSubject: s (
+) (
+isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfDeclarationPresenter
+)
+public isKindOfDeclarationPresenter ^ <Boolean> = (
+  ^true
+)
+linkForError: exception = (
+	^(link: exception printString
+	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception)) fromSnippet: subject])
+	color: (Color r: 1 g: 0 b: 0)
+)
+definitionForType = (
+  ^(row: {label: 'Type'. blank: 4. label: subject type printString}) color: (Color r: 0 g: 1 b: 0).
+)
+definition = (
+	^collapsed: collapsedDefinition expanded: expandedDefinition
+)
+expandedDefinition = (
+	| result |
+	^column: {
+		(codeMirror: subject source)
+			changeResponse: [:editor | result content: (column: {typecheck: editor textBeingAccepted asString.}). editor enterEditState];
+            acceptResponse: [:editor | 
+              compileDeclaration: editor textBeingAccepted ifFail: [:message | editor showMessage: message].
+              editor leaveEditState.
+              updateGUI: []
+              ].
+            
+		result:: holder: [(*deferred: [*)column: {typecheck: subject source}(*]*)].
+	}
+)
+collapsedDefinition = (
+  ^(row: {label: subject name. mediumBlank. typecheck: subject source}) elasticity: 1
+)
+typecheck: declaration <String> = (
+	| result <TypeAST> |
+  [result:: subject typecheck: (withoutNbsp: declaration) ] on: Error do: [:e | ^linkForError: e]. 
+
+  ^(row: {label: 'Type'. blank: 4. label: ([result printString] on: Error do: [:e | ^linkForError: e])}) color: (Color r: 0 g: 1 b: 0); elasticity: 1. 
+)
+public tag ^ <String> = (
+  ^subject name
+)
+) : (
+)
+public class DeclarationSubject onModel: m <String> = Subject onModel: m (
+(*
+The model is the name of the declaration.
+*)
+| sourceSlot <String> ::= declarationSource.  lastType |
+) (
+public createPresenter = (
+  ^DeclarationPresenter onSubject: self
+)
+public isKindOfDeclarationSubject ^ <Boolean> = (
+  ^true
+)
+isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfDeclarationSubject
+)
+public name = (
+	^model
+)
+public source ^ <String> = (
+  ^sourceSlot
+)
+public ast ^ <FunctionAST | LetAST> = (
+ ^program declarations detect: [:d <FunctionAST | LetAST> | d id = name].
+)
+public declaration ^ <FunctionAST | LetAST | Nil> = (
+  ^program declarations detect: [:d <FunctionAST | LetAST> | d id = name] ifNone: []
+)
+public declarationSource ^ <String> = (
+  ^declaration isNil ifFalse: [declaration prettyPrint] ifTrue: ['']
+)
+public source: s <String> = (
+  | tree <FunctionAST | LetAST> = parser declaration parseString: s. |
+  program addDeclaration: tree.
+  name = tree name ifTrue: [
+    sourceSlot:: s.
+    lastType:: nil.
+    ]
+)
+public typecheck: s <String> = (
+  | tree <FunctionAST | LetAST> = parser declaration parseString: s. |
+  tree scope nestIn: program scope.
+  tree typecheckDeclaration.
+  ^lastType:: tree type
+)
+public type ^ <TensorTypeAST> = (
+  lastType isNil ifTrue: [^typecheck: source].
+  ^lastType
+)
+) : (
+)
+public class ProgramSubject onModel: s = Subject onModel: s(
+) (
+public createPresenter ^ <ProgramPresenter> = (
+  ^ProgramPresenter onSubject: self
+)
+isMyKind: other ^ <Boolean> = (
+  ^other isKindOfProgramSubject
+)
+public isKindOfProgramSubject ^ <Boolean> = (
+  ^true
+)
+public declarations = (
+  ^model declarations collect: [:d | DeclarationSubject onModel: d id]
+)
+public functionTemplateText ^ <String> = (
+  ^'func functionName?(parameterName?: type?) = expression?'
+)
+public letBindingTemplateText ^ <String> = (
+  ^'let variableName? = expression?'
+)
+public primitives ^ <List[FunctionAST]> = (
+  | skope = model topLevelScope. prims <List[FunctionAST]> = List new.  |
+  
+  skope keysAndValuesDo: [:k :v |  
+    | d <FunctionAST | LetBindingAST> = v at: #ast. | 
+    (d isKindOfFunctionAST and: [d body isKindOfPrimitiveBodyAST]) ifTrue: [prims add: d]
+    ].
+  ^prims
+)
+public prelude = (
+  ^model standardPrelude
+)
+) : (
+)
+class ProgramPresenter onSubject: s <ProgramSubject> = Presenter onSubject: s (
+  | stateSlot |
+) (
+public isKindOfProgramPresenter ^ <Boolean> = (
+  ^true
+)
+isMyKind: other ^ <Boolean> = (
+  ^other isKindOfProgramPresenter 
+)
+addNewFunctionTemplate = (
+  addNewItemTemplate: subject functionTemplateText
+)
+addNewLetBindingTemplate = (
+    addNewItemTemplate: subject letBindingTemplateText
+)
+headerDefinition = (
+  ^row: {button: 'Add Function' action: [addNewFunctionTemplate]. button: 'Add Let Binding' action: [addNewLetBindingTemplate]}
+)
+public state = (
+  stateSlot isNil ifTrue: [stateSlot:: ProgramPresenterState new].
+  ^stateSlot
+)
+updateVisualsFromSameKind: oldPresenter <Self> ^ <Alien[Element]> = (
+  stateSlot:: oldPresenter state.
+  substanceSlot:: nil.
+  ensureSubstance.
+  ^super updateVisualsFromSameKind: oldPresenter
+)
+createNewDeclarationFromTemplate: template <DeclarationTemplate> = (
+	compileDeclaration: template text ifFail: [:message | ^template editor showMessage: message].
+    state removePrefix: template.
+    updateGUI: []
+)
+public addNewItemTemplate: src = (
+	(* Handle a user's request to create a new declaration by displaying a new declaration template. *)
+
+	| template prefixState <DefinitionListPresenterState> = state. |
+	template:: DeclarationTemplate
+		caption: 'Adding new declaration:'
+		initialText: src
+		acceptResponse:
+			[:ed | createNewDeclarationFromTemplate: template]
+		cancelResponse:
+			[:ed | updateGUI: [prefixState removePrefix: template]].
+	prefixState addPrefix: template
+)
+primitives ^ <Fragment> = (
+  ^ collapsed: (label: 'Primitives')
+      expanded: (column: (subject primitives collect: [:p | row: {label: p prettyPrint}]))
+)
+evaluator = (
+  ^(SnippetSubject onModel: '0') presenter
+)
+definition = (
+  ^column: {
+        headerDefinition.
+        mediumBlank.
+        state prefixHolder.
+        mediumBlank.
+        primitives.
+        mediumBlank.
+        prelude.
+        mediumBlank.
+        toggleList: (subject declarations collect: [:ds | ds presenter]).
+        evaluator
+    }
+)
+prelude = (
+  ^collapsed: (label: 'Standard Prelude')
+      expanded: (column: (subject prelude collect: [:pf |  row: {label: pf prettyPrint}])).
+)
+) : (
+)
+public class DeclarationTemplate
+   caption: c <String>
+   initialText: t <String | Text>
+   acceptResponse: onAccept <[DefinitionTemplate]>
+   cancelResponse: onCancel <[DefinitionTemplate]>
+ = Presenter onSubject: nil (|
+	public caption = c.
+	public initialText = t.
+	public initiallyInEditState ::= true.
+	public acceptResponse = onAccept.
+	public cancelResponse = onCancel.
+	public editor
+|) (
+editorDefinition ^ <Fragment> = (
+	editor:: (codeMirror: initialText)
+	(*	acceptLabelText: 'save';
+		cancelLabelText: 'cancel';*)
+		acceptResponse: [acceptResponse value: self];
+		cancelResponse: [cancelResponse value: self].
+	initiallyInEditState ifTrue: [editor enterEditState].
+	^editor
+)
+public hash ^ <Integer> = (
+  ^text hash
+)
+public tag ^ <String> = (
+  ^printString
+)
+public text ^ <String> = (
+  ^editor textBeingAccepted
+)
+isMyKind: f <Fragment> ^ <Boolean> = (
+  ^f isKindOfDeclarationTemplate
+)
+public isKindOfDeclarationTemplate ^ <Boolean> = (
+  ^true
+)
+public = other <Object>^ <Boolean> = (
+  other isKindOfDeclarationTemplate ifFalse: [^false].
+  ^other text = text
+)
+definition ^ <Fragment> = (
+	^(row: {
+		mediumBlank.
+		elastic:
+			(column: {
+				blank: 5.
+				label: caption.
+				editorDefinition.
+				mediumBlank.
+ 			}).
+		blank: 5.
+		}) color: (Gradient from: (Color h: 100 s: 0.3 v: 0.9) to: (Color h: 100 s: 0.3 v: 0.8))
+)
+) : (
+)
+class ProgramPresenterState = (
+  | 
+  prefixes <List[DeclarationTemplate]> = List new. 
+  prefixPresenter = PrefixPresenter new.
+  public prefixHolder <HolderComposer> = prefixPresenter holder: fragmentForPrefixes. 
+  |
+) (
+class PrefixPresenter = Presenter onSubject: nil (
+(*
+A trick/hack to give the enclosing object access to the the fragment factories it needs.
+The only way to create fragments outside the Hopscotch module is via the factories inherited from Presenter.
+ProgramPresenterState is not a presenter, and yet it manufactures bits of presentation. Hence, we create
+this presenter class, which publicizes the required inherited factories. Each factory has a single instance of this class,
+which it uses to access the needed factories.
+*)
+) (
+public column: ds  <List[Fragment]> ^ <ColumnComposer>  = (
+  ^super column: ds
+)
+public holder: c <Fragment> ^ <HolderComposer> = (
+  ^super holder: c
+)
+public isKindOfPrefixPresenter ^ <Boolean> = (
+  ^true
+)
+isMyKind: f <Fragment> ^ <Boolean> = (
+  ^f isKindOfPrefixPresenter
+)
+) : (
+)
+public addPrefix: p <DefinitionTemplate> = (
+  prefixes add: p.
+  updatePrefixes.
+)
+fragmentForPrefixes ^ <Fragment> = (
+  ^prefixPresenter column: prefixes
+)
+public removePrefix: p <DefinitionTemplate>  = (
+  prefixes remove: p.
+  updatePrefixes.
+)
+updatePrefixes = (
+  prefixHolder isNil ifFalse: [prefixHolder content: fragmentForPrefixes]
+)
+public isKindOfProgramPresenterState ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class PrimitivePresenter onSubject: s = Presenter onSubject: s (
+) (
+) : (
+)
+class TensorPresenter onSubject: s = Presenter onSubject: s () (
+shapeString ^ <String> = (
+  | result = subject tensor reflectee shape printString. |
+  result isEmpty ifTrue: [^'[]'].
+  ^result
+)
+public isKindOfTensorPresenter ^ <Boolean> = (
+  ^true
+)
+isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfTensorPresenter
+)
+definition = (
+  ^(column: {
+      row: {label: 'Tensor'. blank: 4. label: subject tensor reflectee printString}.      
+      row: {label: 'rank'. blank: 4.  label: subject tensor reflectee rank printString}.
+      row: {label: 'shape'. blank: 4. label: shapeString}.
+    }) color: (Color h: 240 s: 0.05 asFloat v: 0.9 asFloat)
+)
+) : (
+)
+public class TensorSubject onModel: m = Subject onModel: m () (
+createPresenter = (
+	^TensorPresenter onSubject: self
+)
+public tensor = (
+  ^model
+)
+public isKindOfTensorSubject ^ <Boolean> = (
+  ^true
+)
+isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfTensorSubject
+)
+) : (
+)
+class SnippetPresenter onSubject: s = Presenter onSubject: s () (
+evaluate: expression <String> = (
+	| result <Tensor> |
+	[result:: ObjectMirror reflecting: (eval: (withoutNbsp: expression))]
+		on: Error do: [:e | ^linkForError: e].
+     ^(TensorSubject onModel:  result) presenter
+)
+linkForResult: objectMirror = (
+	^link: objectMirror reflectee printString
+	action: [enterSubject: (TensorSubject onModel: objectMirror) fromSnippet: subject]
+)
+typecheck: expression <String> = (
+	| result <TypeAST> |
+  [result:: type: (withoutNbsp: expression) ] on: Error do: [:e | ^linkForError: e]. 
+
+  ^(row: {label: 'Type'. blank: 4. label: result printString}) color: (Color r: 0 g: 1 b: 0). 
+)
+public isKindOfSnippetPresenter ^ <Boolean> = (
+  ^true
+)
+public isMyKind: other <Fragment> ^ <Boolean> = (
+  ^other isKindOfSnippetPresenter
+)
+definition = (
+	| result |
+	^column: {
+		(codeMirror: subject snippet)
+			changeResponse: [:editor | result content: (column: {typecheck: editor textBeingAccepted asString. evaluate: editor textBeingAccepted asString})].
+		result:: holder: [deferred: [column: {typecheck: subject snippet. evaluate: subject snippet}]].
+	}
+)
+linkForError: exception = (
+	^(link: exception printString
+	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception)) fromSnippet: subject])
+	color: (Color r: 1 g: 0 b: 0)	
+)
+eval: e <String> = (
+  | tensor = parser expr parseString: e. |
+  tensor scope nestIn: program scope.
+   ^tensor eval
+)
+type: e <String> ^ <TensorTypeAST> = (
+  | tensor = parser expr parseString: e. |
+  tensor scope nestIn: program scope.
+   ^tensor userType
+)
+) : (
+)
+public class SnippetSubject onModel: m <String> = Subject onModel: m () (
+createPresenter = (
+	^SnippetPresenter onSubject: self
+)
+public programPrelude ^ <String> = (
+^preludeSlot
+)
+public isKindOfSnippetSubject ^ <Boolean> = (
+  ^true
+)
+isMyKind: other <Subject> ^ <Boolean> = (
+  ^other isKindOfSnippetSubject
+)
+public snippet ^ <String> = (
+	^model
+)
+) : (
+)
+public class PreludeDeclarationSubject onModel: m <String> = DeclarationSubject onModel: m (
+) (
+public declaration ^ <FunctionAST | LetAST | Nil> = (
+  ^program standardPrelude detect: [:d <FunctionAST | LetAST> | d id = name] ifNone: []
+)
+) : (
+)
+public programSubject ^ <ProgramSubject> = (
+  ^ProgramSubject onModel: program
+)
+withoutNbsp: string = (
+	('a' at: 1) isKindOfInteger
+		ifTrue:
+			[ | bytes = ByteArray withAll: string. |
+			1 to: bytes size do: [:index | (bytes at: index) = 160 ifTrue: [bytes at: index put: 32]].
+			^bytes asString]
+		ifFalse:
+			[ | nonbreakingSpace = String fromRune: 160.
+			space = String fromRune: 32. |
+			^string replaceAll: nonbreakingSpace with: space]
+)
+compileDeclaration: d <String> ifFail: blk = (
+  [program addDeclaration: (parser declaration parseString: d)] 
+     on: Error do: [:e | 
+          | msg <String> = e messageText isNil ifTrue: [e printString] ifFalse: [e messageText]. |
+          blk value: msg
+        ]
+)
+public standardPrelude ^ <String> = (
+  ^''
+)
+) : (
+public usingPlatform: platform <Platform> engine: engine <ShapeRankTypechecker> parser: parsingModule <ShapeRankParser> = (
+      ^self usingPlatform: platform  engine: engine parser: parsingModule code: '; 0'
+)
+)

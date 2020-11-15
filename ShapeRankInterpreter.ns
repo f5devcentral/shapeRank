@@ -1,0 +1,529 @@
+Newspeak3
+'Root'
+class ShapeRankInterpreter usingPlatform: platform asts: asts collectionUtils: utils = (
+|
+	private ASTClass <ShapeRankAST class> = asts.
+	private Map = platform collections Map.
+	private List = platform collections List.
+        private Utils = utils.
+|
+) (
+public class Evaluator usingPlatform: p <Platform> collectionUtils: c = ASTClass usingPlatform: p collectionUtils: c(
+(*
+As indicated elsewhere, this class leverages class hierarchy inheritance, extending the AST with interpretation
+machinery without compromising modularity. 
+
+Runtime values are represented by class Tensor.  These are produced by evaluation, performed by the #eval
+methods of various AST nodes.   Interpretation uses a call stack, which consists of individual activations. Class 
+Activation implements this, providing the runtime scope by mapping parameter names to tensors.
+*)
+  | 
+  callStack <List[Activation]> = List new. 
+  emptyFrame = Tensor dimensions: {} contents: {}.
+  specialEvaluators <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = computeSpecialEvaluators.
+  |
+) (
+class Activation of: f <FunctionAST> from: argVector <List[Tensor]> = (
+|
+	function <FunctionAST> = f.
+	public arguments <List[Tensor]> = argVector.
+|
+) (
+public at: k <Symbol> ^ <Tensor> = (
+  ^at: k ifAbsent: [Error signal: 'Undefined variable ', k]. (* should never happen in a typechecked prgram *)
+)
+public at: k <Symbol> ifAbsent: blk <[Tensor]> ^ <Tensor> = (
+  1 to: function parameters size do: [:i <Integer> |
+	(function parameters at: i) id = k ifTrue: [ | arg |
+		arg:: arguments at: i.
+		arg isKindOfTensor ifFalse: [arg:: scalar: arg].
+		^arg
+		]
+	].
+^blk value 
+)
+) : (
+)
+public class BlockAST body: e <ExprAST> position: p <{Integer. Integer}> = super BlockAST body: e position: p (
+  | private body = e. |
+) (
+public eval ^ <Tensor> = (
+  | homeContext = callStack isEmpty ifTrue: [emptyFrame] ifFalse: [currentActivation]. |
+  ^Tensor dimensions: {} contents: {
+    Block body: body context: homeContext
+  }
+)
+) : (
+public body: e <ExprAST> ^ <Instance> = (
+(* sigh, we should find a solution for class method inheritance *)
+  ^body: e position: e position
+)
+)
+public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = super WhereAST expr1: e1 ident: id expr2: e2 position: p (
+) (
+public eval ^ <Tensor> = (
+  (* e1 already has ident -> e2 in its scope *)
+  ^expr1 eval
+)
+) : (
+)
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
+) (
+public eval  ^ <Tensor> = (
+  ^ Tensor dimensions: {} contents: {val}
+)
+) : (
+)
+public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
+) (
+public eval ^<Tensor> = (
+  ^Tensor dimensions: {} contents: {val}
+)
+) : (
+)
+public class StructLiteralAST data: data <Map[Symbol, ExprAST]> position: p <{Integer. Integer}> = super StructLiteralAST data: data position: p (
+) (
+public eval ^<Tensor> = (
+  ^Tensor dimensions: {} contents: { Record contents: (contents collect: [:v | v eval]) }
+)
+) : (
+)
+public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
+) (
+public evalOn: t <Tensor | Record | ParameterAST> ^<Tensor> = (
+  t isKindOfParameterAST ifTrue: [^evalOn: (currentActivation at: t id)].
+  t isKindOfRecord ifTrue: [^t data at: label ifAbsent: [ assert: false. nil]]. (* is this right? *)
+  t isKindOfTensor ifTrue: [
+    | ret = t map: [:v | evalOn: v]. |
+    t isScalar ifTrue: [^ret contents at: 1] ifFalse: [^ret]
+  ].
+  Error signal: 'Could not index non-struct object'.
+)
+public eval ^<Tensor> = (
+  ^evalOn: (expr eval)
+)
+) : (
+)
+public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
+) (
+public eval ^ <Tensor> = (
+  ^computeFunction: callee arguments: evaluateArguments
+)
+evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <Tensor | AST> = (
+  ^(param isHOF and: [arg isKindOfBlockAST not]) ifTrue: [
+        | ast ::= (scope lookup: arg id ifAbsent:
+                     [^(currentActivation at: arg id)]) at: #ast. |
+        ast isKindOfParameterAST ifTrue: [^(currentActivation at: ast id)].
+        Tensor dimensions: {} contents: {ast}
+     ] ifFalse: [arg eval]
+)
+evaluateArguments = (
+   | result = List new: arguments size. |
+   1 to: arguments size do: [:i <Integer> | result add: (evaluateArgument: (arguments at: i) for: (callee parameters at: i))].
+   ^result
+)
+) : (
+)
+class Frame dimensions: ds <List[Integer]> cells: cs <List[Object]> = (
+|
+	public dimensions <List[Integer]> = ds.
+	public cells <List[Object]> = cs.
+|
+) (
+public asTensor ^ <Tensor> = (
+  dimensions isEmpty ifTrue: [^cells at: 1].
+  ^Tensor 
+      dimensions: dimensions, (cells at: 1) dimensions
+      contents: (subframes collect: [:f <Frame> | f asTensor])
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public map: f <[Object | T def]> ^ <Frame[T]> = (
+  ^Frame 
+        dimensions: dimensions 
+        cells: (cells collect: f)
+)
+public max: t <Frame> ^ <Frame> = (
+ (* should check that either my shape is a prefix of t's or vice versa *)
+  dimensions size > t dimensions size ifTrue: [^self].
+  ^t
+)
+public printString = (
+  ^'Frame of rank: ', rank printString
+)
+public rank ^ <Integer> = (
+  ^dimensions size
+)
+public replicateToMatch: dims <List[Integer]> = (
+  | 
+  replicaSize <Integer> = dims reduce: [:e1 <Integer> :e2  <Integer> | e1* e2] ifEmpty: [1].
+  replicatedContents <List[Object]> = List new: replicaSize.
+  cdims <List[Integer]> = dims copyFrom: dimensions size + 1 to: dims size.
+  replicationFactor <Integer> = cdims reduce: [:e1 <Integer> :e2  <Integer> | e1* e2] ifEmpty: [1].
+  |
+  assert: [replicaSize/replicationFactor = cells size] message: 'replication error'.
+  cdims isEmpty ifTrue: [^self].
+  1 to: cells size do: [:i <Integer> | 
+	| e <Object> = cells at: i. |
+	1 to: replicationFactor do: [:j <Integer> | 
+		replicatedContents add: e
+		].
+	].
+  ^Frame dimensions: dims cells: replicatedContents
+)
+public size = (
+  ^dimensions reduce: [:d1 <Integer> :d2 <Integer> | d1 * d2] ifEmpty: [1]
+)
+subframes ^ <List[Frame]> = (
+  | n = size/dimensions first. dimTail = dimensions copyFrom: 2 to: dimensions size.|
+  ^(1 to: dimensions first) collect: [:i <Integer> | 
+	| subcells = cells copyFrom: (i -1)*n + 1 to: i*n. |
+	Frame dimensions: dimTail cells: subcells 
+	]
+)
+) : (
+)
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+) (
+computeBinding  ^ <Tensor> = (
+   callStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [evalFromScope: id]].
+  ^evalFromScope: id.
+)
+public eval  ^ <Tensor> = (
+   callStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [evalFromScope: id]].
+  ^evalFromScope: id.
+)
+evalFromScope:  n <Symbol> ^ <ExprAST> = (
+  | decl = (scope lookup: id) at: #ast. |
+  decl isKindOfLetAST ifTrue: [^decl expression eval].
+  decl isKindOfExprAST ifTrue: [^decl eval].
+  decl isKindOfFunctionAST ifTrue: [Error signal: 'Higher order functions not supported'].
+ ^decl
+)
+) : (
+)
+public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
+public eval  ^ <Tensor> = (
+  ^ Tensor dimensions: {} contents: {val}
+)
+) : (
+)
+class PrimitiveBodyAST block: blk <Block> = super PrimitiveBodyAST block: blk (
+) (
+public eval ^ <Tensor> = (
+  ^block valueWithArguments: currentActivation arguments asArray
+)
+) : (
+)
+public class ProgramAST declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
+  super ProgramAST declarations: ds expression: e position: p (
+) (
+public eval ^ <Tensor> = (
+  ^expression eval.
+)
+) : (
+)
+public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 
+  super RerankAST reranking: fn to: rs  position: p (
+) (
+public eval  ^ <Tensor> = (
+  ^etaExpansion
+)
+) : (
+)
+public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <{Integer. Integer}> = 
+  super ShapeCastAST expression: e to: s position: p (
+) (
+ensure: t <Tensor>  conformsTo: s <ShapeAST> ^ <Boolean> = (
+  ^t shape = shape
+)
+public eval  ^ <Tensor> = (
+  | result <Tensor> = expression eval. |
+  (ensure: result conformsTo: shape) ifFalse: [Error signal: 'Runtime type error: cast failed'].
+  ^result
+)
+) : (
+)
+class Record contents: data <Map[Symbol, Tensor]> = (
+  | public data <Map[Symbol, Tensor]> = data. |
+) (
+public isKindOfRecord = (
+  ^true
+)
+public = other <Object> ^<Boolean> = (
+  other isKindOfRecord ifFalse: [^false].
+  ^(Utils maps: data eq: other data)
+)
+public hash ^<Integer> = (
+  ^(Utils valueMapHashOf: data)
+)
+public printString ^<String> = (
+  | ret ::= '{ '.
+    first ::= true. |
+  data keysAndValuesDo: [:k :v |
+    first ifTrue: [first:: false] ifFalse: [ret:: ret, ', '].
+    ret:: ret, ' ', k, ': ', v printString.
+  ].
+  ret:: ret, ' }'.
+  ^ret
+)
+) : (
+)
+public class Block body: e <ExprAST> context: c <Activation> = (
+  | public body = e.
+    private ctx = c. |
+) (
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public rank ^ <Integer> = (
+  ^0
+)
+public evalBody ^<Tensor> = (
+  | result <Tensor> |
+  pushActivation: ctx.
+  result:: body eval.
+  popActivation.
+  ^result
+)
+public isKindOfBlock = (
+  ^true
+)
+) : (
+)
+class Tensor dimensions: ds <List[Integer]> contents: cs <List[Object]> = (
+(*
+A Tensor is either scalar or not. It is scalar iff it is of rank 0.
+A non-scalar Tensor contains a list of subtensors stored in its #contents. A scalar Tensor
+has an empty #dimensions list, and contains a single non-Tensor in #contents.
+*)
+|
+	public dimensions <List[Integer]> = ds.
+	public contents <List[Object]> = cs.
+|
+) (
+public = other <Object> ^ <Boolean> = (
+  (isScalar & other isScalar) ifTrue: [^asScalar = other asScalar].
+  other isKindOfTensor ifFalse: [^false].
+  other dimensions  with:  dimensions do: [:od :d | od = d ifFalse: [^false]].
+  other contents with: contents do: [:oe :e | oe = e ifFalse: [^false]].
+  ^true.
+)
+public asScalar ^ <Object> = (
+  | c |
+  isScalar ifFalse: [Error signal: printString, ' is not a scalar'].
+  c:: contents at: 1.
+  c isKindOfTensor ifTrue: [^c asScalar].
+  ^c
+)
+public cellsOfShape: cds <List[Integer]> ^ <List[Tensor]> = (
+  assert: [rank >= cds size] message: 'Cells larger than Tensor!'.
+  rank = cds size ifTrue: [^{self}].
+  ^(contents collect: [:e <Tensor> | e cellsOfShape: cds]) flatten
+)
+public contains: element = (
+   isScalar ifTrue: [^self = element].
+   contents do: [:subtensor <Tensor> | (subtensor contains: element) ifTrue: [^true]].
+   ^false
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public isKindOfTensor ^ <Boolean> = (
+  ^true
+)
+public isScalar ^ <Boolean> = (
+| c |
+  ^rank = 0 and: [
+	contents size = 1 and: [
+		c:: contents at: 1. 
+		c isKindOfTensor not or: [c isScalar]
+		]
+	]
+)
+public map: f <[Object | T def]> ^ <Tensor[T]> = (
+  | newContents = contents collect: f.
+    newDimensions = (newContents size > 0 and: [newContents first isKindOfTensor])
+                    ifTrue: [
+                      | myDim = dimensions size > 0
+                                  ifTrue: [{dimensions first}]
+                                  ifFalse: [dimensions]. |
+                        myDim, newContents first dimensions]
+                    ifFalse: dimensions. |
+  ^Tensor dimensions: newDimensions contents: newContents
+)
+public max: t <Tensor> ^ <Tensor> = (
+ (* should check that either my shape is a prefix of t's or vice versa *)
+  dimensions size > t dimensions size ifTrue: [^self].
+  ^t
+)
+public printOn: stream <CharOutputStream> = (
+      rank > 0 ifTrue: [
+	   stream nextPutAll: '['.
+         contents do: [:e | e printOn: stream] separatedBy: [ stream nextPutAll: ', ']. 
+         stream nextPutAll: ']'.
+      ]
+      ifFalse: [(contents at: 1) printOn: stream]
+)
+public printString ^ <String> = (
+  | contentString <String> |
+      contentString:: ''.
+      ^rank > 0 ifTrue: [
+	   contents do: [:e | contentString:: contentString, e printString] 
+	        separatedBy: [contentString:: contentString, ', '].
+	   '[', contentString, ']'.
+      ]
+      ifFalse: [(contents at: 1) printString]
+)
+public rank ^ <Integer> = (
+  ^dimensions size
+)
+public shape ^ <ShapeAST> = (
+  | dims <List[DimensionNumber]> = dimensions collect: [:d <Integer> | DimensionNumberAST number: d position: {0. 0} ]. |
+  ^ShapeVectorAST dimensions: dims position: {0. 0}
+)
+public hash ^ <Integer> = (
+  dimensions hash bitXor: [contents hash].
+)
+) : (
+)
+public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
+) (
+appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
+  e isKindOfTensorAST ifTrue: [
+	ds add: e expressions size.
+	appendDimensionsOf: e expressions first to: ds
+	].
+   ^ds
+)
+public dimensions = (
+  ^appendDimensionsOf: self to: List new
+)
+public eval  ^ <Tensor> = (
+  ^ Tensor dimensions: dimensions contents: (expressions flatMap: [:e <ExprAST> | e eval])
+)
+public hasRank ^ <Boolean> = (
+   ^true
+)
+public rank ^ <Integer> = (
+  ^dimensions size
+)
+) : (
+)
+public DimensionNumberAST ^ <DimensionNumberAST class> = (
+  ^super DimensionNumberAST
+)
+public ShapeVectorAST ^ <ShapeVectorAST class> = (
+  ^super ShapeVectorAST
+)
+computeFunction: callee <FunctionAST> arguments: args <List[Tensor]> = (
+  | 
+  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
+  maxFrame <Frame>
+  replicatedFrames <List[Frame]>
+  zippedFrame <Frame>
+  resultFrame <Frame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
+	f1 max: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
+  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
+(* map*)
+  resultFrame:: zippedFrame map: [:argVector <List[Tensor]> | 
+	 | result  <Frame> | 
+	 pushActivation:  (Activation of: callee from: argVector).
+	 result:: callee body eval.
+	 popActivation.
+	 result.
+	].
+  ^resultFrame asTensor.  
+)
+computeSpecialEvaluators ^ <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = (
+  | ses <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = Map new. scanReduceBlock <[List[ExprAST] | List[Tensor]]>  |
+  scanReduceBlock:: [:args <List[ExprAST]> | 
+	List new 
+	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 1) id) at: #ast}); 
+	  add: (args at: 2) eval; 
+	  add: (args at: 3) eval;
+	  yourself
+	].
+  ses 
+	at: #fold put: scanReduceBlock; 
+	at: #innerProduct put: innerProductBlock; 
+	at: #outerProduct put: scanReduceBlock; 
+	at: #reduce put: scanReduceBlock; 
+	at: #scan put: scanReduceBlock.
+  ^ses
+)
+currentActivation ^ <Activation> = (
+   ^callStack last
+)
+currentProgram ^ <ProgramAST> = (
+  ^super currentProgram
+)
+frameArgument: arg <Tensor> forParameter: p <ParameterAST> ^ <Frame> = (
+  p hasRank ifFalse: [
+	^Frame dimensions: {} cells: {arg}.
+	].
+  arg rank >= p rank ifTrue: [ 
+	| 
+	fdims <List[Integer]> = arg dimensions copyFrom: 1 to: arg rank - p rank.
+	cdims <List[Integer]> = arg dimensions copyFrom: arg rank  - p rank + 1 to: arg dimensions size.
+      |
+      fdims isEmpty ifTrue: [^Frame dimensions: fdims cells: {arg}].
+	^Frame dimensions: fdims cells: (arg cellsOfShape: cdims)
+	].
+   ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
+)
+frameArguments: args <List[Tensor]> of: callee <FunctionAST> = (
+  | argFrames <List[Frame]> = List new: args size. |
+  args with: callee parameters do: [:a <Tensor> :p <ParameterAST> |
+	argFrames add: (frameArgument: a forParameter: p)
+	].
+  ^argFrames
+)
+innerProductBlock = (
+  ^[:args <List[ExprAST]> | 
+	List new 
+	  add: (args at: 1) eval; 
+	  add: (args at: 2) eval; 
+	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 3) id) at: #ast}); 
+	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 4) id) at: #ast}); 
+	  yourself
+	].
+)
+popActivation = (
+  callStack removeLast.
+)
+programScope ^ <Scope> = (
+  ^super programScope
+)
+pushActivation: a <Activation> = (
+  callStack add: a
+)
+scalar: o <Object> ^ <Tensor> = (
+  ^Tensor dimensions: {} contents: {o}
+)
+zipFrame: l <List[Frame]> ^ <Frame>  = (
+ | 
+  n <Integer> = l size.  
+  k <Integer> =  l first cells size. 
+  dims <List[Integer]> = l first dimensions.
+  zippedCells <List[Object]> = List new: k.
+|
+
+ (l allSatisfy: [:e <Frame> |  e cells size = k] ) ifFalse: [Error signal: 'Cells of non-uniform size'].
+ l do: [:e | e dimensions with: dims do: [:d1 :d2 | d1 = d2 ifFalse: [Error signal: 'Argument frames of varying rank']]].
+ 1 to: k do: [:i <Integer> | | element = List new: n.|
+	1 to: n do: [:j <Integer> |  element add: ((l at: j) cells at: i)].
+	zippedCells add: element.
+	].
+  ^Frame dimensions: dims cells: zippedCells.
+)
+) : (
+)
+) : (
+)

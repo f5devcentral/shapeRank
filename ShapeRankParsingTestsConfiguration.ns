@@ -1,0 +1,23 @@
+Newspeak3
+'ShapeRank'
+class ShapeRankParsingTestsConfiguration packageTestsUsing: manifest = (
+(* WIP on tests *)
+|
+	private ShapeRankParsingTests = manifest ShapeRankParserTests.
+	private ShapeRankASTs = manifest ShapeRankASTs.
+	private CombinatorialParsing  = manifest CombinatorialParsing.
+	private ShapeRankGrammar = manifest ShapeRankGrammar.
+	private ShapeRankParser = manifest ShapeRankParser.
+        private CollectionUtils = manifest CollectionUtils.
+|) (
+public testModulesUsingPlatform: platform minitest: minitest = (
+	| utils asts parserLib grammar parsing |
+        utils:: CollectionUtils usingPlatform: platform.
+	asts:: ShapeRankASTs usingPlatform: platform collectionUtils: utils.
+	parserLib:: CombinatorialParsing usingPlatform: platform.
+	grammar:: ShapeRankGrammar usingPlatform: platform parsers: parserLib.
+	parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: ShapeRankASTs collectionUtils: utils.
+	^{ShapeRankParsingTests usingPlatform: platform parsing: parsing asts: asts minitest: minitest}
+)
+) : (
+)

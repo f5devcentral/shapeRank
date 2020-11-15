@@ -1,0 +1,367 @@
+Newspeak3
+'Root'
+class ShapeRankParser usingPlatform: platform grammar: grammar asts: astClass collectionUtils: utils = (
+|
+	private List = platform collections List.
+        private Map = platform collections Map.
+        private ShapeGrammar = grammar Grammar.
+
+        private astClass = astClass.
+        private platform = platform.
+        private utils = utils.
+|
+) (
+public class Parser = ShapeGrammar (
+|
+private asts = astClass usingPlatform: platform collectionUtils: utils.
+private BlockAST = asts BlockAST.
+private BoolAST = asts BoolAST.
+private CallAST = asts CallAST.
+private DimensionNumberAST = asts  DimensionNumberAST.
+private DimensionSumAST = asts DimensionSumAST.
+private DimensionVariableAST = asts DimensionVariableAST.
+private DimensionVariableReferenceAST = asts DimensionVariableReferenceAST.
+private DynamicTypeAST = asts DynamicTypeAST.
+private FunctionAST = asts FunctionAST.
+private IdentifierAST = asts IdentifierAST.
+private LetAST = asts LetAST.
+private NumAST = asts NumAST.
+private ParameterAST = asts ParameterAST.
+private ProgramAST = asts ProgramAST.
+private RerankAST = asts RerankAST.
+private ShapeAppendAST = asts ShapeAppendAST.
+private ShapeCastAST = asts ShapeCastAST.
+private ShapeVariableAST = asts ShapeVariableAST.
+private ShapeVariableReferenceAST = asts ShapeVariableReferenceAST.	
+private ShapeVectorAST = asts ShapeVectorAST.
+private StringAST = asts StringAST.
+private StructLiteralAST = asts StructLiteralAST.
+private StructDotAST = asts StructDotAST.
+private TensorAST = asts TensorAST.
+private TensorTypeAST = asts TensorTypeAST.
+private TypeIdAST  = asts TypeIdAST.
+private TypeVariableReferenceAST  = asts TypeVariableReferenceAST.
+private BoundedTypeAST = asts BoundedTypeAST.
+private TypeStructAST = asts TypeStructAST.
+private WhereAST = asts WhereAST.
+
+private MessageNotUnderstood = platform kernel MessageNotUnderstood.
+
+dimVarCounter <Integer> ::= 0.
+|
+[asts addPreludeWithParser: self] on: MessageNotUnderstood do: [:sig | nil].
+) (
+public boolConst ^ <CombinatorialParser[BoolAST]> = (
+  ^super boolConst wrap:
+		[:t <Token> |
+		  BoolAST value:  t value = #true position: {t start. t end}
+		]
+)
+public escapedChar ^<CombinatorialParser[Integer]> = (
+  ^super escapedChar wrapper: [:slash :escaped | escaped ]
+)
+public stringLiteral ^<CombinatorialParser[StringAST]> = (
+  ^super stringLiteral wrapper: [:bq :ls :eq |
+    | str = String fromRunes: ls. |
+    StringAST value: str position: {bq start. eq end}
+  ].
+)
+public call ^ <CombinatorialParser[CallAST]> = (
+  ^super call wrapper:
+		[:id_token  <Token> :lp <Token> :es <List[ExprAST]> :rp <Token> |
+		  CallAST function: id_token value arguments: es position: {id_token start. rp end}
+		]
+)
+public declarationSection ^ <CombinatorialParser[List[FunctionAST | LetAST]]> = (
+  ^super declarationSection wrapper:
+    [:decls <List[FunctionAST | LetAST]> :sc <Token> | decls]  
+)
+public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
+  ^super declaration plus
+)
+public dotExpr ^ <CombinatorialParser[StructDotAST]> = (
+  ^super dotExpr wrapper:
+    [:fst :rst | | lst = List new addFirst: fst; addAll: rst; yourself. |
+      lst reduce: [:acc :v | | token = v at: 2. |
+        StructDotAST expr: acc label: token value position: {acc start. token end}
+      ]
+    ]
+)
+public unaryTerm ^ <CombinatorialParser[ExprAST]> = (
+  ^super unaryTerm wrapper:
+    [:op :term | CallAST
+                   function: (op value = ("-" runeAt: 1) ifTrue: ['negate'] ifFalse: ['not'])
+                   arguments: {term}
+                   position: {op start. term end} ]
+)
+oneStepBinaryWrapper ^<[:ExprAST :{Token. ExprAST} | ExprAST]> = (
+  ^[:fst :rst | | lst = List new addFirst: fst; addAll: rst; yourself. |
+      lst reduce: [:acc :v |
+      | token = v at: 1.
+        ast = v at: 2.
+        name = token value isKindOfNumber ifTrue: [String fromRunes: {token value}]
+                                          ifFalse: [token value]. |
+      CallAST function: name arguments: {acc. ast} position: {acc start. ast end}.
+       ]
+    ]
+)
+public addExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super addExpr wrapper: oneStepBinaryWrapper
+)
+public mulExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super mulExpr wrapper: oneStepBinaryWrapper
+)
+public relExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super relExpr wrapper: oneStepBinaryWrapper
+)
+public andExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super andExpr wrapper: oneStepBinaryWrapper
+)
+public orExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super orExpr wrapper: oneStepBinaryWrapper
+)
+public whereExpr ^ <CombinatorialParser[ExprAST]> = (
+  ^super whereExpr wrapper: [:fst :rst |
+    | lst = List new addFirst: fst; addAll: rst; yourself. |
+      lst reduce: [:acc :v |
+      | token = v at: 1.
+        ast = v at: 2. |
+        WhereAST expr1: acc ident: token value expr2: ast position: {acc start. ast end}
+      ]
+  ]
+)
+public property ^ <CombinatorialParser[{Symbol. ExprAST}]> = (
+  ^super property wrapper: [:id :c :e | {id. e} ]. 
+)
+public struct ^ <CombinatorialParser[StructLiteralAST]> = (
+  ^super struct wrapper: [:l :properties :r | | ret = Map new. |
+    properties do: [:v | ret at: ((v at: 1) value) put: (v at: 2)].
+    StructLiteralAST data: ret position: {l start. r end}
+  ]
+)
+public structTypeProperty ^<CombinatorialParser[{Symbol. TypeAST}]> = (
+  ^super structTypeProperty wrapper: [:id :c :t | {id. t} ]
+)
+public structType ^<CombinatorialParser[TypeStructAST]> = (
+  ^super structType wrapper: [:l :properties :r | | ret = Map new. |
+    properties do: [:v | ret at: ((v at: 1) value) put: (v at: 2) ].
+    TypeStructAST table: ret position: {l start. r end}
+  ]
+)
+public dimension ^ <CombinatorialParser[DimensionAST]> = (
+  ^super dimension wrapper:
+		[:d <DimensionAST> :suffix <{Token. DimensionAST}> |
+		  suffix isNil 
+		    ifTrue: [d]
+		    ifFalse: [
+			| op = suffix at: 1. d2 = suffix at: 2.|
+		      DimensionSumAST of: d and: d2 position: {d start. d2 end}
+		   ]
+	     ]
+)
+public dimensionNumber ^ <CombinatorialParser[DimensionNumberAST]>  = (
+  ^super dimensionNumber wrap:
+		[:i <Token> |
+		  DimensionNumberAST number: (evaluateIntTokenValue: i value) position: {i start. i end}
+		]
+)
+public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
+  ^super dimensionVariable wrapper:
+		[:dollarSign <Token> :idToken <Token> |
+		  DimensionVariableReferenceAST named: idToken value position: {dollarSign start. idToken end}
+		]  
+)
+public dynamic ^ <CombinatorialParser[DynamicTypeAST]> = (
+  ^super dynamic wrap:
+		[:kw <Token> |
+		  DynamicTypeAST  position: {kw start. kw end}
+		]  
+)
+evaluateIntTokenValue: val ^ <Integer> = (
+  | 
+  ds <List[Integer]> = (val at: 2) collect: [:v <Integer> | v - 48]. 
+  absoluteValue <Integer> = ds reduce: [:d1 :d2 |  d1 * 10 + d2 ].
+  sign  <Integer> = (val at: 1) isNil ifTrue: [1] ifFalse: [-1].
+  |
+  ^sign * absoluteValue
+)
+evaluateFloatTokenValue: integralPart decimal: decimalPart ^<Float> = (
+  | integral = evaluateIntTokenValue: integralPart.
+    (* I'd use Number raisedTo: but that appears to just halt *)
+    decimalBase = (decimalPart collect: [:v | 10]) reduce: [:acc :v | acc * v].
+    decimal = (evaluateIntTokenValue: {nil. decimalPart}) / decimalBase. |
+  ^(integral + decimal) asFloat
+)
+public ifExpr = (
+  ^super ifExpr wrapper:
+		[:ifToken <Token> :ce <AST> :thenToken <Token> :te <AST> :elseToken <Token> :ee <AST> |
+		  | tb <BlockAST> eb  <BlockAST> |
+		   tb:: BlockAST body: te.
+		   eb:: BlockAST body: ee.
+		   CallAST function: #if  arguments: {ce. tb. eb} position: {ifToken start. ee end}
+		]
+)
+public intConst ^ <CombinatorialParser[NumAST]> = (
+  ^super intConst wrap:
+		[:i <Token> |
+		  NumAST value: (evaluateIntTokenValue: i value) position: {i start. i end}
+		]
+)
+public floatConst ^ <CombinatorialParser[NumAST]> = (
+  ^super floatConst wrapper:
+    [:integral :dot :fractional | 
+      NumAST value: (evaluateFloatTokenValue: integral value
+                                     decimal: fractional value)
+             position: {integral start. fractional end}
+    ]
+)
+public letBinding ^ <CombinatorialParser[LetAST]> = (
+  ^super letBinding wrapper:
+		[:l <Token> :id_token <Token> :eq <Token> : e <ExprAST> | 	
+		LetAST named: id_token value expression: e position: {l start. e end}
+		]
+)
+public param ^ <CombinatorialParser[ParameterAST]> = (
+  ^super param wrapper:
+		[:id_token  <Token> :colon <Token> :t <TypeAST> |
+		  ParameterAST named: id_token value type: t position: {id_token start. t end}
+		]
+)
+public parenExpr = (
+  ^super parenExpr wrapper:
+		[:lp <Token> :e <AST> :rp <Token> |
+		  e
+		]
+)
+public rerankExpr ^ <CombinatorialParser[RerankAST]> = (
+  ^super rerankExpr wrapper:
+		[:r <Token> :id_token <Token> :t <Token>  :ranks <List[NumberAST]> |
+		  RerankAST reranking:  id_token value to: (ranks collect: [:rank | rank val]) position: {r start. ranks last end}
+		]
+)
+public shape ^ <CombinatorialParser[ShapeAST]> = (
+  ^super shape wrapper:
+		[:s <ShapeAST> :suffix <{Token. Symbol | ShapeAST}> |
+		  suffix isNil 
+		     ifTrue: [s]
+		     ifFalse: [
+			| op = suffix at: 1. |
+			ShapeAppendAST shape: s to: (suffix at: 2) position: {s start. (suffix at: 2) end}
+			]
+		]
+)
+public shapeCastExpr ^ <CombinatorialParser[RerankAST]> = (
+  ^super shapeCastExpr wrapper:
+		[:c <Token> :e <ExprAST>  :t <Token>  :s <ShapeAST> |
+		  ShapeCastAST expression: e to: s position: {c start. s end}
+		]
+)
+public shapeVector ^ <CombinatorialParser[ShapeVectorAST]> = (
+  ^super shapeVector wrap:
+		[:ds <List[DimensionAST]>  | 
+		  | dims <List[DimensionAST]> |
+		  dims:: ds isNil ifTrue: [List new] ifFalse: [ds].
+		  ShapeVectorAST dimensions: ds position: {dims first start. dims last end}
+		]  
+)
+public shapeVectorElement ^ <CombinatorialParser[DimensionAST]> = (
+  ^super shapeVectorElement wrapper:
+		[:lb  <Token> :d <DimensionAST> :rb <Token> |
+		|  dim <DimensionAST> |
+		  dim:: d isNil ifTrue: [DimensionVariableAST named: newDimVarName position: {lb start. rb end}] ifFalse: [d].
+		  dim
+		]  
+)
+public tensor ^ <CombinatorialParser[TensorAST]> = (
+  ^super tensor wrapper:
+		[:lb  <Token> :es <List[ExprAST]> :rb <Token> |
+		  TensorAST expressions: es position: {lb start. rb end}
+		]  
+)
+public tensorType ^ <CombinatorialParser[TensorTypeAST]> = (
+  ^super tensorType wrapper:
+		[:s <ShapeAST> :t <TypeAST> |
+		  TensorTypeAST shape: s type: t position: {s start. t end}
+		]  
+)
+public type ^ <CombinatorialParser[TensorTypeAST]> = (
+  ^super type wrap: 
+      [:t <TypeAST> |
+	   t asTensorType
+	]
+)
+public typeId ^ <CombinatorialParser[TypeIdAST]> = (
+  ^super typeId wrap:
+		[:id_token <Token> |
+		  TypeIdAST named: id_token value position: {id_token start. id_token end}
+		]  
+)
+public typeVariable ^ <CombinatorialParser[TypeVariableReferenceAST]> = (
+  ^super typeVariable wrapper:
+		[:dollarSign <Token> :id_token <Token> |
+		  TypeVariableReferenceAST named: id_token value position: {dollarSign start. id_token end}
+		]  
+)
+public variableReference ^ <CombinatorialParser[IdentifierAST]> = (
+  ^super variableReference wrap:
+		[:id_token <Token> |
+		  IdentifierAST named: id_token value position: {id_token start. id_token end}
+		]
+)
+public boundedType ^ <CombinatorialParser[BoundedTypeAST]> = (
+  ^super boundedType wrapper:
+    [:base :lt :bound |
+       BoundedTypeAST base: base bound: bound position: {base start. bound end}
+    ]
+)
+newDimVarName ^ <String> = (
+   dimVarCounter:: dimVarCounter + 1.
+   ^'$$d', dimVarCounter printString
+)
+public program ^ <CombinatorialParser[ProgramAST]> = (
+  ^super program wrapper:
+		[:fs <List[FunctionAST | LetAST]>  : e <ExprAST> :ei | 
+		|
+		ds <List[FunctionAST | LetAST]> = nil = fs ifTrue: [List new]
+		  ifFalse: [fs].
+		start <Integer> = ds isEmpty ifTrue: [e start]
+		  ifFalse: [ds first start].
+		|
+		
+		ProgramAST declarations: ds expression: e position: {start. e end}
+		]
+)
+public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
+  ^super shapeVariable wrapper:
+		[:atSign <Token> :id <Token> |
+		  ShapeVariableReferenceAST named: id value position: {atSign start. id end}
+		]  
+)
+public function ^ <CombinatorialParser[FunctionAST]> = (
+  ^super function wrapper:
+		[:fkw <Symbol> 
+		:id_token <Token> 
+		:lp <Token> 
+		:params <List[ParamterAST]> 
+		:rp <Token> 
+		:rt <{Token. TypeAST} | Nil> 
+		:eq <Token>  
+		:body <ExprAST>  | 
+                | returnType = rt isNil ifFalse: [rt last]. |
+		FunctionAST  named: id_token value parameters: params returnType: returnType body: body position: {fkw start. body end}
+		]
+)
+public expr ^ <CombinatorialParser[ExprAST]> = (
+  ^super expr wrapper:
+		[:at <Token | Nil>  :w <WhereAST> |
+		  nil = at ifTrue: [w] ifFalse: [w isShape: true]
+		]
+)
+public declaration = (
+(* expose method publicly for tools *)
+  ^super declaration
+)
+) : (
+)
+) : (
+)

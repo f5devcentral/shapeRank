@@ -1,0 +1,48 @@
+Newspeak3
+'ShapeRank'
+class ShapeRankCLI packageUsing: manifest = (
+|
+        private ShapeRankASTs = manifest ShapeRankASTs.
+        private ShapeRankScopes = manifest ShapeRankScopes.
+        private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private CombinatorialParsing = manifest CombinatorialParsing.
+        private ShapeRankGrammar = manifest ShapeRankGrammar.
+        private ShapeRankParser = manifest ShapeRankParser.
+        private CollectionUtils = manifest CollectionUtils.
+        private Tensorflow = manifest Tensorflow.
+        private NodeAPI = manifest NodeAPI.
+|
+) (
+public main: platform <Platform> args: args = (
+	|
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+	Scopes
+	Typechecker
+	interpreter
+	utils
+	fs
+	|
+	utils:: CollectionUtils usingPlatform: platform.
+	Scopes::
+	 (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+        Typechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.
+        interpreter:: ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils.
+        Evaluator:: interpreter Evaluator.
+        parsers:: CombinatorialParsing usingPlatform: platform.
+        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+        fs:: (NodeAPI usingPlatform: platform) fs.
+        fs writeFileSync: 'hello.hash' contents:
+          ((fs readFileSync: 'hello.txt') hash asString).
+    ^(parser program parseString: (args at: 1)) eval printString out.
+)
+) : (
+)
