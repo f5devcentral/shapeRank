@@ -17,17 +17,23 @@ programming language such as Rust.
 
 Point your web browser at:
 
-[]: # (OK, where do we host this? A prebuilt version in the repo?)
-[]: # (But we don't want build artifacts in the  repo, so we need a separate site.)
+```
+https://shapeRank.github.io/demos/shapeRankIntro.html?sanpshot=ShapeRankDemo.vfuel
+```
 
 You can also download the ShapeRank application.
 
 For Mac (Intel):
 
-
+```
+https://shapeRank.github.io/downloads/ShapeRankNotebook.app.zip
+```
 
 For Windows:
 
+```
+https://shapeRank.github.io/downloads/shapeRankNotebook.zip
+```
 
 
 
