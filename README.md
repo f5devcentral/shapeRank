@@ -1,6 +1,6 @@
 # ShapeRank
 
-ShapeRank is new programming language under development at F5.  ShapeRank is designed for data analytics, machine learning and reactive programming. ShapeRank is purely functional and statically typed. All ShapeRank values are multi-dimensional streams, and all operations are automatically lifted to process such streams in parallel. This lifting originates in the APL language family, and is known as rank-polymorphism.  ShapeRank is unusual in that it extends  rank-polymorphism to streams.  
+ShapeRank is new programming language under development at F5.  ShapeRank is targeted at data analytics, machine learning and reactive programming. ShapeRank is purely functional and statically typed. All ShapeRank values are multi-dimensional streams, and all operations are automatically lifted to process such streams in parallel. This lifting originates in the APL language family, and is known as rank-polymorphism.  ShapeRank is unusual in that it extends  rank-polymorphism to streams.
 
 ## Overview
 
@@ -8,20 +8,73 @@ The current ShapeRank prototype is implemented in Newspeak.
 The goal is to produce a complete reference implementation of ShapeRank,
 in order to validate the design.
 
-Once the reference implementation is complete, we expect to build
+Once the reference implementation is complete, we intend to build
 an industrial-strength, high performance version using a systems
 programming language such as Rust.
 
 
 ## Getting Started
 
-Watch this space for updates.
+Point your web browser at:
+
+[]: # (OK, where do we host this? A prebuilt version in the repo?)
+[]: # (But we don't want build artifacts in the  repo, so we need a separate site.)
+
+You can also download the ShapeRank application.
+
+For Mac (Intel):
+
+
+
+For Windows:
+
 
 
 
 ## Installation
 
-You will need to install the Newspeak WASM virtual machine.
+If you intend to do serious development on ShapeRank, read on:
+
+Create a directory, say, ShapeRank, in the place of your choosing.
+
+mkdir ShapeRank
+
+In this directory, we will be installing the shapeRank repository:
+
+git clone https://github.com/f5devcentral/shapeRank.git
+
+We will also be installing some of its dependencies. In particular,  you will need to install the Newspeak WASM implementation. Make sure you are still in the ShapeRank
+directory.
+
+Clone the newspeak directory:
+
+git clone https://github.com/newspeaklanguage/newspeak.git
+
+and the newspeak WASM  VM
+
+git clone https://github.com/newspeaklanguage/primordialsoup.git
+
+and follow the instructions at
+https://github.com/newspeaklanguage/primordialsoup/blob/master/docs/building.md
+to build a Newspeak WASM installation.
+
+Now return to the ShapeRank directory, and then
+
+cd shapeRank
+source build.sh
+
+At this point you should have a vfuel file in ../newspeak/out/web/.
+To access it, you need to run a local web server or your own version of the electron app.
+To run a server, we recommend you open a new terminal and, in the ShapeRank/shapeRank directory, do
+
+source serve.sh
+
+You can now access the application in a web browser at:
+
+http://localhost:8080/out/web/primordialsoup.html?snapshot=ShapeRankIDE.vfuel
+
+An alternative to running a web server is to modify your ShapeRank application in place by updating its copy of ShapeRankIDE.vfuel. The script updateApp provides a template for doing so. You can refresh the application to get at the latest version you've built.
+[]: # (What apps do we want? The Notebook, the IDE, others?)
 
 ## Usage
 
@@ -29,7 +82,7 @@ You will need to install the Newspeak WASM virtual machine.
 
 ## Development
 
-If you'd like to contribute, you'll need to use the Newspeak Web IDE.
+If you'd like to contribute to thereference implementaion, you'll need to use the Newspeak Web IDE.
 
 
 ## Support
