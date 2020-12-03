@@ -17,8 +17,9 @@ cp ../primordialsoup/out/snapshots/*.vfuel out
 
 # Copy Psoup Newspeak code
 cp ../primordialsoup/newspeak/*.ns out
-# Copy required Newspeak sources
-source copyIDEDeps.sh ../newspeak out
+# Copy required Newspeak files
+cp ../newspeak/*.ns out
+cp ../newspeak/*.png out
 cp src/*.ns out
 # Make sure we have CodeMirror where we need it
 cp -R CodeMirror out
