@@ -55,7 +55,7 @@ Clone the newspeak directory:
 git clone https://github.com/newspeaklanguage/newspeak.git
 ```
 
-and the newspeak WASM  VM
+Next clone the newspeak WASM  VM
 
 ```
 git clone https://github.com/newspeaklanguage/primordialsoup.git
@@ -73,10 +73,19 @@ https://github.com/newspeaklanguage/primordialsoup/blob/master/docs/building.md
 to ensure you have all the dependencies installed. Now  edit the build.sh script so
 that its $EMSDK variable points at your emscripten installation.
 
-Now return to the ShapeRank directory, and then build this repository using build.sh.
+Now return to the ShapeRank directory:
 
 ```
 cd ../shapeRank
+```
+
+Download CodeMirror from  https://codemirror.net/.
+and place a copy at the top level of the shapeRank repository.
+
+Then build this repository using build.sh.
+
+
+```
 source build.sh
 ```
 

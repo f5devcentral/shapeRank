@@ -5,7 +5,7 @@ EMSDK=~/software/emsdk
 
 source $EMSDK/emsdk_env.sh
 
-# Assume we cloned psoup into the directory above;
+# We assume we cloned psoup into the directory above newspeak;
 # change this if your psoup repo is elsewhere
 pushd ../primordialsoup
 ./build os=emscripten arch=wasm
@@ -15,16 +15,17 @@ mkdir -p out
 cp ../primordialsoup/out/ReleaseEmscriptenWASM/primordialsoup.* out
 cp ../primordialsoup/out/snapshots/*.vfuel out
 
-# Copy Psoup sources
+# Copy Psoup Newspeak code
 cp ../primordialsoup/newspeak/*.ns out
 # Copy required Newspeak sources
-copyIDEDeps.sh ../newspeak out
+source copyIDEDeps.sh ../newspeak out
 cp src/*.ns out
-cp -R ../CodeMirror out
+# Make sure we have CodeMirror where we need it
+cp -R CodeMirror out
 
 pushd out
-../primordialsoup/out/ReleaseX64/primordialsoup \
-    ../primordialsoup/out/snapshots/WebCompiler.vfuel \
+../../primordialsoup/out/ReleaseX64/primordialsoup \
+    ../../primordialsoup/out/snapshots/WebCompiler.vfuel \
     *.ns \
     *.png \
     CodeMirror/lib/codemirror.js \
