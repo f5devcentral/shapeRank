@@ -2,11 +2,20 @@
 
 ShapeRank is new programming language under development at F5.  ShapeRank is targeted at data analytics, machine learning and reactive programming. ShapeRank is purely functional and statically typed. All ShapeRank values are multi-dimensional streams, and all operations are automatically lifted to process such streams in parallel. This lifting originates in the APL language family, and is known as rank-polymorphism.  ShapeRank is unusual in that it extends  rank-polymorphism to streams.
 
+#Note! This Site is Not Yet Ready!
+
+The instructions below don't work yet! We expect to have them ready to go by Dec. 7th.
+
+
 ## Overview
 
 The current ShapeRank prototype is implemented in [Newspeak](https://newspeaklanguage.org).
 The goal is to produce a complete reference implementation of ShapeRank,
 in order to validate the design.
+
+The reference implementation is currently under development. Key features are
+lacking or buggy. This is very early stage  development. We intend to do the bulk
+of the work in the open, in this repository.
 
 Once the reference implementation is complete, we intend to build
 an industrial-strength, high performance version using a systems
