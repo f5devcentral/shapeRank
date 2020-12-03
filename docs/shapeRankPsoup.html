@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta name="generator" content="Madoko, version 1.2.0" />
+  <meta name="viewport" content="initial-scale=1.0" />
+  <meta name="author" content="Gilad Bracha" />
+  <title>Introducing ShapeRank</title>
+  <style type="text/css"  class="link">
+  /*# sourceURL=madoko.css */
+  
+  .madoko .toc>.tocblock .tocblock .tocblock {
+    margin-left: 2.25em;
+  }
+  .madoko .toc>.tocblock .tocblock {
+    margin-left: 1.5em;
+  }
+  .madoko .toc-contents>.tocblock>.tocitem {
+    font-weight: bold;
+  }
+  .madoko .toc {
+    margin-top: 1em;
+  }
+  .madoko p.para-continue {
+    margin-bottom: 0pt;
+  }
+  .madoko .para-block+p {
+    margin-top: 0pt;
+  }
+  .madoko ul.para-block, .madoko ol.para-block {
+    margin-top: 0pt;
+    margin-bottom: 0pt;
+  }
+  .madoko ul.para-end, .madoko ol.para-end {
+    margin-bottom: 1em;
+  }
+  .madoko dl {
+    margin-left: 0em;
+  }
+  .madoko blockquote {
+    font-style: italic;
+  }
+  .madoko a.localref {
+    text-decoration: none;
+  }
+  .madoko a.localref:hover {
+    text-decoration: underline;
+  }
+  .madoko .footnotes {
+    font-size: smaller;
+    margin-top: 2em;
+  }
+  .madoko .footnotes hr {
+    width: 50%;
+    text-align: left;
+  }
+  .madoko .footnote { 
+    margin-left: 1em;
+  }
+  .madoko .footnote-before {
+    margin-left: -1em;
+    width: 1em;
+    display: inline-block;
+  }
+  .madoko .align-center, .madoko .align-center>p {
+    text-align: center !important;
+  }
+  .madoko .align-center pre {
+    text-align: left;
+  }
+  .madoko .align-center>* {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .madoko .align-left, .madoko .align-left>p {
+    text-align: left !important;
+  }
+  .madoko .align-left>* {
+    margin-left: 0pt !important;
+    margin-right: auto !important;
+  }
+  .madoko .align-right, .madoko .align-right>p {
+    text-align: right !important;
+  }
+  .madoko .align-right>* {
+    margin-left: auto !important;
+    margin-right: 0pt !important;
+  }
+  .madoko .align-center>table,
+  .madoko .align-left>table,
+  .madoko .align-right>table {
+    text-align: left !important;
+  }
+  .madoko .equation-before {
+    float: right;
+  }
+  .madoko .bibitem {
+    font-size: smaller;
+  }
+  .madoko .bibsearch {
+    font-size: x-small;
+    text-decoration:none;
+    color: black;
+    font-family: "Segoe UI Symbol", Symbola, serif;
+  }
+  .madoko .block, .madoko .figure, .madoko .bibitem, .madoko .equation, .madoko div.math {
+    margin-top: 1ex;
+    margin-bottom: 1ex;
+  }
+  .madoko .figure {
+    padding: 0.5em;
+    margin-left: 0pt;
+    margin-right: 0pt;
+  }
+  .madoko .hidden {
+    display: none;
+  }
+  .madoko .invisible {
+    visibility: hidden;
+  }
+  .madoko.preview .invisible {
+    visibility: visible;
+    opacity: 0.5;
+  }
+  .madoko code.code, .madoko span.code {
+    white-space: pre-wrap;
+  }
+  .madoko hr, hr.madoko {
+    border: none;
+    border-bottom: black solid 1px;
+    margin-bottom: 0.5ex;
+  }
+  .madoko .framed>*:first-child {
+    margin-top: 0pt;
+  }
+  .madoko .framed>*:last-child {
+    margin-bottom: 0pt;
+  }
+  .madoko ul.list-style-type-dash {
+      list-style-type: none !important;
+  }
+  .madoko ul.list-style-type-dash > li:before {
+      content: "\2013"; 
+      position: absolute;
+      margin-left: -1em; 
+  }
+  .madoko table.madoko {
+    border-collapse: collapse;
+  }
+  .madoko td, .madoko th {
+    padding: 0ex 0.5ex;
+    margin: 0pt;
+    vertical-align: top;
+  }
+  .madoko .cell-border-left {
+    border-left: 1px solid black;
+  }
+  .madoko .cell-border-right {
+    border-right: 1px solid black;
+  }
+  .madoko thead>tr:first-child>.cell-line,
+  .madoko tbody:first-child>tr:first-child>.cell-line {
+    border-top: 1px solid black;
+    border-bottom: none;
+  }
+  .madoko .cell-line, .madoko .cell-double-line {
+    border-bottom: 1px solid black;
+    border-top: none;
+  }
+  .madoko .cell-double-line {
+    border-top: 1px solid black;
+    padding-top: 1.5px !important;
+  }
+  .madoko .input-mathpre .MathJax_Display {
+    text-align: left !important;
+  }
+  .madoko div.input-mathpre {
+    text-align: left;
+    margin-top: 1.5ex;
+    margin-bottom: 1ex;
+  }
+  .madoko .math-rendering {
+    color: gray;
+  }
+  .madoko .mathdisplay {
+    text-align: center;
+  }
+  .madoko .pretty table {
+    border-collapse: collapse;
+  }
+  .madoko .pretty td {
+    padding: 0em;
+  }
+  .madoko .pretty td.empty {
+    min-width: 1.5ex;
+  }
+  .madoko .pretty td.expander {
+    width: 100em;
+  }
+  body.madoko, .madoko .serif {
+    font-family: Cambria,"Times New Roman","Liberation Serif","Times",serif;
+  }
+  .madoko .sans-serif {
+    font-family: "Calibri", "Optima", sans-serif;
+  }
+  .madoko .symbol {
+    font-family: "Segoe UI Symbol", Symbola, serif;
+  }
+  body.madoko {  
+    -webkit-text-size-adjust: 100%;       
+    text-rendering: optimizeLegibility;
+  }
+  body.madoko {
+    max-width: 88ex; 
+    margin: 1em auto;
+    padding: 0em 2em;  
+  }
+  body.preview.madoko {
+    padding: 0em 1em;
+  }
+  .madoko p {
+    text-align: justify;
+  }
+  .madoko h1, .madoko h2, .madoko h3, .madoko h4 { 
+    margin-top: 1.22em; 
+    margin-bottom: 1ex;
+  }
+  .madoko h1+p, .madoko h2+p, .madoko h3+p, .madoko h4+p, .madoko h5+p  { 
+    margin-top: 1ex;    
+  }
+  .madoko h5, .madoko h6 { 
+    margin-top: 1ex;
+    font-size: 1em;
+  }
+  .madoko h5 { 
+    margin-bottom: 0.5ex;
+  }
+  .madoko h5 + p {
+    margin-top: 0.5ex;
+  }
+  .madoko h6 { 
+    margin-bottom: 0pt;
+  }
+  .madoko h6 + p {
+    margin-top: 0pt;
+  }
+  .madoko pre, .madoko code, .madoko kbd, .madoko samp, .madoko tt, 
+  .madoko .monospace, .madoko .token-indent, .madoko .reveal pre, .madoko .reveal code, .madoko .email {
+    font-family: Consolas,"Andale Mono WT","Andale Mono",Lucida Console,Monaco,monospace,monospace;
+    font-size: 0.85em;
+  }
+  .madoko pre code, .madoko .token-indent {
+    font-size: 0.95em;
+  }
+  .madoko pre code {
+    font-family: inherit !important;
+  }
+  .madoko ol.linenums li {
+    background-color: white;
+    list-style-type: decimal;
+  }
+  .madoko .remote {
+    background-color: #F0FFF0;
+  }
+  .madoko .remote + * {
+    margin-top: 0pt;
+  }
+  @media print {
+    body.madoko {
+      font-size: 10pt;
+    }
+    @page {
+      margin: 1in 1.5in;
+    }
+  }
+  @media only screen and (max-device-width:1024px) {
+    body.madoko {
+      padding: 0em 0.5em;    
+    }
+    .madoko li {
+      text-align: left;
+    }
+  }
+  
+    </style>
+  <style>
+                  .evaluator + pre {
+                    display: none; 
+                  }
+                  .preview .evaluator + pre {
+                    display: block;
+                  }
+                  </style>
+  </head>
+<body class="madoko">
+
+<div class="body madoko" style="line-adjust:0">
+
+<div class="titleblock align-center para-block" style="text-align:center;line-adjust:0">
+<div class="titleheader align-center" style="text-align:center;line-adjust:0">
+<div class="title para-block" style="font-size:xx-large;font-weight:bold;margin-bottom:0.5ex;line-adjust:0">Introducing ShapeRank</div></div>
+<div class="authors align-center" style="text-align:center;width:80%;line-adjust:0"><table class="authorrow columns block" style="margin-top:2ex;width:100%;line-adjust:0">
+<tbody><tr><td class="author column" style="text-align:center;line-adjust:0">
+<div class="authorname" style="font-size:large;line-adjust:0">Gilad Bracha</div></td></tr></tbody></table></div></div>
+<h2 id="sec-overview" class="h1" data-heading-depth="1" style="display:block"><span class="heading-before"><span class="heading-label">1</span>.&#8194;</span>Overview</h2>
+
+<p class="p indent">ShapeRank is a language designed to support data
+analysis, machine learning and reactive programming. In ShapeRank
+everything is a tensor - a multidimensional array of data. 
+</p>
+
+<p class="p indent">Caveat: At the moment, ShapeRank is only a rudimentary
+prototype. The only scalars supported are integers and booleans.
+</p>
+
+<p class="p indent">Below is a ShapeRank evaluator. It shows a literal
+tensor. Tensors are written as comma separated lists of expressions,
+delimited by square brackets.
+</p>
+
+<div class="shapeRankEvaluator" expression = "[1, 2, 3]"> </div>
+
+<p class="p indent">
+The evaluator is live: you can edit the 
+expression and the result will recompute as you type. 
+
+
+<p class="p indent">A tensor has a shape, which is a vector of
+integers giving its dimensions. In our example, the shape of the
+tensor is [3]. A tensor has a rank, which is the length of its shape,
+so our example has rank 1. The rank and shape are displayed below the
+result, to help you become familiar with the concepts.
+</p>
+
+<p class="p indent">The contents of a tensor are a list of scalar
+values; in our case, 1, 2 and 3. Even scalars are tensors: they have
+an empty shape, and rank 0.
+</p>
+
+<div class="shapeRankEvaluator" expression = "3"> </div>
+
+<strong class="strong-star2">Note that the
+print out is a link</strong>. If you follow this link, it  takes you
+to a Newspeak object inspector which provides a gateway into the
+underlying Newspeak IDE. This allows us to interact with the ShapeRank
+implementation, which is written in Newspeak.
+</p>
+
+We can write higher ranked tensors by nesting them. The example below
+is a matrix with 3 rows and 2 columns. It has rank 2, and shape [3][2].
+
+<div class="shapeRankEvaluator" expression = "[[1, 2], [3, 4], [5, 6]]"></div>
+
+<p>Functions are automatically mapped pointwise on tensors.</p>
+
+<div class="shapeRankEvaluator" expression = "not([true, false])"></div>
+
+<p>
+This holds for functions of any arity.
+</p>
+
+<div class="shapeRankEvaluator" expression = "plus([1, 2, 3], [10, 20,
+  30])"></div>
+
+  <p> It also holds for tensors of any rank. </p>
+
+<div class="shapeRankEvaluator" expression = "plus([[1, 2], [3, 4]],
+  [[10, 20], [30, 40]])"></div>  
+
+<p>
+In mathematics, we often implicitly extend scalars to tensors when
+  operating on tensors. ShapeRank does this automatically for
+  you. Again, this true regardless of function arity, and works for
+  arbitrary ranked tensors, as long as it makes sense.
+</p>
+
+<div class="shapeRankEvaluator" expression = "times(2, [1, 10, 100])"></div>
+
+<p>
+Tensor oriented programming encourages you to think about problems
+differently. Let's take a look at a rather strange example. Computing
+all primes up to given number, say 6. We'll start by creating a
+vector of all numbers between 2 and 6 (1 isn't very intersting for
+our purposes).
+</p>
+
+<div class="shapeRankEvaluator" expression = "range(2, 6)"></div>
+
+
+<p>
+Next, we'll use the outerProduct function to compute a matrix of all
+possible products between these numbers.
+</p>
+
+<div class="shapeRankEvaluator" expression = "outerProduct(times,
+  range(2, 6), range(2, 6))"></div>
+
+<p>
+None of the numbers in the matrix are rime of course - they are all
+  the result of a multiplication of two other integers. Now, we can
+  check which elements of our original vector are contained in the
+  matrix. The result is a boolean vector
+  that corresponds to the original, with true in the position where a
+  match was found, and false otherwise. The entries that were foiund
+  cannot be prime.  The others are necessarily  prime, because we've
+  checked them against every possible product of natural numbers
+  smaller than themselves.
+</p>
+
+<div class="shapeRankEvaluator" expression = "contains(outerProduct(times,
+  range(2, 6), range(2, 6)), range(2, 6))"></div>
+  
+<p>
+It's convenient to negate our boolean vector, so that we have true in
+  positions that match prime numnbers.
+</p>
+
+<div class="shapeRankEvaluator" expression = "not(contains(outerProduct(times,
+  range(2, 6), range(2, 6)), range(2, 6)))"></div>
+
+ <p>
+We can now use the boolean vector as a mask on the original vector to
+  obtain the actual prime numbers. You can change the numbers to
+  convince yourself that this holds. THe lagorithm is cubic, but it
+  might make sense given massive parallelism.
+</p>
+
+<div class="shapeRankEvaluator" expression = "mask(not(contains(outerProduct(times,
+  range(2, 6), range(2, 6)), range(2, 6))), range(2, 6))"></div>
+
+
+<span data-line=""></span></div>
+    <script type="text/javascript">
+      function scheduleTurn(timeout) {
+        if (timeout >= 0) {
+          setTimeout(function() {
+            var timeout = Module._handle_message();
+            scheduleTurn(timeout);
+          }, timeout);
+        }
+      }
+
+      var Module = {
+        noInitialRun: true,
+        noExitRuntime: true,
+        onRuntimeInitialized: function() {
+          var url = new URLSearchParams(window.location.search);
+          var request = new XMLHttpRequest();
+          request.open("GET", url.get("snapshot"), true);
+          request.responseType = "arraybuffer";
+          request.onload = function (event) {
+            var jsBuffer = new Uint8Array(request.response);
+            var cBuffer = _malloc(jsBuffer.length);
+            writeArrayToMemory(jsBuffer, cBuffer);
+            Module._load_snapshot(cBuffer, jsBuffer.length);
+            _free(cBuffer);
+            scheduleTurn(0);
+          };
+          request.send();
+        },
+        print: function(text) {
+          if (arguments.length > 1) {
+            text = Array.prototype.slice.call(arguments).join(" ");
+          }
+          console.log(text);
+
+          var pre = document.createElement("pre");
+          pre.textContent = text;
+          pre.style.color = "black";
+          document.body.appendChild(pre);
+          window.scrollTo(0, document.body.scrollHeight);
+        },
+        printErr: function(text) {
+          if (arguments.length > 1) {
+            text = Array.prototype.slice.call(arguments).join(" ");
+          }
+          console.error(text);
+
+          var pre = document.createElement("pre");
+          pre.textContent = text;
+          pre.style.color = "red";
+          document.body.appendChild(pre);
+          window.scrollTo(0, document.body.scrollHeight);
+        },
+        setStatus: function(text) {
+          console.log(text);
+        },
+      };
+    </script>
+
+</body>
+<script type="text/javascript"
+src="CodeMirror/lib/codemirror.js"></script>
+<link rel="stylesheet" href="CodeMirror/lib/codemirror.css"></link>
+<script type="text/javascript"
+src="CodeMirror/addon/display/autorefresh.js"></script>
+
+<script async type="text/javascript" src="primordialsoup.js"></script>
+
+</html>

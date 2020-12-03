@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta name="generator" content="Madoko, version 1.2.0" />
+  <meta name="viewport" content="initial-scale=1.0" />
+  <meta name="author" content="Gilad Bracha" />
+  <title>Introducing ShapeRank</title>
+  <style type="text/css"  class="link">
+  /*# sourceURL=madoko.css */
+  
+  .madoko .toc>.tocblock .tocblock .tocblock {
+    margin-left: 2.25em;
+  }
+  .madoko .toc>.tocblock .tocblock {
+    margin-left: 1.5em;
+  }
+  .madoko .toc-contents>.tocblock>.tocitem {
+    font-weight: bold;
+  }
+  .madoko .toc {
+    margin-top: 1em;
+  }
+  .madoko p.para-continue {
+    margin-bottom: 0pt;
+  }
+  .madoko .para-block+p {
+    margin-top: 0pt;
+  }
+  .madoko ul.para-block, .madoko ol.para-block {
+    margin-top: 0pt;
+    margin-bottom: 0pt;
+  }
+  .madoko ul.para-end, .madoko ol.para-end {
+    margin-bottom: 1em;
+  }
+  .madoko dl {
+    margin-left: 0em;
+  }
+  .madoko blockquote {
+    font-style: italic;
+  }
+  .madoko a.localref {
+    text-decoration: none;
+  }
+  .madoko a.localref:hover {
+    text-decoration: underline;
+  }
+  .madoko .footnotes {
+    font-size: smaller;
+    margin-top: 2em;
+  }
+  .madoko .footnotes hr {
+    width: 50%;
+    text-align: left;
+  }
+  .madoko .footnote {
+    margin-left: 1em;
+  }
+  .madoko .footnote-before {
+    margin-left: -1em;
+    width: 1em;
+    display: inline-block;
+  }
+  .madoko .align-center, .madoko .align-center>p {
+    text-align: center !important;
+  }
+  .madoko .align-center pre {
+    text-align: left;
+  }
+  .madoko .align-center>* {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .madoko .align-left, .madoko .align-left>p {
+    text-align: left !important;
+  }
+  .madoko .align-left>* {
+    margin-left: 0pt !important;
+    margin-right: auto !important;
+  }
+  .madoko .align-right, .madoko .align-right>p {
+    text-align: right !important;
+  }
+  .madoko .align-right>* {
+    margin-left: auto !important;
+    margin-right: 0pt !important;
+  }
+  .madoko .align-center>table,
+  .madoko .align-left>table,
+  .madoko .align-right>table {
+    text-align: left !important;
+  }
+  .madoko .equation-before {
+    float: right;
+  }
+  .madoko .bibitem {
+    font-size: smaller;
+  }
+  .madoko .bibsearch {
+    font-size: x-small;
+    text-decoration:none;
+    color: black;
+    font-family: "Segoe UI Symbol", Symbola, serif;
+  }
+  .madoko .block, .madoko .figure, .madoko .bibitem, .madoko .equation, .madoko div.math {
+    margin-top: 1ex;
+    margin-bottom: 1ex;
+  }
+  .madoko .figure {
+    padding: 0.5em;
+    margin-left: 0pt;
+    margin-right: 0pt;
+  }
+  .madoko .hidden {
+    display: none;
+  }
+  .madoko .invisible {
+    visibility: hidden;
+  }
+  .madoko.preview .invisible {
+    visibility: visible;
+    opacity: 0.5;
+  }
+  .madoko code.code, .madoko span.code {
+    white-space: pre-wrap;
+  }
+  .madoko hr, hr.madoko {
+    border: none;
+    border-bottom: black solid 1px;
+    margin-bottom: 0.5ex;
+  }
+  .madoko .framed>*:first-child {
+    margin-top: 0pt;
+  }
+  .madoko .framed>*:last-child {
+    margin-bottom: 0pt;
+  }
+  .madoko ul.list-style-type-dash {
+      list-style-type: none !important;
+  }
+  .madoko ul.list-style-type-dash > li:before {
+      content: "\2013";
+      position: absolute;
+      margin-left: -1em;
+  }
+  .madoko table.madoko {
+    border-collapse: collapse;
+  }
+  .madoko td, .madoko th {
+    padding: 0ex 0.5ex;
+    margin: 0pt;
+    vertical-align: top;
+  }
+  .madoko .cell-border-left {
+    border-left: 1px solid black;
+  }
+  .madoko .cell-border-right {
+    border-right: 1px solid black;
+  }
+  .madoko thead>tr:first-child>.cell-line,
+  .madoko tbody:first-child>tr:first-child>.cell-line {
+    border-top: 1px solid black;
+    border-bottom: none;
+  }
+  .madoko .cell-line, .madoko .cell-double-line {
+    border-bottom: 1px solid black;
+    border-top: none;
+  }
+  .madoko .cell-double-line {
+    border-top: 1px solid black;
+    padding-top: 1.5px !important;
+  }
+  .madoko .input-mathpre .MathJax_Display {
+    text-align: left !important;
+  }
+  .madoko div.input-mathpre {
+    text-align: left;
+    margin-top: 1.5ex;
+    margin-bottom: 1ex;
+  }
+  .madoko .math-rendering {
+    text-align: left;
+    white-space: pre;
+    color: gray;
+  }
+  .madoko .mathdisplay {
+    text-align: center;
+  }
+  .madoko span.math-rendering {
+    display:inline-block;
+    width:8em;
+    overflow-x:auto;
+    font-size:70%;
+  }
+  .madoko span.math-rendering::-webkit-scrollbar {
+    width:4px;
+  }
+  .madoko .pretty table {
+    border-collapse: collapse;
+  }
+  .madoko .pretty td {
+    padding: 0em;
+  }
+  .madoko .pretty td.empty {
+    min-width: 1.5ex;
+  }
+  .madoko .pretty td.expander {
+    width: 100em;
+  }
+  body.madoko, .madoko .serif {
+    font-family: Cambria,"Times New Roman","Liberation Serif","Times",serif;
+  }
+  .madoko .sans-serif {
+    font-family: "Calibri", "Optima", sans-serif;
+  }
+  .madoko .symbol {
+    font-family: "Segoe UI Symbol", Symbola, serif;
+  }
+  body.madoko {
+    -webkit-text-size-adjust: 100%;       
+    text-rendering: optimizeLegibility;
+  }
+  body.madoko {
+    max-width: 88ex; 
+    margin: 1em auto;
+    padding: 0em 2em;
+  }
+  body.preview.madoko {
+    padding: 0em 1em;
+  }
+  .madoko p {
+    text-align: justify;
+  }
+  .madoko h1, .madoko h2, .madoko h3, .madoko h4 {
+    margin-top: 1.22em;
+    margin-bottom: 1ex;
+  }
+  .madoko h1+p, .madoko h2+p, .madoko h3+p, .madoko h4+p, .madoko h5+p  {
+    margin-top: 1ex;
+  }
+  .madoko h5, .madoko h6 {
+    margin-top: 1ex;
+    font-size: 1em;
+  }
+  .madoko h5 {
+    margin-bottom: 0.5ex;
+  }
+  .madoko h5 + p {
+    margin-top: 0.5ex;
+  }
+  .madoko h6 {
+    margin-bottom: 0pt;
+  }
+  .madoko h6 + p {
+    margin-top: 0pt;
+  }
+  .madoko pre, .madoko code, .madoko kbd, .madoko samp, .madoko tt,
+  .madoko .monospace, .madoko .token-indent, .madoko .reveal pre, .madoko .reveal code, .madoko .email {
+    font-family: Consolas,"Andale Mono WT","Andale Mono",Lucida Console,Monaco,monospace,monospace;
+    font-size: 0.85em;
+  }
+  .madoko pre code, .madoko .token-indent {
+    font-size: 0.95em;
+  }
+  .madoko pre code {
+    font-family: inherit !important;
+  }
+  .madoko ol.linenums li {
+    background-color: white;
+    list-style-type: decimal;
+  }
+  .madoko .remote {
+    background-color: #F0FFF0;
+  }
+  .madoko .remote + * {
+    margin-top: 0pt;
+  }
+  @media print {
+    body.madoko {
+      font-size: 10pt;
+    }
+    @page {
+      margin: 1in 1.5in;
+    }
+  }
+  @media only screen and (max-device-width:1024px) {
+    body.madoko {
+      padding: 0em 0.5em;
+    }
+    .madoko li {
+      text-align: left;
+    }
+  }
+  
+    </style>
+  <link rel="stylesheet" type="text/css" href="CodeMirror/lib/codemirror.css"  class="link">
+  <script src="scheduleTurn.js"  class="script"></script>
+  <script src="CodeMirror/lib/codemirror.js"  class="script"></script>
+  <script src="CodeMirror/addon/display/autorefresh.js"  class="script"></script>
+  <script src="primordialsoup.js"  class="script"></script>
+  
+  </head>
+<body class="madoko">
+
+<div class="body madoko" style="line-adjust:0">
+<h2 id="sec-introducing-shaperank" class="h1" data-heading-depth="1" style="display:block"><span class="heading-before"><span class="heading-label">1</span>.&#8194;</span>Introducing ShapeRank</h2>
+<p class="p noindent">ShapeRank is a language designed to support data
+analysis, machine learning and reactive programming. In ShapeRank
+everything is a tensor - a multidimensional array of data.
+</p>
+<p class="p indent">Caveat: At the moment, ShapeRank is only a rudimentary
+prototype.
+</p>
+<p class="p indent">Below is a ShapeRank evaluator. It shows a literal
+tensor. Tensors are written as comma separated lists of expressions,
+delimited by square brackets.
+</p><div class="shapeRankEvaluator" expression = "[1, 2, 3]"> </div>
+
+
+
+<p class="p noindent">The evaluator is live: you can edit the 
+expression and the result will recompute as you type. 
+</p>
+<p class="p indent">A tensor has a shape, which is a vector of
+integers giving its dimensions. In our example, the shape of the
+tensor is [3]. A tensor has a rank, which is the length of its shape,
+so our example has rank 1. The rank and shape are displayed below the
+result, to help you become familiar with the concepts.
+</p>
+<p class="p indent">The contents of a tensor are a list of scalar
+values; in our case, 1, 2 and 3. Even scalars are tensors: they have
+an empty shape, and rank 0. 
+</p>
+</p><div class="shapeRankEvaluator" expression = "3"> </div>
+
+
+
+<p class="p noindent"><strong class="strong-star2">Note that the
+print out is a link</strong>. If you follow this link, it  takes you
+to a Newspeak object inspector which provides a gateway into the
+underlying Newspeak IDE. This allows us to interact with the ShapeRank
+implementation, which is written in Newspeak.
+</p>
+<p class="p indent">We can write higher ranked tensors by nesting them. The example below
+is a matrix with 3 rows and 2 columns. It has rank 2, and 
+shape <svg  class="math-inline math-render-svg math" style="vertical-align:-0.2930em;height:1.0879em;width:2.2513em" viewBox='34.67 54.164 21.441 10.361'><desc>$[3][2]$</desc><g id='math-e30cc3'><use x='34.869' y='61.836' xlink:href='#g3-91'/><use x='37.637' y='61.836' xlink:href='#g3-51'/><use x='42.618' y='61.836' xlink:href='#g3-93'/><use x='45.385' y='61.836' xlink:href='#g3-91'/><use x='48.153' y='61.836' xlink:href='#g3-50'/><use x='53.134' y='61.836' xlink:href='#g3-93'/></g></svg>.
+</p><div class="shapeRankEvaluator" expression = "[[1, 2], [3, 4], [5, 6]]"></div>
+
+
+
+<p class="p noindent">Functions are automatically mapped pointwise on tensors
+</p><div class="shapeRankEvaluator" expression = "not [true, false]"></div>
+
+
+
+<p class="p noindent">This holds for functions of any arity.
+</p><div class="shapeRankEvaluator" 
+  expression = "[1, 2, 3] + [10, 20, 30]">
+</div>
+
+
+
+<p class="p noindent">It also holds for tensors of any rank.
+</p><div class="shapeRankEvaluator" 
+  expression = "[[1, 2], [3, 4]] + [[10, 20], [30, 40]]"
+  >
+</div>  
+
+
+
+
+<p class="p noindent">In mathematics, we often implicitly extend scalars to tensors when
+  operating on tensors. ShapeRank does this automatically for
+  you. Again, this true regardless of function arity, and works for
+  arbitrary ranked tensors, as long as it makes sense.
+</p><div class="shapeRankEvaluator" expression = "2 * [1, 10, 100]"></div>
+
+
+<p class="p noindent"><br>
+    As a simple example, consider the definition of dot product, 
+<svg  class="math-inline math-render-svg math" style="vertical-align:-0.3047em;height:1.0406em;width:4.6597em" viewBox='88.468 54.718 44.378 9.91'><desc>$\Sigma_{i = 1}^{n}a_i \cdot b_i$</desc><g id='math-9a2d64'><use x='88.667' y='61.836' xlink:href='#g3-6'/><use x='95.863' y='58.22' xlink:href='#g2-110'/><use x='95.863' y='64.429' xlink:href='#g2-105'/><use x='98.681' y='64.429' xlink:href='#g4-61'/><use x='104.797' y='64.429' xlink:href='#g4-49'/><use x='109.267' y='61.836' xlink:href='#g1-97'/><use x='114.533' y='63.33' xlink:href='#g2-105'/><use x='120.064' y='61.836' xlink:href='#g0-1'/><use x='125.045' y='61.836' xlink:href='#g1-98'/><use x='129.321' y='63.33' xlink:href='#g2-105'/></g></svg>. In a conventional programming language, one would encode 
+this formula using a loop and destructive assignment. In ShapeRank, you can write
+</p><div class="shapeRankEvaluator" expression = "reduce(+, 0, a*b)"></div>
+
+
+<p class="p noindent"><br>
+  There are two principle advantages:
+<br>
+  1. Concise, clear notation, close 
+  to the underlying math. Iteration is implicit, based on shape of the data. Therefore, there
+  are no indexing errors and no infinite loops.
+<br>
+  2. Parallelism. The notation is inherently parallel. The compiler does not need 
+  to extract parallelism through complex, slow and unreliable
+  analysis.
+</p>
+<p class="p indent">Tensor oriented programming encourages you to think about problems
+differently. Let&#39;s take a look at a rather strange example. Computing
+all primes up to given number, say 6. We&#39;ll start by creating a
+vector of all numbers between 2 and 6 (1 isn&#39;t very interesting for
+our purposes).
+</p><div class="shapeRankEvaluator" expression = "2..6"></div>
+
+
+
+<p class="p noindent">Next, we&#39;ll use the outerProduct function to compute a matrix of all
+possible products between these numbers.
+</p><div class="shapeRankEvaluator" 
+  expression = "outerProduct(*, 2..6, 2..6)">
+</div>
+
+
+
+<p class="p noindent">None of the numbers in the matrix are prime of course - they are all
+  the result of a multiplication of two other integers. Now, we can
+  check which elements of our original vector are contained in the
+  matrix. The result is a boolean vector
+  that corresponds to the original, with true in the position where a
+  match was found, and false otherwise. The entries that were found
+  cannot be prime.  The others are necessarily  prime, because we&#39;ve
+  checked them against every possible product of natural numbers
+  smaller than themselves.
+</p><div class="shapeRankEvaluator" 
+  expression = "contains(
+    outerProduct(*, 2..6, 2..6), 
+    2..6
+    )">
+</div>
+
+
+
+<p class="p noindent">It&#39;s convenient to negate our boolean vector, so that we have true in
+  positions that match prime numbers.
+</p><div class="shapeRankEvaluator" 
+  expression = "not(
+    contains(
+      outerProduct(*, 2..6, 2..6), 
+      2..6
+    )
+  )">
+</div>
+
+
+
+<p class="p noindent">We can now use the boolean vector as a mask on the original vector to
+  obtain the actual prime numbers. You can change the numbers to
+  convince yourself that this holds. The algorithm is cubic, but it
+  might make sense given massive parallelism.
+</p><div class="shapeRankEvaluator" 
+  expression = "mask(
+    not(
+      contains(
+        outerProduct(*, 2..6, 2..6), 
+        2..6
+      )
+    ), 
+    2..6
+  )">
+</div>
+
+<span data-line=""></span></div>
+<svg id='math-svg-paths' style='display:none' version='1.1' viewBox='0 0 0 0' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+<defs>
+<path id='g3-50' d='M1.265 -0.767L2.321 -1.793C3.875 -3.168 4.473 -3.706 4.473 -4.702C4.473 -5.838 3.577 -6.635 2.361 -6.635C1.235 -6.635 0.498 -5.719 0.498 -4.832C0.498 -4.274 0.996 -4.274 1.026 -4.274C1.196 -4.274 1.544 -4.394 1.544 -4.802C1.544 -5.061 1.365 -5.32 1.016 -5.32C0.936 -5.32 0.917 -5.32 0.887 -5.31C1.116 -5.958 1.654 -6.326 2.232 -6.326C3.138 -6.326 3.567 -5.519 3.567 -4.702C3.567 -3.905 3.068 -3.118 2.521 -2.501L0.608 -0.369C0.498 -0.259 0.498 -0.239 0.498 0H4.194L4.473 -1.733H4.224C4.174 -1.435 4.105 -0.996 4.005 -0.847C3.935 -0.767 3.278 -0.767 3.059 -0.767H1.265Z'/>
+<path id='g3-51' d='M2.889 -3.507C3.706 -3.776 4.284 -4.473 4.284 -5.26C4.284 -6.077 3.407 -6.635 2.451 -6.635C1.445 -6.635 0.687 -6.037 0.687 -5.28C0.687 -4.951 0.907 -4.762 1.196 -4.762C1.504 -4.762 1.704 -4.981 1.704 -5.27C1.704 -5.768 1.235 -5.768 1.086 -5.768C1.395 -6.257 2.052 -6.386 2.411 -6.386C2.819 -6.386 3.367 -6.167 3.367 -5.27C3.367 -5.151 3.347 -4.573 3.088 -4.134C2.79 -3.656 2.451 -3.626 2.202 -3.616C2.122 -3.606 1.883 -3.587 1.813 -3.587C1.733 -3.577 1.664 -3.567 1.664 -3.467C1.664 -3.357 1.733 -3.357 1.903 -3.357H2.341C3.158 -3.357 3.527 -2.68 3.527 -1.704C3.527 -0.349 2.839 -0.06 2.401 -0.06C1.973 -0.06 1.225 -0.229 0.877 -0.817C1.225 -0.767 1.534 -0.986 1.534 -1.365C1.534 -1.724 1.265 -1.923 0.976 -1.923C0.737 -1.923 0.418 -1.783 0.418 -1.345C0.418 -0.438 1.345 0.219 2.431 0.219C3.646 0.219 4.553 -0.687 4.553 -1.704C4.553 -2.521 3.925 -3.298 2.889 -3.507Z'/>
+<path id='g3-91' d='M2.54 2.491V2.092H1.574V-7.073H2.54V-7.472H1.176V2.491H2.54Z'/>
+<path id='g3-93' d='M1.584 -7.472H0.219V-7.073H1.186V2.092H0.219V2.491H1.584V-7.472Z'/>
+<path id='g1-97' d='M3.716 -3.766C3.537 -4.134 3.248 -4.403 2.8 -4.403C1.634 -4.403 0.399 -2.939 0.399 -1.484C0.399 -0.548 0.946 0.11 1.724 0.11C1.923 0.11 2.421 0.07 3.019 -0.638C3.098 -0.219 3.447 0.11 3.925 0.11C4.274 0.11 4.503 -0.12 4.663 -0.438C4.832 -0.797 4.961 -1.405 4.961 -1.425C4.961 -1.524 4.872 -1.524 4.842 -1.524C4.742 -1.524 4.732 -1.484 4.702 -1.345C4.533 -0.697 4.354 -0.11 3.945 -0.11C3.676 -0.11 3.646 -0.369 3.646 -0.568C3.646 -0.787 3.666 -0.867 3.776 -1.305C3.885 -1.724 3.905 -1.823 3.995 -2.202L4.354 -3.597C4.423 -3.875 4.423 -3.895 4.423 -3.935C4.423 -4.105 4.304 -4.204 4.134 -4.204C3.895 -4.204 3.746 -3.985 3.716 -3.766ZM3.068 -1.186C3.019 -1.006 3.019 -0.986 2.869 -0.817C2.431 -0.269 2.022 -0.11 1.743 -0.11C1.245 -0.11 1.106 -0.658 1.106 -1.046C1.106 -1.544 1.425 -2.77 1.654 -3.228C1.963 -3.816 2.411 -4.184 2.809 -4.184C3.457 -4.184 3.597 -3.367 3.597 -3.308S3.577 -3.188 3.567 -3.138L3.068 -1.186Z'/>
+<path id='g1-98' d='M2.381 -6.804C2.381 -6.814 2.381 -6.914 2.252 -6.914C2.022 -6.914 1.295 -6.834 1.036 -6.814C0.956 -6.804 0.847 -6.795 0.847 -6.615C0.847 -6.496 0.936 -6.496 1.086 -6.496C1.564 -6.496 1.584 -6.426 1.584 -6.326C1.584 -6.257 1.494 -5.918 1.445 -5.709L0.628 -2.461C0.508 -1.963 0.468 -1.803 0.468 -1.455C0.468 -0.508 0.996 0.11 1.733 0.11C2.909 0.11 4.134 -1.375 4.134 -2.809C4.134 -3.716 3.606 -4.403 2.809 -4.403C2.351 -4.403 1.943 -4.115 1.644 -3.806L2.381 -6.804ZM1.445 -3.039C1.504 -3.258 1.504 -3.278 1.594 -3.387C2.082 -4.035 2.531 -4.184 2.79 -4.184C3.148 -4.184 3.417 -3.885 3.417 -3.248C3.417 -2.66 3.088 -1.514 2.909 -1.136C2.58 -0.468 2.122 -0.11 1.733 -0.11C1.395 -0.11 1.066 -0.379 1.066 -1.116C1.066 -1.305 1.066 -1.494 1.225 -2.122L1.445 -3.039Z'/>
+<path id='g0-1' d='M1.913 -2.491C1.913 -2.78 1.674 -3.019 1.385 -3.019S0.857 -2.78 0.857 -2.491S1.096 -1.963 1.385 -1.963S1.913 -2.202 1.913 -2.491Z'/>
+<path id='g2-105' d='M2.26 -4.359C2.26 -4.47 2.176 -4.624 1.981 -4.624C1.792 -4.624 1.59 -4.442 1.59 -4.24C1.59 -4.122 1.681 -3.975 1.869 -3.975C2.071 -3.975 2.26 -4.17 2.26 -4.359ZM0.837 -0.816C0.809 -0.725 0.774 -0.642 0.774 -0.523C0.774 -0.195 1.053 0.07 1.437 0.07C2.134 0.07 2.441 -0.893 2.441 -0.997C2.441 -1.088 2.35 -1.088 2.329 -1.088C2.232 -1.088 2.225 -1.046 2.197 -0.969C2.036 -0.411 1.73 -0.126 1.458 -0.126C1.318 -0.126 1.283 -0.216 1.283 -0.37C1.283 -0.53 1.332 -0.663 1.395 -0.816C1.465 -1.004 1.541 -1.193 1.618 -1.374C1.681 -1.541 1.932 -2.176 1.96 -2.26C1.981 -2.329 2.001 -2.413 2.001 -2.483C2.001 -2.81 1.723 -3.075 1.339 -3.075C0.649 -3.075 0.328 -2.127 0.328 -2.008C0.328 -1.918 0.425 -1.918 0.446 -1.918C0.544 -1.918 0.551 -1.953 0.572 -2.029C0.753 -2.629 1.06 -2.88 1.318 -2.88C1.43 -2.88 1.492 -2.824 1.492 -2.636C1.492 -2.476 1.451 -2.371 1.276 -1.939L0.837 -0.816Z'/>
+<path id='g2-110' d='M0.851 -0.439C0.823 -0.349 0.781 -0.174 0.781 -0.153C0.781 0 0.907 0.07 1.018 0.07C1.144 0.07 1.255 -0.021 1.29 -0.084S1.381 -0.37 1.416 -0.516C1.451 -0.649 1.527 -0.969 1.569 -1.144C1.611 -1.297 1.653 -1.451 1.688 -1.611C1.764 -1.897 1.778 -1.953 1.981 -2.239C2.176 -2.518 2.504 -2.88 3.027 -2.88C3.431 -2.88 3.438 -2.525 3.438 -2.392C3.438 -1.974 3.138 -1.2 3.027 -0.907C2.95 -0.711 2.922 -0.649 2.922 -0.53C2.922 -0.16 3.229 0.07 3.585 0.07C4.282 0.07 4.589 -0.893 4.589 -0.997C4.589 -1.088 4.498 -1.088 4.477 -1.088C4.38 -1.088 4.373 -1.046 4.345 -0.969C4.184 -0.411 3.884 -0.126 3.605 -0.126C3.459 -0.126 3.431 -0.223 3.431 -0.37C3.431 -0.53 3.466 -0.621 3.592 -0.934C3.675 -1.151 3.961 -1.89 3.961 -2.28C3.961 -2.957 3.424 -3.075 3.055 -3.075C2.476 -3.075 2.085 -2.72 1.876 -2.441C1.827 -2.922 1.416 -3.075 1.13 -3.075C0.83 -3.075 0.669 -2.859 0.579 -2.699C0.425 -2.441 0.328 -2.043 0.328 -2.008C0.328 -1.918 0.425 -1.918 0.446 -1.918C0.544 -1.918 0.551 -1.939 0.6 -2.127C0.704 -2.538 0.837 -2.88 1.109 -2.88C1.29 -2.88 1.339 -2.727 1.339 -2.538C1.339 -2.406 1.276 -2.148 1.227 -1.96S1.109 -1.485 1.074 -1.332L0.851 -0.439Z'/>
+<path id='g4-49' d='M2.336 -4.435C2.336 -4.624 2.322 -4.631 2.127 -4.631C1.681 -4.191 1.046 -4.184 0.76 -4.184V-3.933C0.928 -3.933 1.388 -3.933 1.771 -4.129V-0.572C1.771 -0.342 1.771 -0.251 1.074 -0.251H0.809V0C0.934 -0.007 1.792 -0.028 2.05 -0.028C2.267 -0.028 3.145 -0.007 3.299 0V-0.251H3.034C2.336 -0.251 2.336 -0.342 2.336 -0.572V-4.435Z'/>
+<path id='g4-61' d='M5.356 -2.343C5.461 -2.343 5.621 -2.343 5.621 -2.518C5.621 -2.685 5.454 -2.685 5.363 -2.685H0.746C0.656 -2.685 0.488 -2.685 0.488 -2.518C0.488 -2.343 0.649 -2.343 0.753 -2.343H5.356ZM5.363 -0.809C5.454 -0.809 5.621 -0.809 5.621 -0.976C5.621 -1.151 5.461 -1.151 5.356 -1.151H0.753C0.649 -1.151 0.488 -1.151 0.488 -0.976C0.488 -0.809 0.656 -0.809 0.746 -0.809H5.363Z'/>
+<path id='g3-6' d='M3.706 -3.248C3.796 -3.347 3.796 -3.387 3.796 -3.407C3.796 -3.457 3.756 -3.507 3.726 -3.547L1.684 -6.496H3.985C5.669 -6.496 6.167 -6.137 6.376 -4.563H6.625L6.346 -6.804H0.817C0.578 -6.804 0.558 -6.804 0.558 -6.575L3.039 -2.969L0.667 -0.269C0.568 -0.159 0.568 -0.139 0.568 -0.11C0.568 0 0.667 0 0.817 0H6.346L6.625 -2.351H6.376C6.197 -0.687 5.519 -0.418 3.955 -0.418H1.205L3.706 -3.248Z'/>
+</defs>
+</svg>
+
+</body>
+
+</html>
