@@ -76,7 +76,7 @@ that its $EMSDK variable points at your emscripten installation.
 Now return to the ShapeRank directory, and then build this repository using build.sh.
 
 ```
-cd shapeRank
+cd ../shapeRank
 source build.sh
 ```
 
