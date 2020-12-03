@@ -31,15 +31,19 @@ Or see [a more detailed presentation](
 https://f5devcentral.github.io/shapeRank/shapeRankPreso.html?snapshot=ShapeRankDemo.vfuel#).
 
 
-You can also download the ShapeRank application.
-
-[For Mac (Intel)](https://f5devcentral.github.io/shapeRank/downloads/ShapeRankNotebook.app.zip)
-
-[For Windows](https://f5devcentral.github.io/shapeRank/downloads/shapeRankNotebook.zip)
-
 
 
 ## Installation
+
+To contribute to ShapeRank, you will want to get the ShapeRank development environment, which is a
+customized version of the Newspeak web IDE, available:
+
+[For Mac (Intel)](https://f5devcentral.github.io/shapeRank/downloads/ShapeRankWithIDE.app.zip)
+
+[For Windows](https://f5devcentral.github.io/shapeRank/downloads/shapeRankWithIDE.zip)
+
+
+
 
 If you intend to do serious development on ShapeRank, read on:
 
