@@ -25,17 +25,17 @@ programming language such as Rust.
 ## Getting Started
 
 ShapeRank runs on the web, so you can start with a [live,  interactive introduction to ShapeRank](
-https://shapeRank.github.io/demos/shapeRankIntro.html?snapshot=ShapeRankDemo.vfuel).
+https://f5devcentral.github.io/shapeRank/shapeRankIntro.html?snapshot=ShapeRankDemo.vfuel).
 
 Or see [a more detailed presentation](
-https://shapeRank.github.io/demos/shapeRankPreso.html?snapshot=ShapeRankDemo.vfuel).
+https://f5devcentral.github.io/shapeRank/shapeRankPreso.html?snapshot=ShapeRankDemo.vfuel#).
 
 
 You can also download the ShapeRank application.
 
-[For Mac (Intel)](https://shapeRank.github.io/downloads/ShapeRankNotebook.app.zip)
+[For Mac (Intel)](https://f5devcentral.github.io/shapeRank/downloads/ShapeRankNotebook.app.zip)
 
-[For Windows](https://shapeRank.github.io/downloads/shapeRankNotebook.zip)
+[For Windows](https://f5devcentral.github.io/shapeRank/downloads/shapeRankNotebook.zip)
 
 
 
