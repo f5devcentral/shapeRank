@@ -32,11 +32,12 @@ pushd out
     CodeMirror/lib/codemirror.js \
     CodeMirror/addon/display/autorefresh.js \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankWithIDE ShapeRankWithIDE.vfuel \
+    RuntimeForElectron ShapeRankWithIDE ShapeRankElectronIDE.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankDemo ShapeRankDemo.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankDemo2 ShapeRankDemo2.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankCLI ShapeRankCLI.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankWorkspaceApp ShapeRankWorkspaceApp.vfuel \
-    RuntimeWithMirrorsForPrimordialSoup ShapeRankNotebook ShapeRankNotebook.vfuel   
+    RuntimeWithMirrorsForPrimordialSoup ShapeRankNotebook ShapeRankNotebook.vfuel
     
 
 popd
