@@ -65,6 +65,7 @@ public main: platform args: args = (
     hopscotchIDE augmentIDE: ide withPlatform: platform.
     namespace:: ide namespacing Root.
 	populateNamespace: namespace.
+    (platform js global at: 'document') at: 'title' put: 'ShapeRank IDE'.
     ide launch: (ide browsing HomeSubject new)
 )
 ) : (
