@@ -2,10 +2,6 @@
 
 ShapeRank is new programming language under development at F5.  ShapeRank is targeted at data analytics, machine learning and reactive programming. ShapeRank is purely functional and statically typed. All ShapeRank values are multi-dimensional streams, and all operations are automatically lifted to process such streams in parallel. This lifting originates in the APL language family, and is known as rank-polymorphism.  ShapeRank is unusual in that it extends  rank-polymorphism to streams.
 
-# Note! This Site is Not Yet Ready!
-
-The instructions below don't work yet! We expect to have them ready to go by Dec. 7th.
-
 
 ## Overview
 
@@ -117,8 +113,6 @@ http://localhost:8080/out/web/primordialsoup.html?snapshot=ShapeRankIDE.vfuel
 
 An alternative to running a web server is to modify your ShapeRank application in place by updating its copy of ShapeRankIDE.vfuel. The script updateApp provides a template for doing so. You can refresh the application to get at the latest version you've built.
 []: # (What apps do we want? The Notebook, the IDE, others?)
-
-## Usage
 
 
 
