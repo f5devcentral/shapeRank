@@ -973,6 +973,13 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
+public class UnboundedDimensionAST position: p <{Integer. Integer}> = DimensionAST position: p (
+) (
+public isKindOfUnboundedDimensionAST ^ <Boolean> = (
+  ^true
+)
+) : (
+)
 emptyShape ^ <ShapeVectorAST> = (
   ^ShapeVectorAST dimensions: {} position: {0. 0}
 )

@@ -361,6 +361,12 @@ public declaration = (
 (* expose method publicly for tools *)
   ^super declaration
 )
+public unboundedDimension ^ <UnboundedDimensionAST> = (
+  ^super unboundedDimension wrap:
+		[:t <Token> |
+		  UnboundedDimensionAST position: {t start. t end}
+		]
+)
 ) : (
 )
 ) : (
