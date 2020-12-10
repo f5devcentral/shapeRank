@@ -11,6 +11,7 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private ShapeRankScopes = manifest ShapeRankScopes.
         private ShapeRankTypechecker = manifest ShapeRankTypechecker.
         private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private ShapeRankStreamInterpreter = manifest ShapeRankStreamInterpreter.        
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
@@ -31,6 +32,16 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private Tensorflow = manifest Tensorflow.
 |
 ) (
+public main: platform args: args = (
+    | ide namespace hopscotchPlatform |
+	hopscotchPlatform:: hopscotchRuntime using: platform.
+	ide:: hopscotchIDE ideUsingPlatform: hopscotchPlatform.
+    hopscotchIDE augmentIDE: ide withPlatform: platform.
+    namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+    (platform js global at: 'document') at: 'title' put: 'ShapeRank IDE'.
+    ide launch: (ide browsing HomeSubject new)
+)
 populateNamespace: namespace = (
 	namespace at: #ShapeRankWithIDE put: self class.
 	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
@@ -39,6 +50,7 @@ populateNamespace: namespace = (
 	namespace at: #ShapeRankScopes put: ShapeRankScopes.
 	namespace at: #ShapeRankTypechecker put: ShapeRankTypechecker.
 	namespace at: #ShapeRankInterpreter put: ShapeRankInterpreter.
+	namespace at: #ShapeRankStreamInterpreter put: ShapeRankStreamInterpreter.    
 	namespace at: #ShapeRankGrammar put: ShapeRankGrammar.
 	namespace at: #ShapeRankParser put: ShapeRankParser.
 	namespace at: #ShapeRankEmbedder put: Embedder.
@@ -57,16 +69,6 @@ populateNamespace: namespace = (
     namespace at: #CollectionUtils put: CollectionUtils.
     namespace at: #NodeAPI put: NodeAPI.
     namespace at: #Tensorflow put: Tensorflow. 
-)
-public main: platform args: args = (
-    | ide namespace hopscotchPlatform |
-	hopscotchPlatform:: hopscotchRuntime using: platform.
-	ide:: hopscotchIDE ideUsingPlatform: hopscotchPlatform.
-    hopscotchIDE augmentIDE: ide withPlatform: platform.
-    namespace:: ide namespacing Root.
-	populateNamespace: namespace.
-    (platform js global at: 'document') at: 'title' put: 'ShapeRank IDE'.
-    ide launch: (ide browsing HomeSubject new)
 )
 ) : (
 public shapeRankParserFrom: platform <Platform> manifest: manifest = (
