@@ -17,6 +17,10 @@ Once the reference implementation is complete, we intend to build
 an industrial-strength, high performance version using a systems
 programming language such as Rust.
 
+For a quick overview of the language, you can check out this talk:
+
+https://www.youtube.com/watch?v=x1FoTYnJxeY&feature=youtu.be
+
 
 ## Getting Started
 
