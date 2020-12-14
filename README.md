@@ -42,7 +42,7 @@ customized version of the Newspeak web IDE, available:
 
 [For Windows](https://f5devcentral.github.io/shapeRank/downloads/shapeRankWithIDE.zip)
 
-Note that the app's are unsigned, so you wiill need to explictly force
+Note that the app's are unsigned, so you wiill need to explicitly force
 the OS to open them the first  time.
 
 
