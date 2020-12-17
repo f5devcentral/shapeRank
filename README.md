@@ -31,98 +31,34 @@ Or see [a more detailed presentation](
 https://f5devcentral.github.io/shapeRank/shapeRankPreso.html?snapshot=ShapeRankDemo.vfuel#).
 
 
-
-
 ## Installation
 
-To contribute to ShapeRank, you will want to get the ShapeRank development environment, which is a
-customized version of the Newspeak web IDE, available:
-
-[For Mac (Intel)](https://f5devcentral.github.io/shapeRank/downloads/ShapeRankWithIDE.app.zip)
-
-[For Windows](https://f5devcentral.github.io/shapeRank/downloads/shapeRankWithIDE.zip)
-
-Note that the app's are unsigned, so you will need to explicitly force
-the OS to open them the first  time.
-
-
-If you intend to do serious development on ShapeRank, read on:
-
-Create a directory, say, ShapeRank, in the place of your choosing.
-
-```
-mkdir ShapeRank
-```
-
-In this directory, we will be installing the shapeRank repository:
+Strictly speaking, there is no installation needed, as all ShapeRank
+software runs in a web browser. If you want to go beyond the demos,
+you can clone this repository at the location of your choice:
 
 ```
 git clone https://github.com/f5devcentral/shapeRank.git
 ```
 
-We will also be installing some of its dependencies. In particular,  you will need to install the Newspeak WebAssembly (aka WASM) implementation. Make sure you are still in the ShapeRank
-directory.
+You can then load the ShapeRank sources into the [online Newspeak IDE](https://newspeaklanguage.org/samples/primordialsoup.html?snapshot=HopscotchWebIDE.vfuel).
 
-Clone the newspeak directory:
+However, if you wish to contribute to
+ShapeRank,  you will likely prefer to install the IDE locally.  See
+the next section, **Development**,  for details.
 
-```
-git clone https://github.com/newspeaklanguage/newspeak.git
-```
-
-Next clone the newspeak WASM  VM
-
-```
-git clone https://github.com/newspeaklanguage/primordialsoup.git
-```
-
-Then (very important!) switch to the extraRevs branch of primordialsoup.
-
-```
-cd primordialsoup
-git checkout extraRevs
-```
-
-and check the instructions at
-https://github.com/newspeaklanguage/primordialsoup/blob/master/docs/building.md
-to ensure you have all the dependencies installed. Now  edit the build.sh script so
-that its $EMSDK variable points at your emscripten installation.
-
-Now return to the ShapeRank directory:
-
-```
-cd ../shapeRank
-```
-
-Download CodeMirror from  https://codemirror.net/.
-and place a copy at the top level of the shapeRank repository.
-
-Then build this repository using build.sh.
-
-
-```
-source build.sh
-```
-
-At this point you should have a vfuel file in ./out.
-To access it, you need to run a local web server or your own version of the electron app.
-To run a server, we recommend you open a new terminal and, in the ShapeRank/shapeRank directory, do
-
-```
-source serve.sh
-```
-
-You can now access the application in a web browser at:
-http://localhost:8080/out/web/primordialsoup.html?snapshot=ShapeRankIDE.vfuel
-
-
-An alternative to running a web server is to modify your ShapeRank application in place by updating its copy of ShapeRankIDE.vfuel. The script updateApp provides a template for doing so. You can refresh the application to get at the latest version you've built.
-[]: # (What apps do we want? The Notebook, the IDE, others?)
-
+As the project progresses, ShapeRank specific web based  tools for
+developing and deploying new ShapeRank code should become available.
 
 
 ## Development
 
-If you'd like to contribute to the reference implementation, you'll need to use the Newspeak Web IDE.
+To contribute to ShapeRank, you will want to download the the [Newspeak web
+IDE](https://newspeaklanguage.org/downloads.html). Make sure you are
+getting the web IDE, not the old Smalltalk based version!
+
+Note that the IDE app's are unsigned, so you will need to explicitly force
+the OS to open them the first  time.
 
 
 ## Support
