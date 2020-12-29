@@ -125,6 +125,10 @@ evaluateArguments = (
 ) : (
 )
 class Frame dimensions: ds <List[Integer]> cells: cs <List[Object]> = (
+(*
+A frame, logically, is an array of cells of shape #dimensions. 
+In practice, we maintain a flat representation of the cells as one dimensional list.
+*)
 |
 	public dimensions <List[Integer]> = ds.
 	public cells <List[Object]> = cs.
