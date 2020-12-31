@@ -1,0 +1,278 @@
+Newspeak3
+'Root'
+class HyperStreams usingPlatform: p <Platform> = (
+	|
+    (* imports *)
+    private List = p collections List.
+    public HyperStream = HyperStreamFactory new.
+	|
+) (
+class AbstractHyperStream rank: r <Integer> = (
+	|
+    output <OutputPort>
+    window <List[HyperStream]>
+    public rank <Integer> = r.
+    dimensions <List[Integer | UnboundedDimension]>
+	|
+) (
+class Iterator = outer HyperStreams Iterator (
+	|
+	index <Integer> ::= 0.
+	|
+) (
+public next ^ <T> = (
+  hasNext ifTrue: [
+    index:: index + 1.
+    ^at: index
+    ].
+  Error signal: 'Attempt to access unavailable stream element' 
+)
+public hasNext ^ <Boolean> = (
+  ^(index = window size) not.
+)
+public rank ^ <Integer> = (
+  ^outer AbstractHyperStream rank
+)
+) : (
+)
+public map: f <[:T | R]>  ^ <Stream[R]> = (
+)
+public addAll: es <List[T]> = (
+  es do: [:e <T> | add: e]
+)
+public take: n <Integer> ^ <Stream[T]> = (
+)
+public isComplete  ^ <Boolean> = (
+)
+public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
+)
+public collect: f <[:T | R]>  ^ <Stream[R]> = (
+)
+public select: f <[:T | Boolean]> ^ <Stream[T]> = (
+)
+public iterator ^ <Iterator[T]> = (
+  ^Iterator new
+)
+public  asStream ^ <HyperStream> = (
+  ^self
+)
+public add: e <T> = (
+  window add: e
+)
+) : (
+fromArray: a <Array[T]> ^ <Instance> = (
+  ^self new addAll: a; isComplete: true; yourself
+)
+)
+class ConstantStream on: k  = AbstractHyperStream rank: 0 (
+	|
+	constant = k.
+	|
+) (
+class Iterator = (
+) (
+public hasNext ^ <Boolean> = (
+  ^true
+)
+public next ^ <T> = (
+  ^constant
+)
+public rank ^ <Integer> = (
+  ^0
+)
+) : (
+)
+public collect: f <[:T | R]>  ^ <Stream[R]> = (
+  ^class on: (f value: constant)
+)
+public select: f <[:T | Boolean]> ^ <Stream[T]> = (
+  (f value: constant) ifTrue: [^self] ifFalse: [^EmptyStream].
+)
+public isComplete  ^ <Boolean> = (
+  ^false (* Is this the right answer?*)
+)
+public add: e <T> = (
+  Error signal: 'Attempt to add to a constant stream'
+)
+) : (
+)
+public class BoundedHyperStream fromList: l <List[T]> rank: r <integer> = AbstractHyperStream rank: r (
+	window: l.
+) (
+public isBounded ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+public class UnboundedHyperStream iteratingOver: i <Iterator> = AbstractHyperStream rank: i rank (
+	|
+	source <Iterator> = i.
+	|
+) (
+public map: f <[:T | R]>  ^ <Stream[R]> = (
+  ^class iteratingOver: (iterator map: f)
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  ^class iteratingOver: (iterator take: n)
+)
+) : (
+)
+public class HyperStreamFactory = (
+) (
+public  iteratingOver: i <Iterator>  ^ <UnboundedHyperStream> = (
+   ^UnboundedHyperStream iteratingOver: i
+)
+public zipSynchronous: streams <List[Stream]> ^ <Stream> = (
+  ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s | s iterator]))
+)
+public replicateStream: s <S> ^ <Stream[S]> = (
+   s isScalar ifTrue: [^iteratringOver: s iterator].
+)
+repeat: s  dimension: d = (
+   d isKindOfInteger ifTrue: [| l = List new: d. | (* So many layers *)
+     1 to: d do: [:i | l add: (HyperStream iteratingOver: s iterator)].
+     ^fromList: l rank: s rank + 1.
+   ].
+   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator)
+)
+public replicate: s <S> ^ <Stream[S]> = (
+   s isScalar ifTrue: [^ConstantStream on: s].
+   ^iteratingOver: s iterator
+)
+public fromTensor: t <Tensor> ^ <BoundedHyperSteam> = (
+  ^BoundedHyperStream fromTensor: t
+)
+public fromList: l <List[T]> rank: r <Integer> ^ <BoundedHyperSteam> = (
+  ^BoundedHyperStream fromList: l rank: r
+)
+public zipReactive: streams <List[Stream]> ^ <Stream> = (
+  ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s | s iterator]))
+)
+public replicate: s dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream> = (
+   dims isEmpty ifTrue: [^replicate: s].
+   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
+)
+) : (
+)
+class MappedIterator mapping: f <[:T | R]> on: i <Iterator> =  DerivedIterator fromIterator: i (
+	|
+	function <[:T | R]> = f.
+	|
+) (
+public next ^ <R> = (
+  ^function value: iterator next
+)
+) : (
+)
+class DerivedIterator fromIterator: i <Iterator> =  Iterator (
+	|
+	iterator <Iterator>
+	|
+) (
+public hasNext ^ <Boolean> = (
+  ^iterator hasNext
+)
+public rank ^ <Integer> = (
+  ^iterator rank
+)
+) : (
+)
+class Iterator = (
+) (
+public hasNext ^ <Boolean> = (
+  ^subclassResponsibility
+)
+public next ^ <T> = (
+  ^subclassResponsibility
+)
+public map: f = (
+  ^MappedIterator mapping: f on: self
+)
+public filter: f <[:T | Boolean]>  = (
+  ^FilteredIterator filtering: f on: self
+)
+public rank ^ <Integer> = (
+  ^subclassResponsibility
+)
+) : (
+)
+class FilteredIterator mapping: f <[:T | Boolean]> on: i <Iterator> =  DerivedIterator fromIterator: i (
+	|
+	function <[:T | Boolean]> = f.
+    peek <T | Nil>
+	|
+) (
+public next ^ <T> = (
+ | result = peek. |
+ peek isNil ifTrue: [Error signal].
+ peek:: lookahead.
+  ^result
+)
+lookahead = (
+  | nextItem <T | Nil> nextIsValid <Boolean>  |
+  [iterator hasNext ifTrue: [nextIsValid:: (function value: (nextItem: iterator next))] ifFalse: [true]] whileFalse: [].
+  ^nextIsValid ifTrue: [nextItem] ifFalse: [nil].
+)
+public hasNext ^ <boolean>  = (
+   (* We're working on a stream, so even if we had nothing before, we might have something now. *)
+   ^peek isNil not or: [peek:: lookahead. peek isNil not]
+)
+) : (
+)
+class ReactiveZipIterator zipping: iters <List[Iterator[T]]> = Iterator (
+	|
+	iterators <List[Iterator]> = iters.
+	|
+) (
+public hasNext ^ <Boolean> = (
+  ^iterators anySatisfy: [:iter <Iterator[T]> | iter hasNext].
+)
+public next ^ <List[T]> = (
+  | result <List[T]> = List new: iterators size. |
+  iterators do: [:iter <iterator[T]> |
+     result add: (iter hasNext 
+       ifTrue: [iter next]
+       (* Not quite. First time? also last not defined yet *)
+       ifFalse: [iter last]
+    )
+  ].
+  ^result
+)
+public rank ^ <Integer> = (
+  ^iterators first rank
+)
+) : (
+)
+class SynchronousZipIterator zipping: iters <List[Iterator]> = Iterator (
+	|
+	iterators <List[Iterator]> = iters.
+	|
+) (
+public hasNext ^ <Boolean> = (
+  ^iterators allSatisfy: [:iter <Iterator[T]> | iter hasNext].
+)
+public next ^ <List[T]> = (
+  ^iterators collect: [:iter <Iterator[T]> | iter next ]
+)
+public rank ^ <Integer> = (
+  ^iterators first rank
+)
+) : (
+)
+class ReplicatingIterator replicating: v by: i = DerivedIterator fromIterator: i (
+	|
+	replicated = v.
+	|
+) (
+public next = (
+  iterator next.
+  v isKindOfHyperStream ifTrue: [^v iterator].
+  ^v
+)
+public rank ^ <Integer> = (
+  ^iterator rank + 1
+)
+) : (
+)
+) : (
+)

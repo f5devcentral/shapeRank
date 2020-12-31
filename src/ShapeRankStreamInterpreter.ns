@@ -1,11 +1,12 @@
 Newspeak3
 'Root'
-class ShapeRankStreamInterpreter usingPlatform: platform asts: asts collectionUtils: utils = (
+class ShapeRankStreamInterpreter usingPlatform: platform asts: asts collectionUtils: utils streams: hs = (
 (* 
 WIP on implementing the stream semantics. Need to incorporate HyperStream module: nest, imprt or inherit?
 *)
 |
 	private ASTClass <ShapeRankAST class> = asts.
+    private HyperStream <HyperStream> = hs HyperStream.
 	private Map = platform collections Map.
 	private List = platform collections List.
     private Utils = utils.
@@ -385,6 +386,12 @@ public shape ^ <ShapeAST> = (
 public hash ^ <Integer> = (
   dimensions hash bitXor: [contents hash].
 )
+public asStream ^ <HyperStream> = (
+  | subtensors <List[HyperStream]>  |
+  isScalar ifTrue: [^HyperStream replicate: self].
+  subtensors:: contents collect: [:subtensor <Tensor> | subtensor asStream].
+  ^HyperStream fromList: subtensors rank: rank
+)
 ) : (
 )
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
@@ -493,12 +500,6 @@ computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream>
 	].
   ^resultFrame asStream.  
 )
-cellsFor: fdims from: arg ^ <Stream[Object]> = (
-    (* base case: empty frame with single cell *)
-    fdims isEmpty ifTrue: [^arg].
-    (* recursively traverse first dimension of the argument, computing cells for each element *)
-    ^arg asStream collect: [:e  <Object>  |  cellsFor: fdims tail from: e]
-)
 frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
   (* unranked parameter: use entire argument as sole cell *)
   p hasRank ifFalse: [
@@ -510,8 +511,17 @@ frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
 	].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
+cellsFor: fdims from: arg ^ <Stream[Object]> = (
+    (* base case: empty frame with single cell *)
+    fdims isEmpty ifTrue: [^arg].
+    (* recursively traverse first dimension of the argument, computing cells for each element *)
+    ^arg asStream collect: [:e  <Object>  |  cellsFor: (fdims copyFrom: 2 to: fdims size) from: e]
+)
 zipFrames: l <List[Frame]> ^ <Frame> = (
-  | zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [: f <Frame> | f cells]). |
+  | 
+  dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
+  zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [: f <Frame> | f cells]). 
+  |
   ^Frame dimensions: dims cells: zippedCells.
 )
 ) : (
