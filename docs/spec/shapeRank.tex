@@ -18,18 +18,9 @@
 
 ShapeRank is a purely functional, decidable, rank-polymorphic statically typed language. It is designed for use in data analysis and machine learning. 
 
+All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either a scalar, [\ref{scalars}] or a sequence, also known as a {\em stream} [\ref{streams}], whose elements are hyperstreams. Streams may be of a known finite size, or they may be unbounded. 
+
 ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built in to the language. User defined functions may be used as arguments to these.
-
-All values in ShapeRank are hyperstreams. A {\em hyperstream} is either a scalar, or a sequence, also known as a {\em stream}, whose elements are hyperstreams. Streams may be of a known finite size, or they may be unbounded. 
-
-Every hyperstream has a {\em shape}, which is either:
-\begin{itemize}
-\item  The empty sequence, if  the hyperstream consists of a single scalar, or 
-\item a sequence whose first element is the number of elements of the hyperstream (if known) or $?$ if the hyperstream is unbounded, and
-whose remainder is given by the shape of the first element of the hyperstream; all elements of a hyperstream must have the same shape. 
-\end{itemize} 
-
-The {\em rank} of a hyperstream is the length of its shape.  All elements of a hyperstream must be of the same rank and type.
 
 The language does not permit recursion and has no explicit looping constructs. These are not needed, since all iteration is implicit, dictated by the shape of the data. As a result, a program written entirely in ShapeRank can never diverge or crash. 
 
@@ -67,6 +58,43 @@ Syntax productions are given in a form of EBNF. The name of a production is give
 
 Lexical rules are similar, but the names of lexical productions are always given in uppercase, and the left and right hand sides are separated by ::=.
 
+
+\section{Concepts}
+\label{concepts}
+
+A {\em hyperstream} consists of either a scalar, or a sequence, also known as a {\em stream}, whose elements are hyperstreams, along with 
+ zero or more {\em dimensions}, a {\em shape} and a {\em rank}. A dimension has a {\em length} (also referred to as its {\em size}), which is either an integer or \QUESTIONMARK.
+
+The shape is a vector of the lengths of the hyperstream's dimensions. The rank is the length of the shape.
+
+{\em
+The rank therefore gives the number of dimensions in the hyperstream.
+}
+
+\subsection{Scalars}
+\label{scalars}
+
+The most elementary hyperstreams are {\em scalar hyperstreams}. These include  booleans [\ref{bool}], numbers [\ref{number}], strings [\ref{string}] and  structs [\ref{structTypes}]. A scalar hyperstream consists of a single scalar value, and has zero dimensions, hence its shape is the empty sequence, $[]$. The rank of a scalar hyperstream is therefore $0$. We will often refer to scalar hyperstreams simply as scalars.
+
+\subsection{Streams}
+\label{streams}
+
+A {\em stream} is a sequence of {\em elements}.  A stream may be {\em bounded} or {\em unbounded}. A bounded stream has a known finite length; the length of an unbounded stream, is not known and is potentially infinite.
+
+A non-scalar hyperstream consists of a stream, $s$, of hyperstreams. All elements of $s$ must have a common type.  
+
+The shape of a non-scalar hyperstream is a vector whose first element is the number of elements of $s$ (if $s$ is bounded) or \QUESTIONMARK if $s$ is unbounded, and
+whose remainder is given by the shape of the elements of $s$.
+
+{\em The above implies all elements of $s$ have the same rank and common element type, and each of their dimensions is either the same or \QUESTIONMARK}
+
+
+\subsection{Reactivity and Synchronicity}
+\label{reactivityAndSynchronicity}
+
+A function is {\em reactive} if it fires whenever new data is available on any of its inputs. Otherwise it is {\em synchronous}.
+
+
 \section{Let Bindings}
 \label{letBindings}
 
@@ -85,8 +113,12 @@ The effect of $l$ is that variable $ID$ is added to the enclosing program's comp
 
 \FunctionDeclaration
 
-A function declaration defines a transformation of one or more input streams to into an output stream. A function declaration has a
-{\em function signature} which specifies the name of the function, and rank and type of each of its parameters.
+A function declaration defines a transformation of one or more input streams into an output stream. A function declaration has a
+{\em function signature} which specifies the name of the function, and the type of each of its parameters.
+
+{\em The type of a parameter will specify its element type and its shape (and therefore its rank). }
+
+If the keyword \SYNC precedes the keyword \FUNC, the function is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
 \FunctionSignature{}
 
@@ -134,7 +166,7 @@ A new scope $s$ is created, and is known as the {\em immediate scope of} $f$. Th
 The variables $p_i$ are added to $s$, with types $T_i, i \in 1..n$ respectively.
 
 Let $T_e$ be the type of $e$ in $s$. 
-It is a compile-time error if  $T_e$ does not unify [\ref{typeUnification}] with $T_r$.  It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
+It is a compile-time error if  $T_e$ is not a subtype [\ref{subtyping}] of $T_r$.  It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
 
 
 
@@ -215,7 +247,7 @@ The cells are the elements of the $h[1] \ldots [k]$ are known as the cells of of
 \subsubsection{Replication}
 \label{replication}
 
-A frame $f_0$ of shape $d_1, \ldots, d_k$ may be replicated into a larger frame, $f_r$ of shape of shape $d_1, \ldots, d_n$ for any $n$ where $n \ge k$. Each cell of $f_r$ is equal to $f_0$.
+A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger frame, $f_r$ of shape of shape $d_1, \ldots, d_n$ for any $n$ where $n \ge k$. Each cell of $f_r$ is equal to $f_0$.
 
 
 
@@ -225,7 +257,12 @@ A frame $f_0$ of shape $d_1, \ldots, d_k$ may be replicated into a larger frame,
 
 Let $c \triangleq F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c$ proceeds as follows. 
 
-Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $p_i$. Let $max\_frame \in \{i \in 1..k | f_i\}$ be a frame such that $rank(max\_frame) \ge rank(f_i), i \in 1 ..k$. Next, $f_i$ is replicated into a frame $af_i$, of shape $shape(max\_frame), i \in 1..k$. Then, let $r$ be the value of $map(zip_k(af_1, \ldots, af_k), F)$. $c$ evaluates to $r$.
+Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $p_i$. Let $max\_frame \in \{i \in 1..k | f_i\}$ be a frame such that $rank(max\_frame) \ge rank(f_i), i \in 1 ..k$. Next, $f_i$ is replicated into a frame $af_i$, of shape $shape(max\_frame), i \in 1..k$. 
+If $F$ is reactive[\ref{reactivityAndSynchronicity}], let $zip = zip_{react_k}$, otherwise let $zip = zip_{sync_k}$.
+
+{\em Still need to define map and zip functions precisely.}
+
+Then, let $r$ be the value of $map(zip(af_1, \ldots, af_k), F)$. $c$ evaluates to $r$.
 
 {\em
 Every formal parameter has an expected rank. However, arguments may be of higher rank. An argument of rank $n$ may be passed where a parameter of rank $k$ is expected, provided $n \ge k$. The argument is viewed as a frame of rank $n-k$ with cells of rank $k$. 
@@ -233,9 +270,6 @@ Every formal parameter has an expected rank. However, arguments may be of higher
 
 It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time error if $shape(f_i)$ is not a prefix of $shape(max\_frame), i \in 1..k$. 
 
-{
-So far, this is APL call semantics, more or less; the extension to streams needs to be pinned down. Specifically, the behavior of zip - synchronous, reactive or mixed.
-}
 
 \subsection{Boolean Literals}
 \label{booleanLiterals}
@@ -311,7 +345,7 @@ Let $s \triangleq \LCURLY{}p_1\COLON{} e_1\COMMA{} \ldots \COMMA{} p_n\COLON{} e
 \subsection{Dot Expressions}
 \label{dotExpressions}
 
-A {\em dot expression} provides a way to access a member of a struct [\ref{struct}] or builtin type.
+A {\em dot expression} provides a way to access a member of a struct [\ref{structTypes}] or builtin type.
 
 \DotExpression{}
 
@@ -328,7 +362,7 @@ It is a compile-time error if $T$ does not have a member named $p$.
 \subsection{Member Expressions}
 \label{memberExpression}
 
-A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{characterLiterals}, \ref{stringLiterals}, \ref{structLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
+A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{characterLiterals}, \ref{stringLiterals}, \ref{structTypesLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
 
 
 \subsection{Unary Expressions}
@@ -372,7 +406,7 @@ The expression $e_1 \theta e_2$ where $\theta$ is an additive operator, is equiv
 A {\em relational expression} is either an additive expression [\ref{additiveExpressions}] or the application of a relational operator to two relational expressions.
 A {\em relational operator} is one of the operators \EQ{}, \NEQ{}, \LT{}, \GT{}, \LTE{}, \GTE{}.
 
-The operators \EQ{}, \NEQ{}, \LT{}, \GT{}, \LTE{}, \GTE{} implement the equal, not equal,  less than, greater than,  less than or equal, greater or equal operators respectively. The \EQ{} and \LT{} operators are defined by equality and the linear orderings among values of types as given in sections \ref{bool}, \ref{char}, \ref{number}, \ref{list}, \ref{map}, \ref{struct}.
+The operators \EQ{}, \NEQ{}, \LT{}, \GT{}, \LTE{}, \GTE{} implement the equal, not equal,  less than, greater than,  less than or equal, greater or equal operators respectively. The \EQ{} and \LT{} operators are defined by equality and the linear orderings among values of types as given in sections \ref{bool}, \ref{char}, \ref{number}, \ref{list}, \ref{map}, \ref{structTypes}.
 
 Let $v_1 \ne {\tt system::nan}, v_2 \ne {\tt system::nan}$ be values. 
 
@@ -434,7 +468,7 @@ The expressions $e_i$ are evaluated, respectively, to $v_i, i \in 1..n$.
 
 The value of $s$ is a record with fields $p_i$ with values of $v_i, i \in 1..n$. 
 
-The type of $s$ is $\LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY\BANG$ [\ref{struct}], where $T_i$ is the type of $e_i, i \in 1..n$.
+The type of $s$ is $\LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY\BANG$ [\ref{structTypes}], where $T_i$ is the type of $e_i, i \in 1..n$.
 
 \subsection{Conditional}
 \label{conditional}
@@ -450,9 +484,9 @@ Evaluation of $c$ proceeds as follows:
 The expression $b$ is evaluated. 
 If $b$ evaluates to \TRUE{}, $t$ is evaluated to a value $v_t$. The value of $c$ is $v_t$. Otherwise, $e$ is evaluated to a value $v_e$. The value of $c$ is $v_e$.
 
-Let $B$ be the type of $b$, let $T$ is the type of $t$, let $E$ be the type of $e$, and let $C$ be the unification of $T$ and $E$. The type of $c$ is $C$. 
+Let $B$ be the type of $b$, let $T$ is the type of $t$, let $E$ be the type of $e$, and let $C$ be the least common supertype of $T$ and $E$. The type of $c$ is $C$. 
 
-It is a compile-time error if $B$ does not unify with \BOOL{}. It is a compile-time error if $T$ does not unify with $E$ or vice versa. 
+It is a compile-time error if $B$ is not a subtype of \BOOL{}. It is a compile-time error if $T$ is not a subtype of $E$ or vice versa. 
 
 
 \section{Types}
@@ -505,7 +539,7 @@ Tensor types describe hyperstreams. A tensor type is composed of a shape and an 
 
 
 \subsubsection{Struct Types}
-\label{struct}
+\label{structTypes}
 
 A value of a struct type is composed of named values, known as {\em fields}. The type of a struct value is determined by the names and the types of the fields that it contains.
 

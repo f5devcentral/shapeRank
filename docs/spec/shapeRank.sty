@@ -127,7 +127,7 @@ the ASCII CR character followed by the ASCII LF character
 \alt {\keyword 0} ({\keyword x} $|$ {\keyword X}) \HEX+
 }
 
-\lex{UNKNOWNDIM}{\keyword{?}}
+\lex{UNKNOWNDIM}{\QUESTIONMARK}
 
 \lex{ESCAPE}{
 	the ASCII SP character, also known as ``space''
@@ -251,6 +251,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\DIV{\keyword{/}}
 \def\MOD{\keyword{\%}}
 \def\DOLLAR{\keyword{\$}}
+\def\SYNC{\keyword{sync}}
 
 
 % Grammar Rules
@@ -277,7 +278,7 @@ the ASCII CR character followed by the ASCII LF character
 
 \bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList} \synt{TypeSigSuffix}}
 \bnf {FunctionSignatureOptionalReturn} {\VALIDENT{} \synt{ParameterList} \synt{TypeSigSuffix}?}
-\bnf {FunctionDeclaration} {\FUNC{} \synt{FunctionSignatureOptionalReturn} \BIND \synt{Expression}}
+\bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignatureOptionalReturn} \BIND \synt{Expression}}
 \bnf {LetBinding} {\LET{} \VALIDENT{} \synt{TypeSigSuffix}? \BIND{} \synt{Expression}}
 \bnf {TypeDeclaration} {\TYPE{} \TYPEIDENT{} \BIND{} \synt{TypeSig}}
 \bnf {TypeSigSuffix} {\COLON{} \synt{TypeSig}}
