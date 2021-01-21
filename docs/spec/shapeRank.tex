@@ -79,7 +79,10 @@ The most elementary hyperstreams are {\em scalar hyperstreams}. These include  b
 \subsection{Streams}
 \label{streams}
 
-A {\em stream} is a sequence of {\em elements}.  A stream may be {\em bounded} or {\em unbounded}. A bounded stream has a known finite length; the length of an unbounded stream, is not known and is potentially infinite.
+A {\em stream} is a sequence of {\em elements}.  A stream may be {\em bounded} or {\em unbounded}. A bounded stream has a fixed length, determined when the stream is created; the length of an unbounded stream varies over time. At any point in time, an unbounded stream has some number $n \gt 0$ of {\em available elements}. The number of available elements of a stream increases monotonically over time. Every stream also has a {\em dynamic size}, distinct from its statically declared length. The dynamic size is the maximum number of available elements during program execution.
+
+{\em One may think of the length of an unbounded stream as potentially infinite. In practice, no stream is infinite, as we do not anticipate ShapeRank programs surviving the death of the universe.
+}
 
 A non-scalar hyperstream consists of a stream, $s$, of hyperstreams. All elements of $s$ must have a common type.  
 
@@ -92,7 +95,7 @@ whose remainder is given by the shape of the elements of $s$.
 \subsection{Reactivity and Synchronicity}
 \label{reactivityAndSynchronicity}
 
-A function is {\em reactive} if it fires whenever new data is available on any of its inputs. Otherwise it is {\em synchronous}.
+A function is {\em reactive} if it may fire whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
 
 
 \section{Let Bindings}
@@ -242,12 +245,44 @@ In that case, the frame is a 2-vector and the cells are 3-vectors.  Alternately,
 }
 
 A hyperstream $h$, of shape $[d_1, \ldots, d_n]$ may be divided into a frame, $f_h$ of shape $[d_1, \ldots, d_k]$ and cells of shape $[d_{k+1}, , \ldots, d_n]$, for any $0 > k > n$.
-The cells are the elements of the $h[1] \ldots [k]$ are known as the cells of of $f_h$.
+The elements of the $h[1] \ldots [k]$ are known as the cells of of $f_h$.
+
+A function $g(a_1, \ldots, a_k)$ may be {\em mapped} on to a frame $f_h$, written $map(g, f_h)$, producing a new frame, $f_m$ of the same shape as $f_h$ such that for each cell $c_h$ of $f_h$, $f_m$ has a corresponding cell $c_m = g(c_{h_1}, \ldots, c_{h_k})$.
+
+\subsubsection{Zipping}
+\label{zipping}
+
+Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elements, $ i \in 1..k, k \ge 0$:
+
+ The function $zip_{sync_k}$ produces a hyperstream $h_{sync} \triangleq (h_{1_1}, \ldots, h_{k_1}), \ldots, (h_{1_n}, \ldots, h_{k_n})$ where $n = min(s_i), i \in 1..k$.
+ The number of available elements of $h_sync$ at any time is no more than $min(n_i), i \in 1..k$
+
+{\em
+Note that the $h_i$ may include both bounded and unbounded streams. If any of the $h_i$ are bounded, then the result of $zip_{sync_k}$ is bounded, and it's length is that of the shortest of the $h_i$. If all  the $h_i$ are unbounded, then $zip_{sync_k}$ is unbounded, with a dynamic size that is the smallest of the dynamic sizes of the $h_i$.
+
+Of necessity, the number of available elements of $h_sync$ at any time is no more than the
+
+An important property of $zip_{sync_k}$ is that it synchronizes its inputs.
+}
+
+The function $zip_{react_k}$  produces a hyperstream $h_{react}$, whose first element is $(h_{1_1}, \ldots, h_{k_1})$. When the number of available elements of any of $h_i$ increases, an element $(h_{1_{n_1}}, \ldots, h_{k_{n_k}})$ may be appended to $h_react$. The precise decision of when to add new elements to $h_{react}$ is up to the
+implementation, which should make a best-effort to add elements promptly.
+
+{\em
+The value of $h_{react}$ is non-deterministic. The first value is produced when all of the $h_i$ have an available value, just as with $h_sync$. From that point on, however,
+new values may be added whenever any one of the $h_i$ has a new available value. No guarantees are made as to whether such a value will be added and when. It is quite possible that some of the $h_i$ will have a new available value, while others do not. In such cases, for any $h_i$ that doesn't have a new value,  the last available value is reused.
+It is also possible that multiple new values may have become available on any or all of the $h_i$, in which case some values will be skipped.
+
+The implementation of $zip_{react_k}$ is a best-effort, subject to complex engineering trade-offs, much like garbage-collection.
+
+In an extreme case, $zip_{react_k}$ might produce a single value, but this would be an unacceptably poor implementation. Alternatively, $zip_{react_k}$ could behave just like 
+$zip{sync_k}$, and this too would be unacceptable.
+}
 
 \subsubsection{Replication}
 \label{replication}
 
-A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger frame, $f_r$ of shape of shape $d_1, \ldots, d_n$ for any $n$ where $n \ge k$. Each cell of $f_r$ is equal to $f_0$.
+A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger frame, $f_r$ of shape $[d_1, \ldots, d_n]$ for any $n$ where $n \ge k$. Each cell of $f_r$ is equal to $f_0$.
 
 
 
@@ -255,18 +290,26 @@ A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger fram
 \subsubsection{Call Evaluation}
 \label{callEvaluation}
 
+
 Let $c \triangleq F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c$ proceeds as follows. 
 
-Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $p_i$. Let $max\_frame \in \{i \in 1..k | f_i\}$ be a frame such that $rank(max\_frame) \ge rank(f_i), i \in 1 ..k$. Next, $f_i$ is replicated into a frame $af_i$, of shape $shape(max\_frame), i \in 1..k$. 
-If $F$ is reactive[\ref{reactivityAndSynchronicity}], let $zip = zip_{react_k}$, otherwise let $zip = zip_{sync_k}$.
-
-{\em Still need to define map and zip functions precisely.}
-
-Then, let $r$ be the value of $map(zip(af_1, \ldots, af_k), F)$. $c$ evaluates to $r$.
+Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $p_i$. Let $max\_frame \in \{i \in 1..k | f_i\}$ be a frame such that $rank(max\_frame) \ge rank(f_i), i \in 1 ..k$. Next, $f_i$ is replicated [\ref{replication}] into a frame $af_i$, of shape $shape(max\_frame), i \in 1..k$. 
 
 {\em
 Every formal parameter has an expected rank. However, arguments may be of higher rank. An argument of rank $n$ may be passed where a parameter of rank $k$ is expected, provided $n \ge k$. The argument is viewed as a frame of rank $n-k$ with cells of rank $k$. 
 }
+
+If $F$ is reactive[\ref{reactivityAndSynchronicity}], let $zip = zip_{react_k}$, otherwise let $zip = zip_{sync_k}$.
+
+{\em
+The use of zip serves to combine multiple arguments into one. An alternative formulation might use a $map_k$ function instead.
+However, using zip gives us a convenient place to manage reactivity.
+It is the use of the different zip functions that determine when a reactive function will fire. 
+}
+
+Let $r$ be the value of $map(F, zip(af_1, \ldots, af_k),)$. $c$ evaluates to $r$.
+
+
 
 It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time error if $shape(f_i)$ is not a prefix of $shape(max\_frame), i \in 1..k$. 
 
@@ -362,7 +405,7 @@ It is a compile-time error if $T$ does not have a member named $p$.
 \subsection{Member Expressions}
 \label{memberExpression}
 
-A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{characterLiterals}, \ref{stringLiterals}, \ref{structTypesLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
+A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{characterLiterals}, \ref{stringLiterals}, \ref{structLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
 
 
 \subsection{Unary Expressions}
@@ -469,6 +512,11 @@ The expressions $e_i$ are evaluated, respectively, to $v_i, i \in 1..n$.
 The value of $s$ is a record with fields $p_i$ with values of $v_i, i \in 1..n$. 
 
 The type of $s$ is $\LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY\BANG$ [\ref{structTypes}], where $T_i$ is the type of $e_i, i \in 1..n$.
+
+
+\subsection{Reranking}
+\label{reranking}
+
 
 \subsection{Conditional}
 \label{conditional}
