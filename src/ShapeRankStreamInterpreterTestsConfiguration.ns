@@ -1,5 +1,5 @@
 Newspeak3
-'ShapeRank'
+'Root'
 class ShapeRankStreamInterpreterTestsConfiguration packageTestsUsing: manifest = (
 |
 	private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
@@ -11,9 +11,10 @@ class ShapeRankStreamInterpreterTestsConfiguration packageTestsUsing: manifest =
 	private ShapeRankGrammar = manifest ShapeRankGrammar.
 	private ShapeRankParser = manifest ShapeRankParser.
 	private ShapeRankTestData = manifest ShapeRankTestData.
-        private CollectionUtils = manifest CollectionUtils.
-        private Tensorflow = manifest Tensorflow.
-        private NodeAPI = manifest NodeAPI.
+    private CollectionUtils = manifest CollectionUtils.
+    private Tensorflow = manifest Tensorflow.
+    private NodeAPI = manifest NodeAPI.
+    private HyperStreams = manifest HyperStreams.
 |
 ) (
 public testModulesUsingPlatform: platform minitest: minitest = (
@@ -21,7 +22,8 @@ public testModulesUsingPlatform: platform minitest: minitest = (
   utils = CollectionUtils usingPlatform: platform.
   Scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
   Typechecker = (ShapeRankTypechecker usingPlatform: platform asts: Scopes collectionUtils: utils) Typechecker.
-  Evaluator = (ShapeRankStreamInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils) Evaluator.
+  Streams = HyperStreams usingPlatform: platform.
+  Evaluator = (ShapeRankStreamInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils streams: Streams) Evaluator.
   parsers = CombinatorialParsing usingPlatform: platform.
   grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
   parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.

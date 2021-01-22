@@ -16,15 +16,15 @@
 
 \section{Introduction}
 
-ShapeRank is a purely functional, decidable, rank-polymorphic statically typed language. It is designed for use in data analysis and machine learning. 
+ShapeRank is a purely functional, decidable, rank-polymorphic statically typed language. It is designed for data analysis, reactive programming and machine learning. 
 
-All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either a scalar, [\ref{scalars}] or a sequence, also known as a {\em stream} [\ref{streams}], whose elements are hyperstreams. Streams may be of a known finite size, or they may be unbounded. 
+All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar, [\ref{scalars}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
 
 ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built in to the language. User defined functions may be used as arguments to these.
 
-The language does not permit recursion and has no explicit looping constructs. These are not needed, since all iteration is implicit, dictated by the shape of the data. As a result, a program written entirely in ShapeRank can never diverge or crash. 
+The language does not permit recursion and has no explicit looping constructs. These are not needed, since all iteration is implicit, dictated by the shape of the data. As a result, a program written in ShapeRank can never diverge or crash. 
 
-ShapeRank has no constructs to create recursive data structures, and so any data a program creates is is acyclic. Hence, reference counting is a sufficient strategy for memory reclamation.
+ShapeRank has no constructs to create recursive data structures, and so any data a program creates is acyclic. Hence, reference counting is a sufficient strategy for memory reclamation.
 
 
 
@@ -171,6 +171,50 @@ The variables $p_i$ are added to $s$, with types $T_i, i \in 1..n$ respectively.
 Let $T_e$ be the type of $e$ in $s$. 
 It is a compile-time error if  $T_e$ is not a subtype [\ref{subtyping}] of $T_r$.  It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
 
+\section{Built-in Functions}
+\label{builtinFunctions}
+
+
+\subsection{Fold}
+\label{fold}
+
+
+$fold(f: @P\$T \to{}@Q\$S \to{}@P\$T, acc: @P\$T, x:[\$d]::@R::@Q \$S): @R::@P \$T $
+
+\subsection{Hyperstream Creation}
+\label{streamCreation}
+
+Because ShapeRank prohibits recursion, it is not possible to create unbounded hyperstreams from scratch. One must obtain an unbounded hyperstream from input or by calling a function.
+However, it is possible to define bounded hyperstreams.
+
+{\em In other words, arrays.}
+
+The function:
+
+$makeTensor(dims: @S, contents: []\$T):@S \$T$
+
+Will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
+
+\subsection{Inner Product}
+\label{innerProduct}
+
+$innerProduct(a: @X:: [\$n]\$T, b: [\$n]::@Y\$S,  f: \$R \to \$R \to \$Q, g: \$T \to \$S \to \$R): @X::@Y\$Q$
+
+\subsection{OuterProduct}
+\label{outerProdcut}
+
+$outerProduct(f: @S1 \$T1 \to{} @S2 T2 \to{} @S3 \$T3, a: [d1]::@S4::@S1 \$T1, b: [d2]::@S5::@S2 \$T2): [d1]::@S4::[d2]::@S5::@S3 \$T3$
+
+
+\subsection{Reduce}
+\label{reduce}
+
+$reduce(f: @S \$T \to{} @S \$T \to{} @S \$T, acc: @S \$T, x:[]::@R::@S \$T): @R::@S \$T$
+
+\subsection{Scan}
+\label{scan}
+
+$scan(f: @S \$T \to{} @S \$T \to{} @S \$T, acc: @S \$T, x:[d]::@R::@S \$T):[d]::@R::@S \$T$
 
 
 \section{Expressions}
