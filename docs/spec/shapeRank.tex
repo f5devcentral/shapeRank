@@ -20,7 +20,7 @@ ShapeRank is a purely functional, decidable, rank-polymorphic statically typed l
 
 All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar, [\ref{scalars}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
 
-ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built in to the language. User defined functions may be used as arguments to these.
+ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built into the language [\ref{higherOrderFunctions}]. User defined functions [\ref{functions}] may be used as arguments to these.
 
 The language does not permit recursion and has no explicit looping constructs. These are not needed, since all iteration is implicit, dictated by the shape of the data. As a result, a program written in ShapeRank can never diverge or crash. 
 
@@ -135,7 +135,7 @@ A function signature has the form  $F\LPAREN{}p_1\COLON T_1\COMMA{} \ldots\COMMA
 The signature corresponds to the function type [\ref{functionTypes}] $T_1, \ldots, T_n \to T_r$.
 
 {\em
-Note that,  as described in section \ref{typeVariables}, the parameter list may implicitly declare type variables. However, the return type $T_r$ may not. If type variables are introduced, the resulting function type will of course be polymorphic. 
+Note that,  as described in section \ref{dependentTypeVariables}, the parameter list may implicitly declare type variables. However, the return type $T_r$ may not. If type variables are introduced, the resulting function type will of course be polymorphic. 
 }
 
 Processing a function signature has the following effect:
@@ -144,7 +144,7 @@ A new scope, $s_{sig}$, is introduced. The scope $s_{sig}$ is nested in the comp
 The current compile-time scope is set to $s$, and the types of the formal parameters and the return type are checked in accordance with the rules of section \ref{typeExpressions}. Then the current compile-time scope is set back to $s_m$.
 
 {\em 
-The function signature scope is intended to contain bindings for any type variables [\ref{typeVariables}] that are introduced in the parameter list.
+The function signature scope is intended to contain bindings for any type variables [\ref{dependentTypeVariables}] that are introduced in the parameter list.
 }
 
 It is a compile-time error if $p_i = p_j, i \ne j$.
@@ -174,13 +174,6 @@ It is a compile-time error if  $T_e$ is not a subtype [\ref{subtyping}] of $T_r$
 \section{Built-in Functions}
 \label{builtinFunctions}
 
-
-\subsection{Fold}
-\label{fold}
-
-
-$fold(f: @P\$T \to{}@Q\$S \to{}@P\$T, acc: @P\$T, x:[\$d]::@R::@Q \$S): @R::@P \$T $
-
 \subsection{Hyperstream Creation}
 \label{streamCreation}
 
@@ -195,26 +188,88 @@ $makeTensor(dims: @S, contents: []\$T):@S \$T$
 
 Will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
 
-\subsection{Inner Product}
+\subsection{Higher-Order Functions}
+\label{higherOrderFunctions}
+
+ShapeRank supports a number of higher-order functions. They treat their function-valued arguments as scalar streams [\ref{scalars}]. We give the signatures of these functions as we do those of normal ShapeRank functions, but extended with the notation for function types.
+
+
+\subsubsection{Fold}
+\label{fold}
+
+
+The $fold$ function takes a binary function $f$, an initial value $acc$ and a stream $x$ of rank $r \ge 1$. It then computes the rank-polymorphic call [\ref{calls}]
+$f(f( \ldots f(acc, x_1), \ldots x_{n-1}), x_n)$, where $n$ is the dynamic size of $x$.
+
+{\em It is worth emphasizing that the calls to f above are rank-polymorphic, and will therefore adapt to the dimensions of x. See the discussion of the signature of fold below.
+}
+
+{\em Note that fold only returns a result when $x$ is complete.  This raises issues wrt to the signature, and  the proposed notation that allows one to mandate bounded streams.}
+
+$fold(f: @P\$T \to{}@Q\$S \to{}@P\$T, acc: @P\$T, x:[]::@R::@Q \$S): @R::@P \$T $
+
+{\em
+The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[\$d]::@R::@Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
+}
+
+
+
+\subsubsection{Inner Product}
 \label{innerProduct}
+
+The $innerProduct$ function takes binary functions $f$ and $g$ and hyperstreams $a$ and $b$, and calls [\ref{calls}] $reduce(f, g(s_a, s_b))$ [\ref{reduce}] for all slices $s_a$ along the last dimension of  $a$ and all slices  $s_b$ along the first dimension of $b$.
+
+{\em Define slices. Define reduce w/o explicit acc parameter.}
+
+{\em Inner product can be seen as a generalization of matrix multiplication.  Given matrices $a: [m][n]$ and $b[n][p]$, their product is given by
+ $innerProduct(a, b, *, +)$
+
+}
 
 $innerProduct(a: @X:: [\$n]\$T, b: [\$n]::@Y\$S,  f: \$R \to \$R \to \$Q, g: \$T \to \$S \to \$R): @X::@Y\$Q$
 
-\subsection{OuterProduct}
-\label{outerProdcut}
+\subsubsection{OuterProduct}
+\label{outerProduct}
 
-$outerProduct(f: @S1 \$T1 \to{} @S2 T2 \to{} @S3 \$T3, a: [d1]::@S4::@S1 \$T1, b: [d2]::@S5::@S2 \$T2): [d1]::@S4::[d2]::@S5::@S3 \$T3$
+The $outerProduct$ function calls [\ref{calls}] a binary function $f$ on all applicable pairs of elements of two arguments $a$ and $b$ and aggregates the results.
+
+{\em
+The outerProduct function is similar to the concept of outer product in mathematics, but there are important differences. It explicitly abstracts over the 'product' operator, $f$, which need not be a mathematical product in any sense. And of course, it applies to hyperstreams rather than tensors.
+}
+
+$outerProduct(f: @S1 \$T1 \to{} @S2 \$T2 \to{} @S3 \$T3, a: [d1]::@S4::@S1 \$T1, b: [d2]::@S5::@S2 \$T2): [d1]::@S4::[d2]::@S5::@S3 \$T3$
+
+{\em
+The signature includes 'padding' much like that of fold above. Here, either the elements of $a$ or of $b$, or both, may have ranks that are strictly greater than what is required by $f$.
+Hence, each has its own distinct padding shape ($S4$ and $S5$ respectively).
+}
 
 
-\subsection{Reduce}
+\subsubsection{Reduce}
 \label{reduce}
+
+The $reduce$ function takes a binary function $f$, an initial value $acc$ and a stream $x$ of rank $r \ge 1$. It then computes
+$f(f( \ldots f(acc, x_1), \ldots x_{n-1}), x_n)$, where $n$ is the dynamic size of $x$.
 
 $reduce(f: @S \$T \to{} @S \$T \to{} @S \$T, acc: @S \$T, x:[]::@R::@S \$T): @R::@S \$T$
 
-\subsection{Scan}
+{\em
+Reduce works just like fold, except that we insist that both of the arguments to $f$ must have the same type. This allows us to compute the
+value in logarithmic time.
+
+The name reduce is motivated by the fact that it reduces the rank of its input $x$ by 1.
+}
+
+\subsubsection{Scan}
 \label{scan}
 
-$scan(f: @S \$T \to{} @S \$T \to{} @S \$T, acc: @S \$T, x:[d]::@R::@S \$T):[d]::@R::@S \$T$
+The $scan$ function operates like $fold$, except that it produces all of its interim results, in order, on its output stream. 
+
+{\em 
+Therefore, scan, unlike fold, is suitable for application to unbounded hyperstreams. Since scan is inherently sequential, there is no justification for a separate version analogous to reduce.
+}
+
+$scan(f: @P \$T \to{} @Q \$T \to{} @P \$T, acc: @P \$T, x:[]::@R::@Q \$T):[d]::@R::@Q \$T$
 
 
 \section{Expressions}
@@ -361,7 +416,7 @@ It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time er
 \subsection{Boolean Literals}
 \label{booleanLiterals}
 
-The identifiers \TRUE{} and \FALSE{} are predefined,  denoting the booleans true and false respectively, and have type \BOOL{} [\ref{bool}].
+The identifiers \TRUE{} and \FALSE{} are predefined,  denoting the boolean scalars true and false respectively, and have type \BOOL{} [\ref{bool}].
 
 {\bf BoolLiteral} $\rightarrow$ \TRUE{} $|$ \FALSE{}
 
@@ -375,13 +430,13 @@ Number literals are either integers literals or floating-point literals.
 \subsubsection{Integer Literals}
 \label{integerLiterals}
 
-An {\em integer literal} represents an integer.  Integer literals have type \INT{}.
+An {\em integer literal} represents an integer scalar.  Integer literals have type \INT{}.
 Integer literals can be expressed in decimal and hexadecimal systems. The prefix `0x` or `0X` indicates a hexadecimal number literal. 
 
 \subsubsection{Floating Point Literals}
 \label{floatingPointLiterals}
 
-A {\em floating-point literal} represents a floating point number conforming to the IEEE floating point standard. Floating-point literals have type \FLOAT{}.
+A {\em floating-point literal} represents a floating point number scalar conforming to the IEEE floating point standard. Floating-point literals have type \FLOAT{}.
 
 Floating-point decimals may also be expressed in scientific notation using `E` or `e`.
 
@@ -397,7 +452,7 @@ ShapeRank does not distinguish among NaN values.
 \subsection{String Literals}
 \label{stringLiterals}
 
-A {\em string literal} can be written in one of the following forms:
+A {\em string literal} denotes a string valued scalar, and can be written in one of the following forms:
 
 \StringLiteral{}
 
@@ -415,13 +470,13 @@ The type of a string literal is \STRING.
 
 \HyperstreamLiteral
 
-Hyperstream literals denote hyperstreams of known size. 
+Hyperstream literals denote hyperstreams [\ref{hyperstreams}] of fixed length. 
 
 
 \subsection{Struct Literals}
 \label{structLiterals}
 
-A {\em struct literal} defines a record of named fields.
+A {\em struct literal} defines a record scalar with named fields.
 
 \StructLiteral{}
 \Property{}
@@ -599,7 +654,7 @@ ShapeRank has a structural type system. Compatibility and equivalence of types i
   \subsubsection{Type Substitution}
   \label{typeSubstitution}
   
-  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{typeVariables}] to types, shapes and dimensions respectively. We write $[\DOLLAR{}X_1 \to T_1, \ldots\, \DOLLAR{}X_n \to T_n]$ to denote the substitution that maps $\DOLLAR{}X_i$ to $T_i, i \in 1..n$. A substitution $[\DOLLAR{}X_1 \to T_1, \ldots, \DOLLAR{}X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each occurrence of $\DOLLAR{}X_i$ in $T$ is replaced by $T_i ,\in 1..n$.
+  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{dependentTypeVariables}] to types, shapes and dimensions respectively. We write $[\DOLLAR{}X_1 \to T_1, \ldots\, \DOLLAR{}X_n \to T_n]$ to denote the substitution that maps $\DOLLAR{}X_i$ to $T_i, i \in 1..n$. A substitution $[\DOLLAR{}X_1 \to T_1, \ldots, \DOLLAR{}X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each occurrence of $\DOLLAR{}X_i$ in $T$ is replaced by $T_i ,\in 1..n$.
   
   {\em 
   In our setting, only type schemas bind type , shape and dimension variables, and we only perform substitution on types, shapes and dimensions, so capture is not an issue.
@@ -624,10 +679,28 @@ The predefined type \BOOL{} contains the values true and false.  A boolean value
 
 The predefined type \STRING{} consists of the set of all lists [\ref{list}] whose elements are Unicode code points. Equality and ordering of code points are defined by the Unicode standard. 
 
-\subsubsection{Tensor Types}
-\label{tensorTypes}
+\subsubsection{Hyperstream Types}
+\label{hyperstreamTypes}
 
-Tensor types describe hyperstreams. A tensor type is composed of a shape and an element type. The shape is either a list of dimensions, a shape variable, or a shape append. The shape may be omitted, in which case it defaults to $[]$, the empty shape. The tensor type $S$ $T$ denotes the set of hyperstreams of shape $S$ with elements of type $T$.
+Hyperstream types describe hyperstreams. A hyperstream type is composed of a shape descriptor and an element type. The shape may be omitted, in which case it defaults to $[]$, the empty shape. The hyperstream type $S$ $T$ denotes the set of hyperstreams of shape $S$ with elements of type $T$.
+
+\paragraph{Shape Descriptors}
+ A shape descriptor denotes a shape vector. It takes one of the following forms:
+ \begin{itemize}
+ \item  A list $[d_1] \ldots [d_n]$, denoting the shape $[d_1, \ldots, d_n]$ where $[d_i], i \in 1..n$ are dimension descriptors.
+ \item A shape variable [\ref{dependentTypeVariables}].
+ \item A shape append, of the form $s_1 :: s_2$, where $s_1, s_2$ are shapes, denoting the concatenation of the shape vectors denoted by $s1$ and $s_2$. 
+ \end{itemize}
+ 
+\paragraph{Dimension Descriptors}
+A dimension descriptor is has the form $[d]$ where $d$ is one of:
+\begin{itemize}
+\item An integer literal $n$ [\ref{integerLiterals}]. This indicates the size of the described dimension is the value of $n$.
+\item An optional dimension variable $v$ [\ref{dependentTypeVariables}]. This indicates the size of the described dimension is the value of $v$.
+If $v$ is omitted, we assume a fresh dimension variable was specified.
+\item  \QUESTIONMARK. This indicates the described dimension's size is unbounded.
+ \end{itemize}
+
 
 
 \subsubsection{Struct Types}
@@ -656,7 +729,7 @@ Let $i \triangleq T$. If $t$ is the type bound to $T$ in the current compile-tim
 It is a compile-time error if $T$ does not denote a type in the current compile-time scope.
 
 \subsubsection{Dependent Type Variables}
-\label{typeVariables}
+\label{dependentTypeVariables}
 
 A {\em dependent type variable} is either a {\em type variable}, a {\em shape variable} or a {\em dimension variable}. Dependent type variables may abstract over types, shapes and dimensions in the context of a type or function [\ref{functions}] declaration. Type variables abstract over types. Shape variables abstract over the shapes of types. Dimension variables are used both to abstract over the dimensions in a shape, and over integer values, which are typically used as dimensions.
 
