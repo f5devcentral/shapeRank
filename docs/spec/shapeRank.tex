@@ -174,6 +174,7 @@ It is a compile-time error if  $T_e$ is not a subtype [\ref{subtyping}] of $T_r$
 \section{Built-in Functions}
 \label{builtinFunctions}
 
+
 \subsection{Hyperstream Creation}
 \label{streamCreation}
 
@@ -182,11 +183,8 @@ However, it is possible to define bounded hyperstreams.
 
 {\em In other words, arrays.}
 
-The function:
-
-$makeTensor(dims: @S, contents: []\$T):@S \$T$
-
-Will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
+The function $makeTensor(dims: \ATSIGN{}S, contents: []\DOLLAR{}T):\ATSIGN{}S \DOLLAR{}T$
+will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
 
 \subsection{Higher-Order Functions}
 \label{higherOrderFunctions}
@@ -198,18 +196,18 @@ ShapeRank supports a number of higher-order functions. They treat their function
 \label{fold}
 
 
-The $fold$ function takes a binary function $f$, an initial value $acc$ and a stream $x$ of rank $r \ge 1$. It then computes the rank-polymorphic call [\ref{calls}]
-$f(f( \ldots f(acc, x_1), \ldots x_{n-1}), x_n)$, where $n$ is the dynamic size of $x$.
+The $fold$ function takes a binary function $f$, an initial value $acc$ and a bounded stream $x$ of rank $r \ge 1$ and length $\DOLLAR{}d$. It then computes the rank-polymorphic call [\ref{calls}]
+$f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size of $x$.
 
 {\em It is worth emphasizing that the calls to f above are rank-polymorphic, and will therefore adapt to the dimensions of x. See the discussion of the signature of fold below.
 }
 
-{\em Note that fold only returns a result when $x$ is complete.  This raises issues wrt to the signature, and  the proposed notation that allows one to mandate bounded streams.}
+{\em Note that fold only returns a result when $x$ is completed, which is why it is restricted to bounded streams.}
 
-$fold(f: @P\$T \to{}@Q\$S \to{}@P\$T, acc: @P\$T, x:[]::@R::@Q \$S): @R::@P \$T $
+$fold(f: \ATSIGN{}P\DOLLAR{}T \to{}\ATSIGN{}Q\DOLLAR{}S \to{}\ATSIGN{}P\DOLLAR{}T, acc: \ATSIGN{}P\DOLLAR{}T, x:[\DOLLAR{}d\BANG]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}S): \ATSIGN{}R::\ATSIGN{}P \DOLLAR{}T $
 
 {\em
-The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[\$d]::@R::@Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
+The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[\DOLLAR{}d]::\ATSIGN{}R::\ATSIGN{}Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
 }
 
 
@@ -226,7 +224,7 @@ The $innerProduct$ function takes binary functions $f$ and $g$ and hyperstreams 
 
 }
 
-$innerProduct(a: @X:: [\$n]\$T, b: [\$n]::@Y\$S,  f: \$R \to \$R \to \$Q, g: \$T \to \$S \to \$R): @X::@Y\$Q$
+$innerProduct(a: \ATSIGN{}X:: [\DOLLAR{}n]\DOLLAR{}T, b: [\DOLLAR{}n]::\ATSIGN{}Y\DOLLAR{}S,  f: \DOLLAR{}R \to \DOLLAR{}R \to \DOLLAR{}Q, g: \DOLLAR{}T \to \DOLLAR{}S \to \DOLLAR{}R): \ATSIGN{}X::\ATSIGN{}Y\DOLLAR{}Q$
 
 \subsubsection{OuterProduct}
 \label{outerProduct}
@@ -237,21 +235,21 @@ The $outerProduct$ function calls [\ref{calls}] a binary function $f$ on all app
 The outerProduct function is similar to the concept of outer product in mathematics, but there are important differences. It explicitly abstracts over the 'product' operator, $f$, which need not be a mathematical product in any sense. And of course, it applies to hyperstreams rather than tensors.
 }
 
-$outerProduct(f: @S1 \$T1 \to{} @S2 \$T2 \to{} @S3 \$T3, a: [d1]::@S4::@S1 \$T1, b: [d2]::@S5::@S2 \$T2): [d1]::@S4::[d2]::@S5::@S3 \$T3$
+$outerProduct(f: \ATSIGN{}S_1 \DOLLAR{}T_1 \to{} \ATSIGN{}S_2 \DOLLAR{}T_2 \to{} \ATSIGN{}S_3 \DOLLAR{}T_3, a: [d_1]::\ATSIGN{}S_4::\ATSIGN{}S_1 \DOLLAR{}T_1, b: [d_2]::\ATSIGN{}S_5::\ATSIGN{}S_2 \DOLLAR{}T_2): [d_1]::\ATSIGN{}S_4::[d_2]::\ATSIGN{}S_5::\ATSIGN{}S_3 \DOLLAR{}T_3$
 
 {\em
 The signature includes 'padding' much like that of fold above. Here, either the elements of $a$ or of $b$, or both, may have ranks that are strictly greater than what is required by $f$.
-Hence, each has its own distinct padding shape ($S4$ and $S5$ respectively).
+Hence, each has its own distinct padding shape ($S_4$ and $S_5$ respectively).
 }
 
 
 \subsubsection{Reduce}
 \label{reduce}
 
-The $reduce$ function takes a binary function $f$, an initial value $acc$ and a stream $x$ of rank $r \ge 1$. It then computes
-$f(f( \ldots f(acc, x_1), \ldots x_{n-1}), x_n)$, where $n$ is the dynamic size of $x$.
+The $reduce$ function takes a binary function $f$, an initial value $acc$ and a bounded stream $x$ of rank $r \ge 1$. It then computes
+$f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size of $x$.
 
-$reduce(f: @S \$T \to{} @S \$T \to{} @S \$T, acc: @S \$T, x:[]::@R::@S \$T): @R::@S \$T$
+$reduce(f: \ATSIGN{}S \DOLLAR{}T \to{} \ATSIGN{}S \DOLLAR{}T \to{} \ATSIGN{}S \DOLLAR{}T, acc: \ATSIGN{}S \DOLLAR{}T, x:[\DOLLAR{}d\BANG]::\ATSIGN{}R::\ATSIGN{}S \DOLLAR{}T): \ATSIGN{}R::\ATSIGN{}S \DOLLAR{}T$
 
 {\em
 Reduce works just like fold, except that we insist that both of the arguments to $f$ must have the same type. This allows us to compute the
@@ -269,7 +267,7 @@ The $scan$ function operates like $fold$, except that it produces all of its int
 Therefore, scan, unlike fold, is suitable for application to unbounded hyperstreams. Since scan is inherently sequential, there is no justification for a separate version analogous to reduce.
 }
 
-$scan(f: @P \$T \to{} @Q \$T \to{} @P \$T, acc: @P \$T, x:[]::@R::@Q \$T):[d]::@R::@Q \$T$
+$scan(f: \ATSIGN{}P \DOLLAR{}T \to{} \ATSIGN{}Q \DOLLAR{}T \to{} \ATSIGN{}P \DOLLAR{}T, acc: \ATSIGN{}P \DOLLAR{}T, x:[]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}T):[d]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}T$
 
 
 \section{Expressions}
@@ -504,7 +502,7 @@ It is a compile-time error if $T$ does not have a member named $p$.
 \subsection{Member Expressions}
 \label{memberExpression}
 
-A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{characterLiterals}, \ref{stringLiterals}, \ref{structLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
+A {\em member expression} is either an identifier expression [\ref{identifierExpressions}], a parenthesized expression [\ref{parenthesizedExpressions}], a function call [\ref{calls}], a literal ([\ref{booleanLiterals}, \ref{numberLiterals}, \ref{stringLiterals}, \ref{structLiterals}], \ref{hyperstreamLiterals}), or a dot expression [\ref{dotExpressions}]]. It serves exclusively as a syntactic grouping.
 
 
 \subsection{Unary Expressions}
@@ -534,13 +532,13 @@ The expression $e_1 \theta e_2$ where $\theta\LPAREN{}p_1\COLON{} T \LT: \NUMBER
 \label{additiveExpressions}
 
 An {\em additive expression} is either a multiplicative expression [\ref{multiplicativeExpressions}] or the application of an additive operator to two additive expressions.
-An {\em additive operator} is one of the operators \PLUS{}, \MINUS{} and \CONCAT{}. The \PLUS{} and \MINUS{} operators implement IEEE double addition and subtraction, respectively. The \CONCAT{} operator implements list concatenation.
+An {\em additive operator} is one of the operators \PLUS{}, and \MINUS{}. The \PLUS{} and \MINUS{} operators implement IEEE double addition and subtraction, respectively. 
 
 \AdditiveExpression{}
 \AdditiveOp{}
 
 
-The expression $e_1 \theta e_2$ where $\theta$ is an additive operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$, where the signature of $\theta$ is $\theta\LPAREN{}T \LT: \NUMBER\COMMA{}T\RPAREN\COLON{} T$ if  $\theta = \PLUS{}$ or  $\theta = \MINUS{}$, or  $\theta\LPAREN{}\LBRACK\DOLLAR{}T\RBRACK\COMMA{}\LBRACK\DOLLAR{}T\RBRACK\RPAREN\COLON\LBRACK\DOLLAR{}T\RBRACK$ otherwise.
+The expression $e_1 \theta e_2$ where $\theta$ is an additive operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$, where the signature of $\theta$ is $\theta\LPAREN{}T \LT: \NUMBER\COMMA{}T\RPAREN\COLON{} T$.
 
 \subsection{Relational Expressions}
 \label{relationalExpressions}
@@ -550,7 +548,7 @@ A {\em relational operator} is one of the operators \EQ{}, \NEQ{}, \LT{}, \GT{},
 
 The operators \EQ{}, \NEQ{}, \LT{}, \GT{}, \LTE{}, \GTE{} implement the equal, not equal,  less than, greater than,  less than or equal, greater or equal operators respectively. The \EQ{} and \LT{} operators are defined by equality and the linear orderings among values of types as given in sections \ref{bool}, \ref{number}, \ref{structTypes}.
 
-Let $v_1 \ne {\tt system::nan}, v_2 \ne {\tt system::nan}$ be values. 
+Let $v_1 \ne {\tt system::nan}, v_2 \ne {\tt system::nan}$ be scalar values. 
 
 $v_1 \NEQ{} v2$ iff it is not the case that $v_1 = v_2$.
 
@@ -604,19 +602,6 @@ Note that logical or is not commutative.
 }
 
 
-Evaluation of $s$ proceeds as follows:
-
-The expressions $e_i$ are evaluated, respectively, to $v_i, i \in 1..n$. 
-
-The value of $s$ is a record with fields $p_i$ with values of $v_i, i \in 1..n$. 
-
-The type of $s$ is $\LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY\BANG$ [\ref{structTypes}], where $T_i$ is the type of $e_i, i \in 1..n$.
-
-
-\subsection{Reranking}
-\label{reranking}
-
-
 \subsection{Conditional}
 \label{conditional}
 
@@ -634,6 +619,48 @@ If $b$ evaluates to \TRUE{}, $t$ is evaluated to a value $v_t$. The value of $c$
 Let $B$ be the type of $b$, let $T$ is the type of $t$, let $E$ be the type of $e$, and let $C$ be the least common supertype of $T$ and $E$. The type of $c$ is $C$. 
 
 It is a compile-time error if $B$ is not a subtype of \BOOL{}. It is a compile-time error if $T$ is not a subtype of $E$ or vice versa. 
+
+\subsection{Reranking}
+\label{reranking}
+
+{\em
+Rerank is not a proper declaration, because it does not introduce a name. 
+}
+
+A {\em rerank expression} takes an existing function and produces a new one, whose parameters differ in rank but is otherwise the same.
+
+Let $f$ be a function with signature $f(p_1: S_1 T_1, \ldots, p_n: S_n T_n)$ and let $r_i = rank(S_i), i \in 1..n$. Then
+
+$ \RERANK{}$ $f$  $\TO{}$ $r_1, \ldots, r_n$ evaluates to a function with body $f(a_1, \ldots, a_n)$ and signature 
+$x(a_1: [d_{11}]\ldots [d_{1{r_1}}]), \ldots, a_n: [d_{n1}]\ldots [d_{n{r_n}}]))$, where $x$ is name unique in the program, and the $d_{ij}$ are fresh dimension variables, which are not necessarily distinct from each other.
+
+{\em
+The precise bindings of the $d_{ij}$ are determined such that they respect the constraints imposed by the body of $x$.
+
+For example:
+
+\RERANK{} * \TO{} 1, 1
+
+produces
+
+$*_{[1,1]}(a: [\DOLLAR{}d_1] Num, b: [\DOLLAR{}d_1] Num) = a * b$
+
+Here, the fresh type variable is shared across both parameters. In contrast, given  $f(a: T, b: [\DOLLAR{}d] T)$
+
+\RERANK{} f \TO{} 2, 1
+
+ produces
+
+$f_{[2,1]}(a: [\DOLLAR{}d_{11}][\DOLLAR{}d_{12}] T, [\DOLLAR{}d_{21}] T) = f(a, b)$
+
+keeping all dimension variables distinct.
+
+The algorithm for computing the signature of the reranked function needs to be specified.
+}
+
+A rerank expression can only be used where a function is expected - as the target of a call, or as an argument to a higher-order function.
+
+
 
 
 \section{Types}
@@ -681,7 +708,10 @@ The predefined type \BOOL{} contains the values true and false.  A boolean value
 \subsubsection{string}
 \label{string}
 
-The predefined type \STRING{} consists of the set of all lists [\ref{list}] whose elements are Unicode code points. Equality and ordering of code points are defined by the Unicode standard. The type \STRING{} is equal only to itself. 
+The predefined type \STRING{} is a sequence of zero or more Unicode code points. Equality and ordering of code points are defined by the Unicode standard. 
+The strings, $a = a_1, \ldots, a_n$ and $b = b_1, \ldots, b_n$ are equal iff $a_i = b_i, i \in 1..n$. Strings are ordered lexicographically., i.e., $a_1, \ldots, a_n < b_1, \ldots, b_m$ iff  either $a_1 < b_1$ or $a_1 = b1$ and $a_2, \ldots, a_n < b_2, \ldots, b_m$.
+
+The type \STRING{} is equal only to itself. 
 
 \subsubsection{Hyperstream Types}
 \label{hyperstreamTypes}
@@ -692,8 +722,10 @@ Hyperstream types describe hyperstreams. A hyperstream type is composed of a sha
 A dimension descriptor has the form $[d]$ where $d$ is one of:
 \begin{itemize}
 \item An integer literal $n$ [\ref{integerLiterals}]. This indicates the size of the described dimension is the value of $n$.
-\item An optional dimension variable [\ref{typeVariables}] $v$. This indicates the size of the described dimension is the value of $v$.
-If $v$ is omitted, we assume a fresh dimension variable was specified.
+\item An optional dimension variable [\ref{typeVariables}] $v$, possibly followed by \BANG. This indicates the size of the described dimension is the value of $v$.
+The use of the \BANG{} suffix indicates the the described  dimension must be of fixed size. 
+{\em ergo, it must be an array, not a stream.}
+If $v$ is omitted, we assume a fresh dimension variable was specified. 
 \item  \QUESTIONMARK. This indicates the described dimension's size is unbounded.
  \end{itemize}
  
@@ -701,7 +733,7 @@ If $v$ is omitted, we assume a fresh dimension variable was specified.
  A shape descriptor denotes a shape vector. It takes one of the following forms:
  \begin{itemize}
  \item  A list $[d_1] \ldots [d_n]$, denoting the shape vector $[d_1, \ldots, d_n]$ where $[d_i], i \in 1..n$ are dimension descriptors.
- \item A shape variable [\ref{typeVariables}].
+ \item A shape variable [\ref{typeVariables}], possibly followed by \BANG. The use of the \BANG{} suffix indicates the the shape's  dimensions must all be of fixed size. 
  \item A shape append, of the form $s_1 :: s_2$, where $s_1, s_2$ are shape descriptors, denoting the concatenation of the shape vectors denoted by $s1$ and $s_2$. 
  \end{itemize}
  
@@ -788,9 +820,9 @@ No explicit declaration of a type variable is needed. They are declared by their
  \paragraph{Shape Variables.}
 
 
- Let $p \triangleq @{}S$.
+ Let $p \triangleq \ATSIGN{}{}S$.
  
- Let $t$ be the shape variable bound to  $@{}S$ in the current compile-time scope. If $@{}S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of  $@{}S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the shape variable bound to  $\ATSIGN{}{}S$ in the current compile-time scope. If $\ATSIGN{}{}S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of  $\ATSIGN{}{}S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
  It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
  

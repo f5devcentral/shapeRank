@@ -101,7 +101,7 @@ the ASCII CR character followed by the ASCII LF character
 \lex{TYPEIDENT}{\TYPESTART{} \IDENTPART*}
 
 \lex{TYPEPARAM}{{\DOLLAR}\TYPEIDENT}
-\lex{SHAPEPARAM}{{@}\TYPEIDENT}
+\lex{SHAPEPARAM}{{\ATSIGN}\TYPEIDENT}
 \lex{DIMPARAM}{{\DOLLAR}\VALIDENT}
 
 \lex{DECIMAL}{{\keyword 0} ... {\keyword 9}}
@@ -187,6 +187,8 @@ the ASCII CR character followed by the ASCII LF character
 \def\THIS{\keyword{this}}
 \def\ASSERT{\keyword{assert}}
 \def\RETURN{\keyword{return}}
+\def\RERANK{\keyword{rerank}}
+\def\TO{\keyword{to}}
 \def\OF{\keyword{of}}
 \def\WHERE{\keyword{where}}
 \def\REPORT{\keyword{report}}
@@ -252,7 +254,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\MOD{\keyword{\%}}
 \def\DOLLAR{\keyword{\$}}
 \def\SYNC{\keyword{sync}}
-
+\def\ATSIGN{\keyword{@}}
 
 % Grammar Rules
 
@@ -286,7 +288,7 @@ the ASCII CR character followed by the ASCII LF character
 %% Type signatures
 \bnf {TypeSig} {
   \synt{ElementType}
-  \alt \synt{TensorType}
+  \alt \synt{HyperstreamType}
 }
 
 \bnf{ElementType}{
@@ -297,12 +299,12 @@ the ASCII CR character followed by the ASCII LF character
 }
 
 \bnf {BuiltinType} {\BOOL{}  \alt \NUMBER{} \alt \STRING{}}
-\bnf {TensorType} {\synt{Shape}? \synt{ElementType}}
+\bnf {HyperstreamType} {\synt{Shape}? \synt{ElementType}}
 \bnf {PropertySig} {\synt{PropertyName} \COLON \synt{TypeSig}}
 \bnf {RefType} {\TYPEIDENT{} }
 \bnf {StructType} {\LCURLY{} \CommaListOp{\synt{PropertySig}} \RCURLY{}}
-\bnf{Dimension}{\INT{} \alt \DIMPARAM{} \alt \synt{Dimension + Dimension} \alt \UNKNOWNDIM}
-\bnf{Shape}{\SHAPEPARAM \alt \synt{Shape :: Shape} \alt \synt{[Dimension?]*}}
+\bnf{Dimension}{\INT{} \alt \DIMPARAM{} \BANG? \alt \synt{Dimension + Dimension} \alt \UNKNOWNDIM}
+\bnf{Shape}{\SHAPEPARAM  \BANG? \alt \synt{Shape :: Shape} \alt \synt{[Dimension?]*}}
 
 % Expressions
 \bnf {Expression} {\synt{WhereBindingExpression}}
@@ -313,7 +315,7 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {RelExpression} {\synt{AdditiveExpression} \alt \synt{RelExpression} \synt{RelOp} \synt{AdditiveExpression}}
 \bnf {RelOp} {\EQ{} \alt \NEQ{} \alt \LT{} \alt \GT{} \alt \LTE{} \alt \GTE{} \alt \IN{} \alt \CONTAINS{} \alt \MATCHES{}}
 \bnf {AdditiveExpression} {\synt{MultiplicativeExpression} \alt \synt{AdditiveExpression} \synt{AdditiveOp} \synt{MultiplicativeExpression}}
-\bnf {AdditiveOp} {\PLUS{} \alt \MINUS{} \alt \CONCAT{}}
+\bnf {AdditiveOp} {\PLUS{} \alt \MINUS{}}
 \bnf {MultiplicativeExpression} {\synt{UnaryExpression} \alt \synt{MultiplicativeExpression} \synt{MultiplicativeOp} \synt{UnaryExpression}}
 \bnf {MultiplicativeOp} {\TIMES{} \alt \DIV{} \alt \MOD{}}
 \bnf {UnaryExpression} {
@@ -341,7 +343,7 @@ the ASCII CR character followed by the ASCII LF character
   \alt \LPAREN{} \synt{Expression} \RPAREN{}
   \alt \LPAREN{} \synt{Expression} \synt{TypeSigSuffix} \RPAREN{}
   \alt \synt{StructLiteral}
-  \alt \synt{EmptyTensorExpr}
+  \alt \synt{EmptyHyperstreamExpr}
   \alt \synt{HyperstreamLiteral}
 }
 \bnf {IdentifierExpression} {\IDENT}
