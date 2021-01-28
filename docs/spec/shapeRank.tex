@@ -629,9 +629,13 @@ Rerank is not a proper declaration, because it does not introduce a name.
 
 A {\em rerank expression} takes an existing function and produces a new one, whose parameters differ in rank but is otherwise the same.
 
-Let $f$ be a function with signature $f(p_1: S_1 T_1, \ldots, p_n: S_n T_n)$ and let $r_i = rank(S_i), i \in 1..n$. Then
+\RerankExpression
 
-$ \RERANK{}$ $f$  $\TO{}$ $r_1, \ldots, r_n$ evaluates to a function with body $f(a_1, \ldots, a_n)$ and signature 
+Let $r \triangleq  \RERANK{}$ $f$  $\TO{}$ $r_1, \ldots, r_n$.
+
+where $f$ is a function with signature $f(p_1: S_1 T_1, \ldots, p_n: S_n T_n)$ and let $r_i = rank(S_i), i \in 1..n$. Then
+
+Then $r$ evaluates to a function with body $f(a_1, \ldots, a_n)$ and signature 
 $x(a_1: [d_{11}]\ldots [d_{1{r_1}}]), \ldots, a_n: [d_{n1}]\ldots [d_{n{r_n}}]))$, where $x$ is name unique in the program, and the $d_{ij}$ are fresh dimension variables, which are not necessarily distinct from each other.
 
 {\em
@@ -660,6 +664,20 @@ The algorithm for computing the signature of the reranked function needs to be s
 
 A rerank expression can only be used where a function is expected - as the target of a call, or as an argument to a higher-order function.
 
+\subsection{Casts}
+\label{casts}
+
+A {\em shape cast expression} can be used to dynamically test whether the shape of an expression matches a specified shape.
+
+\ShapeCastExpression
+
+Let $sc \triangleq \SHAPECAST{}$ $e$ $\TO{}$ $e$.
+Let $s_e T_e$ be the type of $e$, and let $v$ be the value of $e$.
+Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, otherwise a runtime error occurs. The type of $sc$ is $s T_e$. 
+
+It is a compile-time error if the $s_e$ is statically incompatible with $s$.
+
+{\em define what 'statically incompatible' means.}
 
 
 

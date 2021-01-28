@@ -208,6 +208,8 @@ the ASCII CR character followed by the ASCII LF character
 \def\BOOL{\keyword{Bool}}
 \def\STRING{\keyword{String}}
 
+\def\SHAPECAST{\keyword{shapeCast}}
+
 \def\PUBLIC{\keyword{public}}
 \def\PRIVATE{\keyword{private}}
 \def\PROTECTED{\keyword{protected}}
@@ -307,8 +309,8 @@ the ASCII CR character followed by the ASCII LF character
 \bnf{Shape}{\SHAPEPARAM  \BANG? \alt \synt{Shape :: Shape} \alt \synt{[Dimension?]*}}
 
 % Expressions
-\bnf {Expression} {\synt{WhereBindingExpression}}
-\bnf {WhereBindingExpression} {\synt{ConditionalExpression} \alt \synt{WhereBindingExpression} \WHERE{} \VALIDENT{} \BIND{} \synt{ConditionalExpression}}
+\bnf {Expression} {\ATSIGN? \synt{WhereBindingExpression}}
+\bnf {WhereBindingExpression} {\synt{OrExpression} \alt \synt{WhereBindingExpression} \WHERE{} \VALIDENT{} \BIND{} \synt{OrExpression}}
 \bnf {ConditionalExpression} {\IF{} \synt{Expression} \THEN{} \synt{Expression} \ELSE{} \synt{Expression}}
 \bnf {OrExpression} {\synt{AndExpression} \alt  \synt{OrExpression} \OR{} \synt{AndExpression}}
 \bnf {AndExpression} {\synt{RelExpression} \alt \synt{AndExpression} \AND{} \synt{RelExpression}}
@@ -329,6 +331,8 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{FunctionCall}
   \alt \synt{PrimitiveExpression}
 }
+\bnf{RerankExpression}{\RERANK{} \synt{IdentifierExpression} \TO{} \INT{} (\COMMA{} \INT{})*}
+\bnf{ShapeCastExpression}{\SHAPECAST{} \synt{Expression} \TO{} \synt{Shape}}
 \bnf {IndexExpression} {\synt{MemberExpression} \LBRACK{} \synt{Expression} \RBRACK{}}
 \bnf {DotExpression} {\synt{MemberExpression} \DOT{} \synt{PropertyName}}
 \bnf {FunctionCall} {\synt{MemberExpression} \synt{ArgumentList}}
@@ -345,6 +349,7 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{StructLiteral}
   \alt \synt{EmptyHyperstreamExpr}
   \alt \synt{HyperstreamLiteral}
+  \alt \synt{RerankExpression}
 }
 \bnf {IdentifierExpression} {\IDENT}
 \bnf {EmptyHyperstreamLiteral} {\LBRACK{} \RBRACK{}}
