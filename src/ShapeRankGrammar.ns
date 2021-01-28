@@ -22,6 +22,7 @@ See https://docs.google.com/document/d/10KMJ2B6dTWTnivhIwJOrfJl-WVhi0arjMpVLo4FP
 |
 whitespace = super whitespace. (* cache whitespace parser *)
 atSign = tokenFromChar: "@".
+bang =  tokenFromChar: "!".
 colon = tokenFromChar: ":".
 comma = tokenFromChar: ",".
 dollar = tokenFromChar: "$".
@@ -40,6 +41,7 @@ notSym = tokenFromSymbol: 'not'.
 asterisk = tokenFromChar: "*".
 slash = tokenFromChar: "/".
 percent = tokenFromChar: "%".
+questionMark =  tokenFromChar: "?".
 eq = tokenFromSymbol: '=='.
 notEq = tokenFromSymbol: '!='.
 leq = tokenFromSymbol: '<='.
@@ -123,10 +125,11 @@ shapeSuffix = doublecolon, shape.
 shape = (shapeVector | shapeVariable), shapeSuffix opt.
 shapeIndex =  shape, lbracket, int, rbracket.
 dimensionNumber = int.
-dimensionVariable = dollar, identifier.
+dimensionVariable = dollar, identifier, bang opt.
+unknownDimension = questionMark.
 dimensionOp = plusSign | minus.
 dimensionSumSuffix = dimensionOp,  dimension.
-dimension = (dimensionNumber | dimensionVariable  | shapeIndex), dimensionSumSuffix opt.
+dimension = (dimensionNumber | dimensionVariable  | unknownDimension | shapeIndex), dimensionSumSuffix opt.
 intConst = int.
 boolConst = trueToken | falseToken.
 floatConst = int, dot, (tokenFor: digits).
@@ -135,7 +138,7 @@ parenExpr = lparen, expr, rparen.
 ifExpr = if, expr, then, expr, else, expr.
 rerankExpr = rerank, identifier, to,  (intConst plusSeparatedBy: comma).
 shapeCastExpr = shapeCast, expr, to, shape.
-term = struct | ifExpr | call | tensor | floatConst | intConst | boolConst | stringLiteral | rerankExpr | shapeCastExpr | variableReference | parenExpr.
+term = struct | ifExpr | rerankExpr | shapeCastExpr | call | tensor | floatConst | intConst | boolConst | stringLiteral | variableReference | parenExpr.
 dotExpr = term, (dot, alphaNumId) star.
 unaryTerm = (minus | notSym), dotExpr.
 unaryExpr = unaryTerm | dotExpr.

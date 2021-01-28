@@ -973,6 +973,20 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
+public class UnknownDimensionAST position: p <{Integer. Integer}> = DimensionAST position: p (
+) (
+public isKindOfUnknownDimensionAST ^ <Boolean> = (
+  ^true
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfUnknownDimensionAST ifFalse: [^false].
+  ^true
+)
+public hash ^<Integer> = (
+  ^class hash
+)
+) : (
+)
 emptyShape ^ <ShapeVectorAST> = (
   ^ShapeVectorAST dimensions: {} position: {0. 0}
 )

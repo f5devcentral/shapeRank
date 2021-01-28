@@ -165,12 +165,6 @@ public dimensionNumber ^ <CombinatorialParser[DimensionNumberAST]>  = (
 		  DimensionNumberAST number: (evaluateIntTokenValue: i value) position: {i start. i end}
 		]
 )
-public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
-  ^super dimensionVariable wrapper:
-		[:dollarSign <Token> :idToken <Token> |
-		  DimensionVariableReferenceAST named: idToken value position: {dollarSign start. idToken end}
-		]  
-)
 public dynamic ^ <CombinatorialParser[DynamicTypeAST]> = (
   ^super dynamic wrap:
 		[:kw <Token> |
@@ -360,6 +354,18 @@ public expr ^ <CombinatorialParser[ExprAST]> = (
 public declaration = (
 (* expose method publicly for tools *)
   ^super declaration
+)
+public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
+  ^super dimensionVariable wrapper:
+		[:dollarSign <Token> :idToken <Token> :bang <Token | Nil> |
+		  DimensionVariableReferenceAST named: idToken value position: {dollarSign start. idToken end}
+		]  
+)
+public unknownDimension  ^ <CombinatorialParser[UnknownDimensionAST]> = (
+  ^super unknownDimension wrap:
+		[:qm <Token> |
+		  UnknownDimensionAST position: {qm start. qm end}
+		] 
 )
 ) : (
 )

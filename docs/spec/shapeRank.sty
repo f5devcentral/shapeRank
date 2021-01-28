@@ -321,13 +321,15 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {MultiplicativeExpression} {\synt{UnaryExpression} \alt \synt{MultiplicativeExpression} \synt{MultiplicativeOp} \synt{UnaryExpression}}
 \bnf {MultiplicativeOp} {\TIMES{} \alt \DIV{} \alt \MOD{}}
 \bnf {UnaryExpression} {
-       \MINUS{} \synt{UnaryExpression}
-  \alt \NOT{} \synt{UnaryExpression}
+       \MINUS{} \synt{MemberExpression}
+  \alt \NOT{} \synt{MemberExpression}
   \alt \synt{MemberExpression}
 }
 \bnf {MemberExpression} {
   \synt{IndexExpression}
   \alt \synt{DotExpression}
+  \alt \synt{RerankExpression}
+  \alt \synt{ShapeCastExpression}
   \alt \synt{FunctionCall}
   \alt \synt{PrimitiveExpression}
 }
@@ -339,7 +341,7 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {ArgumentList} {\LPAREN{} \CommaListOp {\synt{Expression}} \RPAREN{}}
 
 \bnf {PrimitiveExpression} {
- \synt{IdentifierExpression}
+\synt{IdentifierExpression}
   \alt \synt{NumberLiteral}
   \alt \synt{StringLiteral}
   \alt \TRUE{}
@@ -349,7 +351,6 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{StructLiteral}
   \alt \synt{EmptyHyperstreamExpr}
   \alt \synt{HyperstreamLiteral}
-  \alt \synt{RerankExpression}
 }
 \bnf {IdentifierExpression} {\IDENT}
 \bnf {EmptyHyperstreamLiteral} {\LBRACK{} \RBRACK{}}
