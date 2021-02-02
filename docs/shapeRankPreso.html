@@ -322,7 +322,7 @@
 </p></li></ul>
 <h3 id="sec-array-programming" class="h2" data-heading-depth="2" style="display:block"><span class="heading-before"><span class="heading-label">1.2</span>.&#8194;</span>Array Programming</h3>
 <p class="p noindent">Array programming originated in the early 1960s with Iverson’s Turing-award winning APL.
-It was two generations ahead of its time.
+It was two generations ahead of its time. 
 </p><h3 id="sec-example--dot-product" class="h2" data-heading-depth="2" style="display:block"><span class="heading-before"><span class="heading-label">1.3</span>.&#8194;</span>Example: Dot Product</h3>
 <p class="p noindent">Dot product is defined as
 </p>
@@ -363,7 +363,10 @@ for i := 1 to n { c := c + a[i]*b[i];};</code></pre>
 typing, making it more  applicable to GPUs, TPUs and other accelerators.
 However, that work has remained largely theoretical; it has been 
 unclear how to incorporate it into a practical design.
-</p><h3 id="sec-more-than-just-programming-language" class="h2" data-heading-depth="2" style="display:block"><span class="heading-before"><span class="heading-label">1.6</span>.&#8194;</span>More than Just Programming Language</h3>
+</p><h3 id="sec-hyperstream-programming" class="h2" data-heading-depth="2" style="display:block"><span class="heading-before"><span class="heading-label">1.6</span>.&#8194;</span>Hyperstream Programming</h3>
+<p class="p noindent">ShapeRank extends the ideas of APL to streams, in particular,
+multi-dimensional streams, which we call <em class="em-star1">hyperstreams</em>.
+</p><h3 id="sec-more-than-just-programming-language" class="h2" data-heading-depth="2" style="display:block"><span class="heading-before"><span class="heading-label">1.7</span>.&#8194;</span>More than Just Programming Language</h3>
 <p class="p noindent">We’ve seen a flowering of “Notebook” systems - Mathematica,
  Matlab, Jupyter, Observable ….
 </p>
@@ -621,6 +624,7 @@ initial parameters for the model and the training data
 </p><span data-line=""></span></div>
 <svg id='math-svg-paths' style='display:none' version='1.1' viewBox='0 0 0 0' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
 <defs>
+<path id='g2-26' d='M0.329 1.724C0.299 1.843 0.299 1.863 0.299 1.883C0.299 2.032 0.408 2.152 0.578 2.152C0.787 2.152 0.907 1.973 0.927 1.943C0.976 1.853 1.295 0.518 1.564 -0.558C1.763 -0.159 2.082 0.11 2.55 0.11C3.716 0.11 5.001 -1.295 5.001 -2.78C5.001 -3.836 4.344 -4.403 3.616 -4.403C2.65 -4.403 1.604 -3.407 1.305 -2.192L0.329 1.724ZM2.54 -0.11C1.843 -0.11 1.684 -0.907 1.684 -0.996C1.684 -1.036 1.733 -1.235 1.763 -1.365C2.042 -2.481 2.142 -2.839 2.361 -3.238C2.79 -3.965 3.288 -4.184 3.597 -4.184C3.965 -4.184 4.284 -3.895 4.284 -3.208C4.284 -2.66 3.995 -1.544 3.726 -1.056C3.397 -0.428 2.919 -0.11 2.54 -0.11Z'/>
 <path id='g1-1' d='M1.913 -2.491C1.913 -2.78 1.674 -3.019 1.385 -3.019S0.857 -2.78 0.857 -2.491S1.096 -1.963 1.385 -1.963S1.913 -2.202 1.913 -2.491Z'/>
 <path id='g2-97' d='M3.716 -3.766C3.537 -4.134 3.248 -4.403 2.8 -4.403C1.634 -4.403 0.399 -2.939 0.399 -1.484C0.399 -0.548 0.946 0.11 1.724 0.11C1.923 0.11 2.421 0.07 3.019 -0.638C3.098 -0.219 3.447 0.11 3.925 0.11C4.274 0.11 4.503 -0.12 4.663 -0.438C4.832 -0.797 4.961 -1.405 4.961 -1.425C4.961 -1.524 4.872 -1.524 4.842 -1.524C4.742 -1.524 4.732 -1.484 4.702 -1.345C4.533 -0.697 4.354 -0.11 3.945 -0.11C3.676 -0.11 3.646 -0.369 3.646 -0.568C3.646 -0.787 3.666 -0.867 3.776 -1.305C3.885 -1.724 3.905 -1.823 3.995 -2.202L4.354 -3.597C4.423 -3.875 4.423 -3.895 4.423 -3.935C4.423 -4.105 4.304 -4.204 4.134 -4.204C3.895 -4.204 3.746 -3.985 3.716 -3.766ZM3.068 -1.186C3.019 -1.006 3.019 -0.986 2.869 -0.817C2.431 -0.269 2.022 -0.11 1.743 -0.11C1.245 -0.11 1.106 -0.658 1.106 -1.046C1.106 -1.544 1.425 -2.77 1.654 -3.228C1.963 -3.816 2.411 -4.184 2.809 -4.184C3.457 -4.184 3.597 -3.367 3.597 -3.308S3.577 -3.188 3.567 -3.138L3.068 -1.186Z'/>
 <path id='g2-98' d='M2.381 -6.804C2.381 -6.814 2.381 -6.914 2.252 -6.914C2.022 -6.914 1.295 -6.834 1.036 -6.814C0.956 -6.804 0.847 -6.795 0.847 -6.615C0.847 -6.496 0.936 -6.496 1.086 -6.496C1.564 -6.496 1.584 -6.426 1.584 -6.326C1.584 -6.257 1.494 -5.918 1.445 -5.709L0.628 -2.461C0.508 -1.963 0.468 -1.803 0.468 -1.455C0.468 -0.508 0.996 0.11 1.733 0.11C2.909 0.11 4.134 -1.375 4.134 -2.809C4.134 -3.716 3.606 -4.403 2.809 -4.403C2.351 -4.403 1.943 -4.115 1.644 -3.806L2.381 -6.804ZM1.445 -3.039C1.504 -3.258 1.504 -3.278 1.594 -3.387C2.082 -4.035 2.531 -4.184 2.79 -4.184C3.148 -4.184 3.417 -3.885 3.417 -3.248C3.417 -2.66 3.088 -1.514 2.909 -1.136C2.58 -0.468 2.122 -0.11 1.733 -0.11C1.395 -0.11 1.066 -0.379 1.066 -1.116C1.066 -1.305 1.066 -1.494 1.225 -2.122L1.445 -3.039Z'/>
