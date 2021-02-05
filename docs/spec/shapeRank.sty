@@ -247,7 +247,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\BIND{\keyword{=}}
 \def\COMMA{\keyword{,}}
 \def\DOT{\keyword{.}}
-\def\CONCAT{\keyword{..}}
+\def\RANGE{\keyword{..}}
 \def\DOUBLESLASH{\keyword{//}}
 \def\PLUS{\keyword{+}}
 \def\MINUS{\keyword{-}}
@@ -317,7 +317,7 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {RelExpression} {\synt{AdditiveExpression} \alt \synt{RelExpression} \synt{RelOp} \synt{AdditiveExpression}}
 \bnf {RelOp} {\EQ{} \alt \NEQ{} \alt \LT{} \alt \GT{} \alt \LTE{} \alt \GTE{} \alt \IN{} \alt \CONTAINS{} \alt \MATCHES{}}
 \bnf {AdditiveExpression} {\synt{MultiplicativeExpression} \alt \synt{AdditiveExpression} \synt{AdditiveOp} \synt{MultiplicativeExpression}}
-\bnf {AdditiveOp} {\PLUS{} \alt \MINUS{}}
+\bnf {AdditiveOp} {\PLUS{} \alt \MINUS{} \alt \RANGE{}}
 \bnf {MultiplicativeExpression} {\synt{UnaryExpression} \alt \synt{MultiplicativeExpression} \synt{MultiplicativeOp} \synt{UnaryExpression}}
 \bnf {MultiplicativeOp} {\TIMES{} \alt \DIV{} \alt \MOD{}}
 \bnf {UnaryExpression} {
