@@ -97,6 +97,11 @@ whose remainder is given by the shape of the elements of $s$.
 
 A function is {\em reactive} if it may fire whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
 
+\subsection{Access Control}
+\label{accessControl}
+
+A {\em declaration} is either a let binding [\ref{letBindings}] or a function [\ref{functions}]. Declarations are defined inside modules [\ref{modules}]. Declarations may optionally declared as \PUBLIC{}, in which case they are part of the module produced by the enclosing module declaration and so can be accessed outside the module.
+
 
 \section{Let Bindings}
 \label{letBindings}
@@ -311,6 +316,34 @@ $scan(f: \ATSIGN{}P \DOLLAR{}T \to{} \ATSIGN{}Q \DOLLAR{}T \to{} \ATSIGN{}P \DOL
 
 \section{Modularity}
 \label{modularity}
+
+\subsection{Modules}
+\label{modules}
+
+A {\em module} is a record whose fields are ShapeRank declarations. A module is produced by invoking a module declaration [\ref{moduleDeclarations}].
+Each field of a module is referred to as a {\em module member}.
+
+\subsubsection{Module Member Access}
+\label{moduleMemberAccess}
+
+A member  $f$ of module $m$ may be accessed via a {\em qualified identifier} of the form $m \DOUBLECOLON{} f$.
+
+
+
+
+\subsection{Module Declarations}
+\label{moduleDeclarations}
+
+A {\em module declaration} is a mathematical function between modules [\ref{modules}].  A module declaration has a name, a list of parameters and a body which is a series of function declarations or let bindings.  The parameters  of the module declaration are in scope within its body.
+
+\subsubsection{Module Declaration Invocation}
+\label{moduleDeclarationInvocation}
+
+A module declaration may be invoked to produce a module. Syntactically, a {\em module invocation} has the form of a function call, except that all its arguments must denote modules.
+A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the public declarations of $m$.
+
+{\em firm up. Substitution of arguments, key vs. value, define public access ...}
+
 
 
 
