@@ -162,25 +162,25 @@ public rank ^ <Integer> = (
 public size = (
   ^dimensions reduce: [:d1 <Integer> :d2 <Integer> | d1 * d2] ifEmpty: [1]
 )
-subframes ^ <List[Frame]> = (
-  | n = size/dimensions first. dimTail = dimensions copyFrom: 2 to: dimensions size.|
-  ^(1 to: dimensions first) collect: [:i <Integer> | 
-	| subcells = cells copyFrom: (i -1)*n + 1 to: i*n. |
-	Frame dimensions: dimTail cells: subcells 
-	]
-)
-public asStream ^ <Stream> = (
-  dimensions isEmpty ifTrue: [^cells].
-  ^Stream 
-      dimensions: dimensions, (cells at: 1) dimensions
-      contents: (subframes collect: [:f <Frame> | f asStream])
-)
 public replicateToMatch: dims <List[Integer | UnboundedDimension]> = (
 (* Create a frame of shape dims, that replicates the contents of this frame as neeeded; 
     We assume dims are the dimensions of a frame that is a suffix of this frame. *)
   |  cdims <List[Integer]> = dims copyFrom: dimensions size + 1 to: dims size. |
   cdims isEmpty ifTrue: [^self].
   ^Frame dimensions: dims cells: (HyperStream replicate: cells dimensions: cdims)
+)
+public asStream ^ <Stream> = (
+  dimensions isEmpty ifTrue: [^cells].
+  ^HyperStream 
+      dimensions: dimensions, (cells at: 1) dimensions
+      contents: (subframes collect: [:f <Frame> | f asStream])
+)
+subframes ^ <List[Frame]> = (
+  | n = size/dimensions first. dimTail = dimensions copyFrom: 2 to: dimensions size.|
+  ^(1 to: dimensions first) collect: [:i <Integer> | 
+	| subcells <List[Object]> = cells copyFrom: (i -1)*n + 1 to: i*n. |
+	Frame dimensions: dimTail cells: subcells 
+	]
 )
 ) : (
 )
@@ -520,9 +520,9 @@ cellsFor: fdims from: arg ^ <Stream[Object]> = (
 zipFrames: l <List[Frame]> ^ <Frame> = (
   | 
   dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
-  zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [: f <Frame> | f cells]). 
+  zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells]). 
   |
-  ^Frame dimensions: dims cells: zippedCells.
+  ^Frame dimensions: dims cells: (List withAll: {zippedCells}).
 )
 ) : (
 )

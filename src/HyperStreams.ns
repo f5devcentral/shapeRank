@@ -46,10 +46,6 @@ public isComplete  ^ <Boolean> = (
 )
 public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
 )
-public collect: f <[:T | R]>  ^ <Stream[R]> = (
-)
-public select: f <[:T | Boolean]> ^ <Stream[T]> = (
-)
 public iterator ^ <Iterator[T]> = (
   ^Iterator new
 )
@@ -58,6 +54,15 @@ public  asStream ^ <HyperStream> = (
 )
 public add: e <T> = (
   window add: e
+)
+public isKindOfAbstractHyperStream ^ <Boolean> = (
+  ^true
+)
+public select: f <[:T | Boolean]> ^ <Stream[T]> = (
+  ^filter: f
+)
+public collect: f <[:T | R]>  ^ <Stream[R]> = (
+  ^map: f
 )
 ) : (
 fromArray: a <Array[T]> ^ <Instance> = (
@@ -98,11 +103,33 @@ public add: e <T> = (
 )
 public class BoundedHyperStream fromList: l <List[T]> rank: r <integer> = AbstractHyperStream rank: r (
 	window: l.
+    (* need to set dimensions *)
 ) (
 public isBounded ^ <Boolean> = (
   ^true
 )
+public isKindOfBoundedHyperStream ^ <Boolean> = (
+  ^true
+)
+public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
+  ^class fromList: (window select: f) rank: rank
+)
+public map: f <[:T | R]>  ^ <Stream[R]> = (
+  ^class fromList: (window collect: f) rank: rank
+)
+public isComplete  ^ <Boolean> = (
+  ^true
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  ^class from: (window copyFrom: 1 to: n) rank: rank
+)
+public at: i <Integer> ^ <T> = (
+  ^window at: i
+)
 ) : (
+public fromTensor:t <Tensor> ^ <Instance> = (
+  ^fromList: t contents rank: t rank
+)
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator> = AbstractHyperStream rank: i rank (
 	|
@@ -114,6 +141,12 @@ public map: f <[:T | R]>  ^ <Stream[R]> = (
 )
 public take: n <Integer> ^ <Stream[T]> = (
   ^class iteratingOver: (iterator take: n)
+)
+public isKindOfUnboundedHyperStream ^ <Boolean> = (
+  ^true
+)
+public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
+  ^class iteratingOver: (iterator filter: f)
 )
 ) : (
 )
