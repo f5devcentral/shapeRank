@@ -500,17 +500,6 @@ computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream>
 	].
   ^resultFrame asStream.  
 )
-frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
-  (* unranked parameter: use entire argument as sole cell *)
-  p hasRank ifFalse: [
-	^Frame dimensions: {} cells: {arg}.
-	].
-  arg rank >= p rank ifTrue: [ 
-	| fdims <List[Integer]> = arg dimensions copyFrom: 1 to: arg rank - p rank. |
-    ^Frame dimensions: fdims cells: (cellsFor: fdims from: arg).
-	].
-   ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
-)
 cellsFor: fdims from: arg ^ <Stream[Object]> = (
     (* base case: empty frame with single cell *)
     fdims isEmpty ifTrue: [^arg].
@@ -523,6 +512,17 @@ zipFrames: l <List[Frame]> ^ <Frame> = (
   zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells]). 
   |
   ^Frame dimensions: dims cells: (List withAll: {zippedCells}).
+)
+frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
+  (* unranked parameter: use entire argument as sole cell *)
+  p hasRank ifFalse: [
+	^Frame dimensions: {} cells: {arg}.
+	].
+  arg rank >= p rank ifTrue: [ 
+	| fdims <List[Integer]> = arg dimensions copyFrom: 1 to: arg rank - p rank. |
+    ^Frame dimensions: fdims cells: (List withAll: {cellsFor: fdims from: arg}).
+	].
+   ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
 ) : (
 )

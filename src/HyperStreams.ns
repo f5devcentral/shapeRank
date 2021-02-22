@@ -40,8 +40,6 @@ public map: f <[:T | R]>  ^ <Stream[R]> = (
 public addAll: es <List[T]> = (
   es do: [:e <T> | add: e]
 )
-public take: n <Integer> ^ <Stream[T]> = (
-)
 public isComplete  ^ <Boolean> = (
 )
 public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
@@ -63,6 +61,15 @@ public select: f <[:T | Boolean]> ^ <Stream[T]> = (
 )
 public collect: f <[:T | R]>  ^ <Stream[R]> = (
   ^map: f
+)
+public isComplete: b <Boolean> = (
+  subclassResponsibility
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  subclassResponsibility
+)
+public isBounded ^ <Boolean> = (
+  subclassResponsibility
 )
 ) : (
 fromArray: a <Array[T]> ^ <Instance> = (
@@ -87,17 +94,25 @@ public rank ^ <Integer> = (
 )
 ) : (
 )
-public collect: f <[:T | R]>  ^ <Stream[R]> = (
-  ^class on: (f value: constant)
-)
-public select: f <[:T | Boolean]> ^ <Stream[T]> = (
-  (f value: constant) ifTrue: [^self] ifFalse: [^EmptyStream].
-)
 public isComplete  ^ <Boolean> = (
   ^false (* Is this the right answer?*)
 )
 public add: e <T> = (
   Error signal: 'Attempt to add to a constant stream'
+)
+public map: f <[:T | R]>  ^ <Stream[R]> = (
+  ^class on: (f value: constant)
+)
+public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
+  (f value: constant) ifTrue: [^self] ifFalse: [^EmptyStream].
+)
+public isComplete: b  <Boolean> = (
+   (* Is this the right answer?*)
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  | l <List> = List new: n. |
+  1 to: n do: [:i <Integer> | l add: constant].
+  ^BoundedStream fromList: l rank: 0
 )
 ) : (
 )
@@ -121,10 +136,16 @@ public isComplete  ^ <Boolean> = (
   ^true
 )
 public take: n <Integer> ^ <Stream[T]> = (
-  ^class from: (window copyFrom: 1 to: n) rank: rank
+  (* Need to protect against taking more than the window size? *)
+  ^class fromList: (window copyFrom: 1 to: n) rank: rank
 )
 public at: i <Integer> ^ <T> = (
+(* What if i is out of bounds? *)
   ^window at: i
+)
+public isComplete: b <Boolean> = (
+  (*  do nothing, but check that no one tries to tell me I'm not complete *)
+  assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
 )
 ) : (
 public fromTensor:t <Tensor> ^ <Instance> = (
@@ -134,6 +155,7 @@ public fromTensor:t <Tensor> ^ <Instance> = (
 public class UnboundedHyperStream iteratingOver: i <Iterator> = AbstractHyperStream rank: i rank (
 	|
 	source <Iterator> = i.
+    public isComplete ::= false.
 	|
 ) (
 public map: f <[:T | R]>  ^ <Stream[R]> = (
@@ -148,6 +170,9 @@ public isKindOfUnboundedHyperStream ^ <Boolean> = (
 public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
   ^class iteratingOver: (iterator filter: f)
 )
+public isBounded ^ <Boolean> = (
+  ^false
+)
 ) : (
 )
 public class HyperStreamFactory = (
@@ -157,16 +182,6 @@ public  iteratingOver: i <Iterator>  ^ <UnboundedHyperStream> = (
 )
 public zipSynchronous: streams <List[Stream]> ^ <Stream> = (
   ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s | s iterator]))
-)
-public replicateStream: s <S> ^ <Stream[S]> = (
-   s isScalar ifTrue: [^iteratringOver: s iterator].
-)
-repeat: s  dimension: d = (
-   d isKindOfInteger ifTrue: [| l = List new: d. | (* So many layers *)
-     1 to: d do: [:i | l add: (HyperStream iteratingOver: s iterator)].
-     ^fromList: l rank: s rank + 1.
-   ].
-   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator)
 )
 public replicate: s <S> ^ <Stream[S]> = (
    s isScalar ifTrue: [^ConstantStream on: s].
@@ -181,8 +196,20 @@ public fromList: l <List[T]> rank: r <Integer> ^ <BoundedHyperSteam> = (
 public zipReactive: streams <List[Stream]> ^ <Stream> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s | s iterator]))
 )
+repeat: s  dimension: d = (
+   d isKindOfInteger ifTrue: [ 
+     (* Bounded case *)
+     | l = List new: d. | (* Replicate s d times *)
+     1 to: d do: [:i | l add: (HyperStream iteratingOver: s iterator)].
+     ^fromList: l rank: s rank + 1.
+   ].
+   (* Unbounded case *)
+   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator)
+)
 public replicate: s dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream> = (
+   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
    dims isEmpty ifTrue: [^replicate: s].
+   (* Recursively replicate for the tail of the dimesniosn, and replicate the result by the first dimension *)
    ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
 )
 ) : (
@@ -235,12 +262,6 @@ class FilteredIterator mapping: f <[:T | Boolean]> on: i <Iterator> =  DerivedIt
     peek <T | Nil>
 	|
 ) (
-public next ^ <T> = (
- | result = peek. |
- peek isNil ifTrue: [Error signal].
- peek:: lookahead.
-  ^result
-)
 lookahead = (
   | nextItem <T | Nil> nextIsValid <Boolean>  |
   [iterator hasNext ifTrue: [nextIsValid:: (function value: (nextItem: iterator next))] ifFalse: [true]] whileFalse: [].
@@ -249,6 +270,15 @@ lookahead = (
 public hasNext ^ <boolean>  = (
    (* We're working on a stream, so even if we had nothing before, we might have something now. *)
    ^peek isNil not or: [peek:: lookahead. peek isNil not]
+)
+public next ^ <T> = (
+(* Iffy. Only works if we assume somone has called hasNext just before calling next. 
+   We should probably call hasNext here.  
+*)
+ | result = peek. |
+ peek isNil ifTrue: [Error signal].
+ peek:: lookahead.
+  ^result
 )
 ) : (
 )
@@ -297,13 +327,13 @@ class ReplicatingIterator replicating: v by: i = DerivedIterator fromIterator: i
 	replicated = v.
 	|
 ) (
-public next = (
-  iterator next.
-  v isKindOfHyperStream ifTrue: [^v iterator].
-  ^v
-)
 public rank ^ <Integer> = (
   ^iterator rank + 1
+)
+public next = (
+  iterator next.
+  v isKindOfAbstractHyperStream ifTrue: [^v iterator].
+  ^v
 )
 ) : (
 )
