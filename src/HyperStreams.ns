@@ -187,9 +187,6 @@ public replicate: s <S> ^ <Stream[S]> = (
    s isScalar ifTrue: [^ConstantStream on: s].
    ^iteratingOver: s iterator
 )
-public fromTensor: t <Tensor> ^ <BoundedHyperSteam> = (
-  ^BoundedHyperStream fromTensor: t
-)
 public fromList: l <List[T]> rank: r <Integer> ^ <BoundedHyperSteam> = (
   ^BoundedHyperStream fromList: l rank: r
 )
@@ -211,6 +208,12 @@ public replicate: s dimensions: dims <List[Integer | UnboundedDimension]> ^ <Hyp
    dims isEmpty ifTrue: [^replicate: s].
    (* Recursively replicate for the tail of the dimesniosn, and replicate the result by the first dimension *)
    ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
+)
+public fromTensor: t <Tensor> ^ <BoundedHyperStream> = (
+  ^BoundedHyperStream fromTensor: t
+)
+public fromScalar: o <Object> ^ <ConstantStream> = (
+  ^ConstantStream on: o
 )
 ) : (
 )

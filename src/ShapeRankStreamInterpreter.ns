@@ -27,20 +27,20 @@ Activation implements this, providing the runtime scope by mapping parameter nam
   specialEvaluators <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = computeSpecialEvaluators.
   |
 ) (
-class Activation of: f <FunctionAST> from: argVector <List[Tensor]> = (
+class Activation of: f <FunctionAST> from: argVector <List[Stream]> = (
 |
 	function <FunctionAST> = f.
-	public arguments <List[Tensor]> = argVector.
+	public arguments <List[Stream]> = argVector.
 |
 ) (
-public at: k <Symbol> ^ <Tensor> = (
+public at: k <Symbol> ^ <Stream> = (
   ^at: k ifAbsent: [Error signal: 'Undefined variable ', k]. (* should never happen in a typechecked prgram *)
 )
-public at: k <Symbol> ifAbsent: blk <[Tensor]> ^ <Tensor> = (
+public at: k <Symbol> ifAbsent: blk <[Stream]> ^ <Stream> = (
   1 to: function parameters size do: [:i <Integer> |
 	(function parameters at: i) id = k ifTrue: [ | arg |
 		arg:: arguments at: i.
-		arg isKindOfTensor ifFalse: [arg:: scalar: arg].
+		arg isKindOfAbstractStream ifFalse: [arg:: scalar: arg].
 		^arg
 		]
 	].
@@ -465,40 +465,12 @@ programScope ^ <Scope> = (
 pushActivation: a <Activation> = (
   callStack add: a
 )
-scalar: o <Object> ^ <Tensor> = (
-  ^Tensor dimensions: {} contents: {o}
-)
 frameArguments: args <List[Tensor]> of: callee <FunctionAST> ^ <List[Frame]> = (
   | argFrames <List[Frame]> = List new: args size. |
   args with: callee parameters do: [:a <Tensor> :p <ParameterAST> |
 	argFrames add: (frameArgument: a forParameter: p)
 	].
   ^argFrames
-)
-computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream> = (
-  | 
-  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
-  maxFrame <Frame>
-  replicatedFrames <List[Frame]>
-  zippedFrame <Frame>
-  resultFrame <Frame>
-  |
-(* replicate *)
-  maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
-	f1 max: f2
-	] ifEmpty: [emptyFrame].
-  replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
-(* zip *)
-  zippedFrame:: zipFrames: replicatedFrames. 
-(* map *)
-  resultFrame:: zippedFrame map: [:argVector <List[Tensor]> | 
-	 | result  <Frame> | 
-	 pushActivation:  (Activation of: callee from: argVector).
-	 result:: callee body eval.
-	 popActivation.
-	 result.
-	].
-  ^resultFrame asStream.  
 )
 cellsFor: fdims from: arg ^ <Stream[Object]> = (
     (* base case: empty frame with single cell *)
@@ -523,6 +495,34 @@ frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
     ^Frame dimensions: fdims cells: (List withAll: {cellsFor: fdims from: arg}).
 	].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
+)
+computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream> = (
+  | 
+  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
+  maxFrame <Frame>
+  replicatedFrames <List[Frame]>
+  zippedFrame <Frame>
+  resultFrame <Frame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
+	f1 max: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
+(* zip *)
+  zippedFrame:: zipFrames: replicatedFrames. 
+(* map *)
+  resultFrame:: zippedFrame map: [:argVector <List[Stream]> | 
+	 | result  <Frame> | 
+	 pushActivation:  (Activation of: callee from: argVector).
+	 result:: callee body eval.
+	 popActivation.
+	 result.
+	].
+  ^resultFrame asStream.  
+)
+scalar: o <Object> ^ <Stream> = (
+  ^HyperStream fromScalar: o
 )
 ) : (
 )
