@@ -1,24 +1,35 @@
 Newspeak3
 'Root'
 class HyperStreams usingPlatform: p <Platform> = (
-	|
+(*
+A module for implementing hyperstreams. The implementation is kept as simple (naive) as possible.
+
+A hyperstream is  either a scalar, or a stream whose elements are hyperstreams. A hyperstream has zero or more dimensions. The number of dimensions of a hyperstream is known as its rank. All elements of a hyperstream must have the same rank. Hyperstreams are represented by subclasses of AbstractHyperStream.
+
+A scalar is itself a hyperstream,  known as a scalar hyperstream, which is represented by class ScalarHyperStream.  A scalar hyperstream has zero dimensions, and therefore has rank 0; otherwise, a hyperstream has 1 + k dimensions, where k is the rank of of its elements. Each dimension has a size, which may be known or unknown. If the size is unknown, it indicated by ?, which is represented by an instance of class UnboundedDimension; otherwise the size is a positive integer.
+
+*)
+  |
     (* imports *)
     private List = p collections List.
+    
+    (* export *)
+    
     public HyperStream = HyperStreamFactory new.
-	|
+  |
 ) (
 class AbstractHyperStream rank: r <Integer> = (
-	|
+  |
     output <OutputPort>
     window <List[HyperStream]>
     public rank <Integer> = r.
-    dimensions <List[Integer | UnboundedDimension]>
-	|
+    public dimensions <List[Integer | UnboundedDimension]>
+  |
 ) (
 class Iterator = outer HyperStreams Iterator (
-	|
-	index <Integer> ::= 0.
-	|
+  |
+  index <Integer> ::= 0.
+  |
 ) (
 public next ^ <T> = (
   hasNext ifTrue: [
@@ -80,9 +91,9 @@ fromArray: a <Array[T]> ^ <Instance> = (
 )
 )
 class ConstantStream on: k  = AbstractHyperStream rank: 0 (
-	|
-	constant = k.
-	|
+  |
+  constant = k.
+  |
 ) (
 class Iterator = (
 ) (
@@ -119,8 +130,11 @@ public take: n <Integer> ^ <Stream[T]> = (
 )
 ) : (
 )
-public class BoundedHyperStream fromList: l <List[T]> dimensions: ds <List[Integer | UnboundedDimension]> = AbstractHyperStream rank: ds size (
-	window: l.
+public class BoundedHyperStream fromList: l <List[Stream[T]]> dimensions: ds <List[Integer | UnboundedDimension]> = AbstractHyperStream rank: ds size (
+(* A hyperstream whose first dimension is a known integer.  The rank of a bounded hyperstream is always at least 1 - rank 0 cases are represented by ScalarHyperStream.
+Hence, the window and dimensions are never empty, and the window elements elements are always hyperstreams, bottoming out as scalar hyperstreams.
+*)
+  window: l.
     dimensions: ds.
 ) (
 public isBounded ^ <Boolean> = (
@@ -140,27 +154,25 @@ public isComplete: b <Boolean> = (
   (*  do nothing, but check that no one tries to tell me I'm not complete *)
   assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
 )
-public map: f <[:T | R]>  ^ <Stream[R]> = (
-  ^class fromList: (window collect: f) dimensions: dimensions
-)
-public take: n <Integer> ^ <Stream[T]> = (
-  (* Need to protect against taking more than the window size? *)
-  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
-)
 public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
   | dtail = dimensions copy from: 2 to: dimensions size. |
-  ^class fromList: (window select: f) dimensions: {UnboundedDimension new}, dtail 
+  ^class fromList: (window select: [:e <Stream[T]> | e filter: f]) dimensions: {UnboundedDimension new}, dtail 
+)
+public map: f <[:T | R]>  ^ <Stream[R]> = (
+  ^class fromList: (window collect:  [:e <Stream[T]> | e map: f]) dimensions: dimensions
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  (* Need to protect against taking more than the window size *)
+  assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
+  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
 )
 ) : (
-public fromTensor:t <Tensor> ^ <Instance> = (
-  ^fromList: t contents dimensions: t dimensions
-)
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator> = AbstractHyperStream rank: i rank (
-	|
-	source <Iterator> = i.
+  |
+  source <Iterator> = i.
     public isComplete ::= false.
-	|
+  |
 ) (
 public map: f <[:T | R]>  ^ <Stream[R]> = (
   ^class iteratingOver: (iterator map: f)
@@ -194,18 +206,6 @@ public replicate: s <S> ^ <Stream[S]> = (
 public zipReactive: streams <List[Stream]> ^ <Stream> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s | s iterator]))
 )
-public replicate: s dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream> = (
-   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
-   dims isEmpty ifTrue: [^replicate: s].
-   (* Recursively replicate for the tail of the dimesniosn, and replicate the result by the first dimension *)
-   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
-)
-public fromTensor: t <Tensor> ^ <BoundedHyperStream> = (
-  ^BoundedHyperStream fromTensor: t
-)
-public fromScalar: o <Object> ^ <ConstantStream> = (
-  ^ConstantStream on: o
-)
 public fromList: l <List[T]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam> = (
   ^BoundedHyperStream fromList: l dimensions: dimensions
 )
@@ -219,12 +219,24 @@ repeat: s  dimension: d = (
    (* Unbounded case *)
    ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator)
 )
+public replicate: s  <Stream> dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream> = (
+   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
+   dims isEmpty ifTrue: [^replicate: s].
+   (* Recursively replicate for the tail of the dimesniosn, and replicate the result by the first dimension *)
+   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
+)
+public fromScalar: o <Object> ^ <ConstantStream> = (
+  ^ScalarHyperStream scalarValue: o
+)
+public empty ^ <HyperStream> = ( 
+  ^EmptyHyperStream new
+)
 ) : (
 )
 class MappedIterator mapping: f <[:T | R]> on: i <Iterator> =  DerivedIterator fromIterator: i (
-	|
-	function <[:T | R]> = f.
-	|
+  |
+  function <[:T | R]> = f.
+  |
 ) (
 public next ^ <R> = (
   ^function value: iterator next
@@ -232,9 +244,9 @@ public next ^ <R> = (
 ) : (
 )
 class DerivedIterator fromIterator: i <Iterator> =  Iterator (
-	|
-	iterator <Iterator>
-	|
+  |
+  iterator <Iterator>
+  |
 ) (
 public hasNext ^ <Boolean> = (
   ^iterator hasNext
@@ -264,10 +276,10 @@ public rank ^ <Integer> = (
 ) : (
 )
 class FilteredIterator mapping: f <[:T | Boolean]> on: i <Iterator> =  DerivedIterator fromIterator: i (
-	|
-	function <[:T | Boolean]> = f.
+  |
+  function <[:T | Boolean]> = f.
     peek <T | Nil>
-	|
+  |
 ) (
 lookahead = (
   | nextItem <T | Nil> nextIsValid <Boolean>  |
@@ -290,9 +302,9 @@ public next ^ <T> = (
 ) : (
 )
 class ReactiveZipIterator zipping: iters <List[Iterator[T]]> = Iterator (
-	|
-	iterators <List[Iterator]> = iters.
-	|
+  |
+  iterators <List[Iterator]> = iters.
+  |
 ) (
 public hasNext ^ <Boolean> = (
   ^iterators anySatisfy: [:iter <Iterator[T]> | iter hasNext].
@@ -314,9 +326,9 @@ public rank ^ <Integer> = (
 ) : (
 )
 class SynchronousZipIterator zipping: iters <List[Iterator]> = Iterator (
-	|
-	iterators <List[Iterator]> = iters.
-	|
+  |
+  iterators <List[Iterator]> = iters.
+  |
 ) (
 public hasNext ^ <Boolean> = (
   ^iterators allSatisfy: [:iter <Iterator[T]> | iter hasNext].
@@ -330,9 +342,9 @@ public rank ^ <Integer> = (
 ) : (
 )
 class ReplicatingIterator replicating: v by: i = DerivedIterator fromIterator: i (
-	|
-	replicated = v.
-	|
+  |
+  replicated = v.
+  |
 ) (
 public rank ^ <Integer> = (
   ^iterator rank + 1
@@ -354,6 +366,62 @@ public hash ^ <Integer> = (
   ^class hash
 )
 public isKindOfUnboundedDimension ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class ScalarHyperStream scalarValue: s =  AbstractHyperStream rank: 0 (
+  |
+  constant = s.
+  |
+    window:: List new withAll: {s}.
+    dimensions:: List new.
+) (
+public add: e <T> = (
+  Error signal: 'Cannot add elements to a scalar stream'
+)
+public map: f <[:T | R]>  ^ <ScalarHyperStream[R]> = (
+  ^class scalarValue: (f value: constant)
+)
+public take: n <Integer> ^ <Stream[T]> = (
+  assert: [n < 2] message: 'Attempt to access more than one leement of a scalr stream'.
+  ^self
+)
+public filter: f <[:T | Boolean]> ^ <Stream[T]> = (
+  ^(f value: constant) ifTrue: [self] ifFalse: [HyperStream empty]
+)
+public isBounded ^ <Boolean> = (
+  ^true
+)
+public isComplete ^ <Boolean> = (
+  ^true
+)
+public isComplete: b <Boolean> = (
+  (*  do nothing, but check that no one tries to tell me I'm not complete *)
+  assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
+)
+public isKindOfScalarHyperStream ^ <Boolean> = (
+  ^true
+)
+public isScalar ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class EmptyHyperStream = AbstractHyperStream rank: 0(
+
+) (
+public isBounded ^ <Boolean> = (
+  ^true
+)
+public isComplete ^ <Boolean> = (
+  ^true
+)
+public isComplete: b <Boolean> = (
+  (*  do nothing, but check that no one tries to tell me I'm not complete *)
+  assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
+)
+public isKindOfEmptyHyperStream ^ <Boolean> = (
   ^true
 )
 ) : (

@@ -5,10 +5,10 @@ class ShapeRankStreamInterpreter usingPlatform: platform asts: asts collectionUt
 WIP on implementing the stream semantics. Need to incorporate HyperStream module: nest, imprt or inherit?
 *)
 |
-	private ASTClass <ShapeRankAST class> = asts.
+  private ASTClass <ShapeRankAST class> = asts.
     private HyperStream <HyperStream> = hs HyperStream.
-	private Map = platform collections Map.
-	private List = platform collections List.
+  private Map = platform collections Map.
+  private List = platform collections List.
     private Utils = utils.
 |
 ) (
@@ -29,8 +29,8 @@ Activation implements this, providing the runtime scope by mapping parameter nam
 ) (
 class Activation of: f <FunctionAST> from: argVector <List[Stream]> = (
 |
-	function <FunctionAST> = f.
-	public arguments <List[Stream]> = argVector.
+  function <FunctionAST> = f.
+  public arguments <List[Stream]> = argVector.
 |
 ) (
 public at: k <Symbol> ^ <Stream> = (
@@ -38,12 +38,12 @@ public at: k <Symbol> ^ <Stream> = (
 )
 public at: k <Symbol> ifAbsent: blk <[Stream]> ^ <Stream> = (
   1 to: function parameters size do: [:i <Integer> |
-	(function parameters at: i) id = k ifTrue: [ | arg |
-		arg:: arguments at: i.
-		arg isKindOfAbstractStream ifFalse: [arg:: scalar: arg].
-		^arg
-		]
-	].
+  (function parameters at: i) id = k ifTrue: [ | arg |
+    arg:: arguments at: i.
+    arg isKindOfAbstractStream ifFalse: [arg:: scalar: arg].
+    ^arg
+    ]
+  ].
 ^blk value 
 )
 ) : (
@@ -133,16 +133,10 @@ class Frame dimensions: ds <List[Integer]> cells: cs <Stream[Object]> = (
 The cells themselves are provided as a stream.
 *)
 |
-	public dimensions  <List[Integer | UnboundedDimension]> = ds.
-	public cells <Stream[Object]> = cs.
+  public dimensions  <List[Integer | UnboundedDimension]> = ds.
+  public cells <Stream[Object]> = cs.
 |
 ) (
-public asTensor ^ <Tensor> = (
-  dimensions isEmpty ifTrue: [^cells at: 1].
-  ^Tensor 
-      dimensions: dimensions, (cells at: 1) dimensions
-      contents: (subframes collect: [:f <Frame> | f asTensor])
-)
 public hasRank ^ <Boolean> = (
    ^true
 )
@@ -165,18 +159,12 @@ public rank ^ <Integer> = (
 public size = (
   ^dimensions reduce: [:d1 <Integer> :d2 <Integer> | d1 * d2] ifEmpty: [1]
 )
-public asStream ^ <Stream> = (
-  dimensions isEmpty ifTrue: [^cells].
-  ^HyperStream 
-      dimensions: dimensions, (cells at: 1) dimensions
-      contents: (subframes collect: [:f <Frame> | f asStream])
-)
 subframes ^ <List[Frame]> = (
-  | n = size/dimensions first. dimTail = dimensions copyFrom: 2 to: dimensions size.|
+  | n = size\/dimensions first. dimTail = dimensions copyFrom: 2 to: dimensions size.|
   ^(1 to: dimensions first) collect: [:i <Integer> | 
-	| subcells <List[Object]> = cells copyFrom: (i -1)*n + 1 to: i*n. |
-	Frame dimensions: dimTail cells: subcells 
-	]
+  | subcells <List[Object]> = cells copyFrom: (i -1)*n + 1 to: i*n. |
+  Frame dimensions: dimTail cells: subcells 
+  ]
 )
 public replicateToMatch: dims <List[Integer | UnboundedDimension]> = (
 (* Create a frame of shape dims, that replicates the contents of this frame as needed; 
@@ -184,6 +172,12 @@ public replicateToMatch: dims <List[Integer | UnboundedDimension]> = (
   |  cdims <List[Integer]> = dims copyFrom: dimensions size + 1 to: dims size. |
   cdims isEmpty ifTrue: [^self].
   ^Frame dimensions: dims cells: (HyperStream replicate: cells dimensions: cdims)
+)
+public asStream ^ <Stream> = (
+  dimensions isEmpty ifTrue: [^cells].
+  ^HyperStream 
+      dimensions: dimensions, cells dimensions
+      contents: (subframes collect: [:f <Frame> | f asStream])
 )
 ) : (
 )
@@ -302,8 +296,8 @@ A non-scalar Tensor contains a list of subtensors stored in its #contents. A sca
 has an empty #dimensions list, and contains a single non-Tensor in #contents.
 *)
 |
-	public dimensions <List[Integer]> = ds.
-	public contents <List[Object]> = cs.
+  public dimensions <List[Integer]> = ds.
+  public contents <List[Object]> = cs.
 |
 ) (
 public = other <Object> ^ <Boolean> = (
@@ -334,11 +328,11 @@ public isKindOfTensor ^ <Boolean> = (
 public isScalar ^ <Boolean> = (
 | c |
   ^rank = 0 and: [
-	contents size = 1 and: [
-		c:: contents at: 1. 
-		c isKindOfTensor not or: [c isScalar]
-		]
-	]
+  contents size = 1 and: [
+    c:: contents at: 1. 
+    c isKindOfTensor not or: [c isScalar]
+    ]
+  ]
 )
 public map: f <[Object | T def]> ^ <Tensor[T]> = (
   | newContents = contents collect: f.
@@ -358,7 +352,7 @@ public max: t <Tensor> ^ <Tensor> = (
 )
 public printOn: stream <CharOutputStream> = (
       rank > 0 ifTrue: [
-	   stream nextPutAll: '['.
+     stream nextPutAll: '['.
          contents do: [:e | e printOn: stream] separatedBy: [ stream nextPutAll: ', ']. 
          stream nextPutAll: ']'.
       ]
@@ -368,9 +362,9 @@ public printString ^ <String> = (
   | contentString <String> |
       contentString:: ''.
       ^rank > 0 ifTrue: [
-	   contents do: [:e | contentString:: contentString, e printString] 
-	        separatedBy: [contentString:: contentString, ', '].
-	   '[', contentString, ']'.
+     contents do: [:e | contentString:: contentString, e printString] 
+          separatedBy: [contentString:: contentString, ', '].
+     '[', contentString, ']'.
       ]
       ifFalse: [(contents at: 1) printString]
 )
@@ -384,16 +378,16 @@ public shape ^ <ShapeAST> = (
 public hash ^ <Integer> = (
   dimensions hash bitXor: [contents hash].
 )
-public asStream ^ <HyperStream> = (
-  | subtensors <List[HyperStream]>  |
-  isScalar ifTrue: [^HyperStream replicate: self].
-  subtensors:: contents collect: [:subtensor <Tensor> | subtensor asStream].
-  ^HyperStream fromList: subtensors rank: rank
-)
 public cellsOfShape: cds <List[Integer]> ^ <HyperStream> = (
   assert: [rank >= cds size] message: 'Cells larger than Stream!'.
   rank = cds size ifTrue: [^{self}].
   ^(contents collect: [:e <Tensor> | e cellsOfShape: cds]) flatten
+)
+public asStream ^ <HyperStream> = (
+  | subtensors <List[HyperStream]>  |
+  isScalar ifTrue: [^HyperStream fromScalar: self asScalar].
+  subtensors:: contents collect: [:subtensor <Tensor> | subtensor asStream].
+  ^HyperStream fromList: subtensors dimensions: dimensions
 )
 ) : (
 )
@@ -401,9 +395,9 @@ public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. In
 ) (
 appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
   e isKindOfTensorAST ifTrue: [
-	ds add: e expressions size.
-	appendDimensionsOf: e expressions first to: ds
-	].
+  ds add: e expressions size.
+  appendDimensionsOf: e expressions first to: ds
+  ].
    ^ds
 )
 public dimensions = (
@@ -429,18 +423,18 @@ public ShapeVectorAST ^ <ShapeVectorAST class> = (
 computeSpecialEvaluators ^ <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = (
   | ses <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = Map new. scanReduceBlock <[List[ExprAST] | List[Tensor]]>  |
   scanReduceBlock:: [:args <List[ExprAST]> | 
-	List new 
-	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 1) id) at: #ast}); 
-	  add: (args at: 2) eval; 
-	  add: (args at: 3) eval;
-	  yourself
-	].
+  List new 
+    add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 1) id) at: #ast}); 
+    add: (args at: 2) eval; 
+    add: (args at: 3) eval;
+    yourself
+  ].
   ses 
-	at: #fold put: scanReduceBlock; 
-	at: #innerProduct put: innerProductBlock; 
-	at: #outerProduct put: scanReduceBlock; 
-	at: #reduce put: scanReduceBlock; 
-	at: #scan put: scanReduceBlock.
+  at: #fold put: scanReduceBlock; 
+  at: #innerProduct put: innerProductBlock; 
+  at: #outerProduct put: scanReduceBlock; 
+  at: #reduce put: scanReduceBlock; 
+  at: #scan put: scanReduceBlock.
   ^ses
 )
 currentActivation ^ <Activation> = (
@@ -451,13 +445,13 @@ currentProgram ^ <ProgramAST> = (
 )
 innerProductBlock = (
   ^[:args <List[ExprAST]> | 
-	List new 
-	  add: (args at: 1) eval; 
-	  add: (args at: 2) eval; 
-	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 3) id) at: #ast}); 
-	  add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 4) id) at: #ast}); 
-	  yourself
-	].
+  List new 
+    add: (args at: 1) eval; 
+    add: (args at: 2) eval; 
+    add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 3) id) at: #ast}); 
+    add: (Tensor dimensions: {} contents: {(programScope lookup: (args at: 4) id) at: #ast}); 
+    yourself
+  ].
 )
 popActivation = (
   callStack removeLast.
@@ -467,13 +461,6 @@ programScope ^ <Scope> = (
 )
 pushActivation: a <Activation> = (
   callStack add: a
-)
-zipFrames: l <List[Frame]> ^ <Frame> = (
-  | 
-  dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
-  zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells]). 
-  |
-  ^Frame dimensions: dims cells: (List withAll: {zippedCells}).
 )
 computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream> = (
   | 
@@ -485,19 +472,19 @@ computeFunction: callee <FunctionAST> arguments: args <List[Stream]> ^  <Stream>
   |
 (* replicate *)
   maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
-	f1 max: f2
-	] ifEmpty: [emptyFrame].
+  f1 max: f2
+  ] ifEmpty: [emptyFrame].
   replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
 (* zip *)
   zippedFrame:: zipFrames: replicatedFrames. 
 (* map *)
   resultFrame:: zippedFrame map: [:argVector <List[Stream]> | 
-	 | result  <Frame> | 
-	 pushActivation:  (Activation of: callee from: argVector).
-	 result:: callee body eval.
-	 popActivation.
-	 result.
-	].
+   | result  <Frame> | 
+   pushActivation:  (Activation of: callee from: argVector).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ].
   ^resultFrame asStream.  
 )
 scalar: o <Object> ^ <Stream> = (
@@ -506,8 +493,8 @@ scalar: o <Object> ^ <Stream> = (
 frameArguments: args <List[Stream]> of: callee <FunctionAST> ^ <List[Frame]> = (
   | argFrames <List[Frame]> = List new: args size. |
   args with: callee parameters do: [:a <Stream> :p <ParameterAST> |
-	argFrames add: (frameArgument: a forParameter: p)
-	].
+  argFrames add: (frameArgument: a forParameter: p)
+  ].
   ^argFrames
 )
 cellsFor: fdims <List[Integer]> from: arg <Stream>  ^ <Stream[Object]> = (
@@ -516,15 +503,22 @@ cellsFor: fdims <List[Integer]> from: arg <Stream>  ^ <Stream[Object]> = (
     (* recursively traverse first dimension of the argument, computing cells for each element *)
     ^arg asStream collect: [:e  <Object>  |  cellsFor: (fdims copyFrom: 2 to: fdims size) from: e]
 )
+zipFrames: l <List[Frame]> ^ <Frame> = (
+  | 
+  dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
+  zippedCells <Stream[Object]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells]). 
+  |
+  ^Frame dimensions: dims cells: zippedCells.
+)
 frameArgument: arg <Stream> forParameter: p <ParameterAST> ^ <Frame> = (
   (* unranked parameter: use entire argument as sole cell *)
   p hasRank ifFalse: [
-	^Frame dimensions: {} cells: (HyperStream fromScalar: arg).
-	].
+  ^Frame dimensions: {} cells: (HyperStream fromScalar: arg). (* wrong *)
+  ].
   arg rank >= p rank ifTrue: [ 
-	| fdims <List[Integer]> = arg dimensions copyFrom: 1 to: arg rank - p rank. |
+  | fdims <List[Integer]> = arg dimensions copyFrom: 1 to: arg rank - p rank. |
     ^Frame dimensions: fdims cells: (cellsFor: fdims from: arg).
-	].
+  ].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
 ) : (
