@@ -210,32 +210,6 @@ public class HyperStreamFactory = (
 public  iteratingOver: i <Iterator>  ^ <UnboundedHyperStream> = (
    ^UnboundedHyperStream iteratingOver: i
 )
-public zipSynchronous: streams <List[Stream]> ^ <Stream> = (
-  ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s | s iterator]))
-)
-public replicate: s <S> ^ <Stream[S]> = (
-   s isScalar ifTrue: [^ConstantStream on: s].
-   ^iteratingOver: s iterator
-)
-public fromList: l <List[T]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam> = (
-  ^BoundedHyperStream fromList: l dimensions: dimensions
-)
-repeat: s  dimension: d = (
-   d isKindOfInteger ifTrue: [ 
-     (* Bounded case *)
-     | l = List new: d. | (* Replicate s d times *)
-     1 to: d do: [:i | l add: (HyperStream iteratingOver: s iterator)].
-     ^fromList: l dimensions: {}, s dimensions.
-   ].
-   (* Unbounded case *)
-   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator)
-)
-public replicate: s  <Stream> dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream> = (
-   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
-   dims isEmpty ifTrue: [^replicate: s].
-   (* Recursively replicate for the tail of the dimesniosn, and replicate the result by the first dimension *)
-   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
-)
 public fromScalar: o <Object> ^ <ConstantStream> = (
   ^ScalarHyperStream scalarValue: o
 )
@@ -244,6 +218,32 @@ public empty ^ <HyperStream> = (
 )
 public zipReactive: streams <List[AbstractHyperStream]> ^ <AbstractHyperStream[List]> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <AbstractHyperStream> | s iterator]))
+)
+public replicate: s <AbstractHyperStream[S def]> ^ <AbstractHyperStream[S]> = (
+   s isScalar ifTrue: [^ScalarHyperStream on: s contents].
+   ^iteratingOver: s iterator (* oops, some iterators are stateful, need to clone *)
+)
+public replicate: s  <AbstractHyperStream[T def]> dimensions: dims <List[Integer | UnboundedDimension]> ^ <AbstractHyperStream[T]> = (
+   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
+   dims isEmpty ifTrue: [^replicate: s].
+   (* Recursively replicate for the tail of the dimensions, and replicate the result by the first dimension *)
+   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
+)
+repeat: s  <AbstractHyperStream[T def]> dimension: d <Integer | UnboundedDimension> ^ <AbstractHyperStream[T]> = (
+   d isKindOfInteger ifTrue: [ 
+     (* Bounded case *)
+     | l <List[AbstractHyperStream[T]]> = List new: d. | (* Replicate s d times *)
+     1 to: d do: [:i <Integer> | l add: (HyperStream iteratingOver: s iterator)].
+     ^fromList: l dimensions: {}, s dimensions.
+   ].
+   (* Unbounded case *)
+   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator) (* d has an iterator? *)
+)
+public fromList: l <List[AbstractHyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam[T]> = (
+  ^BoundedHyperStream fromList: l dimensions: dimensions
+)
+public zipSynchronous: streams <List[AbstractHyperStream]> ^ <AbstractHyperStream[List]> = (
+  ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s <AbstractHyperStream> | s iterator]))
 )
 ) : (
 )
