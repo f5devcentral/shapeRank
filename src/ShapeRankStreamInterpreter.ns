@@ -2,11 +2,11 @@ Newspeak3
 'Root'
 class ShapeRankStreamInterpreter usingPlatform: platform asts: asts collectionUtils: utils streams: hs = (
 (* 
-WIP on implementing the stream semantics. Need to incorporate HyperStream module: nest, imprt or inherit?
+Interpreter for ShapeRank with stream support.
 *)
 |
   private ASTClass <ShapeRankAST class> = asts.
-    private HyperStream <HyperStream> = hs HyperStream.
+  private HyperStream <HyperStream class> = hs HyperStream.
   private Map = platform collections Map.
   private List = platform collections List.
     private Utils = utils.
@@ -94,17 +94,17 @@ public eval ^<Tensor> = (
 )
 public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
 ) (
-public evalOn: t <Tensor | Record | ParameterAST> ^<Tensor> = (
+public eval ^<Tensor> = (
+  ^evalOn: (expr eval)
+)
+public evalOn: t <HyperStream | Record | ParameterAST> ^<HyperStream> = (
   t isKindOfParameterAST ifTrue: [^evalOn: (currentActivation at: t id)].
   t isKindOfRecord ifTrue: [^t data at: label ifAbsent: [ assert: false. nil]]. (* is this right? *)
-  t isKindOfTensor ifTrue: [
+  t isKindOfHyperStream ifTrue: [
     | ret = t map: [:v | evalOn: v]. |
     t isScalar ifTrue: [^ret contents at: 1] ifFalse: [^ret]
   ].
   Error signal: 'Could not index non-struct object'.
-)
-public eval ^<Tensor> = (
-  ^evalOn: (expr eval)
 )
 ) : (
 )
@@ -128,13 +128,13 @@ evaluateArguments = (
 )
 ) : (
 )
-class Frame dimensions: ds <List[Integer]> cells: cs <AbstractHyperStream[Cell[T def]]> = (
+class Frame dimensions: ds <List[Integer]> cells: cs <HyperStream[Cell[T def]]> = (
 (* A Frame is a hyperstream of cells. The shape of the hyperstream is given by #dimensions.
 The cells themselves are provided as a hyperstream.
 *)
 |
   public dimensions  <List[Integer | UnboundedDimension]> = ds.
-  public cells <AbstractHyperStream[Cell[T]]> = cs.
+  public cells <HyperStream[Cell[T]]> = cs.
 |
 ) (
 public hasRank ^ <Boolean> = (
@@ -154,9 +154,6 @@ public rank ^ <Integer> = (
 public size = (
   ^dimensions reduce: [:d1 <Integer> :d2 <Integer> | d1 * d2] ifEmpty: [1]
 )
-public asStream ^ <AbstractHyperStream[T]> = (
-  ^cells flatMap: [:c <Cell[T]> | c contents ]
-)
 public replicateToMatch: dims <List[Integer | UnboundedDimension]> ^ <Frame[T]> = (
 (* Create a frame of shape dims, that replicates the contents of this frame as needed; 
     We assume dims are the dimensions of a frame that is a suffix of this frame. *)
@@ -167,7 +164,10 @@ public replicateToMatch: dims <List[Integer | UnboundedDimension]> ^ <Frame[T]> 
 public map: f <[T | X def]> ^ <Frame[X]> = (
   ^Frame 
         dimensions: dimensions 
-        cells: (cells flatMap: [:c <Cell[T]> | Cell for: (f value: c contents)])
+        cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)])
+)
+public asStream ^ <HyperStream[T]> = (
+  ^cells map: [:c <Cell[T]> | c contents ]
 )
 ) : (
 )
@@ -404,9 +404,9 @@ public rank ^ <Integer> = (
 )
 ) : (
 )
-class Cell for: s <AbstractHyperStream[T def]> = (
+class Cell for: s <HyperStream[T def]> = (
 	|
-	public contents <AbstractHyperStream[T]> = s.
+	public contents <HyperStream[T]> = s.
 	|
 ) (
 ) : (
@@ -462,7 +462,7 @@ pushActivation: a <Activation> = (
 scalar: o <Object> ^ <Stream> = (
   ^HyperStream fromScalar: o
 )
-frameArgument: arg <AbstractHyperStream[T def]> forParameter: p <ParameterAST> ^ <Frame[T]> = (
+frameArgument: arg <HyperStream[T def]> forParameter: p <ParameterAST> ^ <Frame[T]> = (
   (* unranked parameter: use entire argument as sole cell *)
   p hasRank ifFalse: [
   ^Frame dimensions: {} cells: (HyperStream fromList: {arg} dimensions: {1}).
@@ -473,20 +473,20 @@ frameArgument: arg <AbstractHyperStream[T def]> forParameter: p <ParameterAST> ^
   ].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
-cellsFor: fdims <List[Integer | UnboundedDimension]> from: arg <AbstractHyperStream[T def]>  ^ <AbstractHyperStream[Cell[T]]> = (
+cellsFor: fdims <List[Integer | UnboundedDimension]> from: arg <HyperStream[T def]>  ^ <HyperStream[Cell[T]]> = (
     (* base case: empty frame with single cell *)
     fdims isEmpty ifTrue: [^HyperStream fromScalar: (Cell for: arg)].
     (* recursively traverse first dimension of the argument, computing cells for each element *)
-    ^arg asStream collect: [:e  <AbstractHyperStream[T]>  |  cellsFor: (fdims copyFrom: 2 to: fdims size) from: e]
+    ^arg asStream collect: [:e  <HyperStream[T]>  |  cellsFor: (fdims copyFrom: 2 to: fdims size) from: e]
 )
-frameArguments: args <List[AbstractHyperStream]> of: callee <FunctionAST> ^ <List[Frame]> = (
+frameArguments: args <List[HyperStream]> of: callee <FunctionAST> ^ <List[Frame]> = (
   | argFrames <List[Frame]> = List new: args size. |
-  args with: callee parameters do: [:a <AbstractHyperStream> :p <ParameterAST> |
+  args with: callee parameters do: [:a <HyperStream> :p <ParameterAST> |
   argFrames add: (frameArgument: a forParameter: p)
   ].
   ^argFrames
 )
-computeFunction: callee <FunctionAST> arguments: args <List[AbstractHyperStream]> ^  <AbstractHyperStream> = (
+computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
   | 
   argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
   maxFrame <Frame>
@@ -502,8 +502,8 @@ computeFunction: callee <FunctionAST> arguments: args <List[AbstractHyperStream]
 (* zip *)
   zippedFrame:: zipFrames: replicatedFrames. 
 (* map *)
-  resultFrame:: zippedFrame map: [:argVector <List[AbstractHyperStream]> | 
-   | result  <AbstractHyperStream> | 
+  resultFrame:: zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
    pushActivation:  (Activation of: callee from: argVector).
    result:: callee body eval.
    popActivation.
@@ -516,9 +516,9 @@ zipFrames: l <List[Frame]> ^ <Frame[List]> = (
   (* All the incoming frames have the same shape, so we pick the first; if the list is empty, dims is empty too *)
   dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
   (* Extract the frame's contents, and zip them *)
-  zipped <AbstractHyperStream[List]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells contents]). 
+  zipped <HyperStream[List]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells contents]). 
   (* Convert the zipped contents into cells *)
-  zippedCells <AbstractHyperStream[Cell[List]]> = cellsFor: dims from: zipped.
+  zippedCells <HyperStream[Cell[List]]> = cellsFor: dims from: zipped.
   |
   ^Frame dimensions: dims cells: zippedCells.
 )
