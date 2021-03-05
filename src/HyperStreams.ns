@@ -17,7 +17,6 @@ A scalar is itself a hyperstream,  known as a scalar hyperstream, which is repre
 public class HyperStream rank: r <Integer> = (
 (* The abstract class at the root of the hyperstream hierarchy.  A hyperstream contains elements of some type T. *)
   |
-    output <OutputPort>
     window <List[HyperStream[T]]>
     public rank <Integer> = r.
     public dimensions <List[Integer | UnboundedDimension]>

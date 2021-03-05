@@ -169,6 +169,81 @@ public map: f <[T | X def]> ^ <Frame[X]> = (
 public asStream ^ <HyperStream[T]> = (
   ^cells map: [:c <Cell[T]> | c contents ]
 )
+fuseBounded: b <BoundedHyperStream[U def]> withScalar: s <ScalarHyperStream[S def]> ^ <BoundedHyperStream[{U. S}]> = (
+)
+fuseScalar: s1 <ScalarHyperStream[S1 def]> withScalar: s2 <ScalarHyperStream[S2 def]> ^ <ScalarHyperStream[{S1. S2}]> = (
+)
+fuseUnbounded: u <UnboundedHyperStream[U def]> withScalar: s <ScalarHyperStream[S def]> ^ <UnboundedHyperStream[{U. S}]> = (
+)
+reactivelyFuseBounded: u <BoundedHyperStream[U def]> with: v <BoundedHyperStream[V def]> ^ <BoundedHyperStream[{U. V}]> = (
+)
+reactivelyFuseUnbounded: u <UnboundedHyperStream[U def]> with: v <UnboundedHyperStream[V def]> ^ <UnboundedHyperStream[{U. V}]> = (
+)
+synchronouslyFuseBounded: u <BoundedHyperStream[Cell[U def]]> with: v <BoundedHyperStream[Cell[V def]]> ^ <BoundedHyperStream[Cell[{U. V}]]> = (
+)
+synchronouslyFuseUnbounded: u <UnboundedHyperStream[Cell[U def]]> with: v <UnboundedHyperStream[Cell[V def]]> ^ <UnboundedHyperStream[Cell[{U. V}]]> = (
+)
+public synchronouslyFuseCells: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[{T.S}]]> = ( 
+     cells isKindOfScalarHyperStream ifTrue: [
+        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
+        fcells isKindOfUnboundedHyperStream 
+           ifTrue: [^fuseUnbounded: fcells withScalar: cells].
+        ^fuseBounded: fcells withScalar: cells
+     ] ifFalse: [
+          cells isKindOfUnboundedHyperStream ifTrue: [
+                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
+                  ^synchronouslyFuseUnbounded: cells with: fcells
+          ].
+          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
+          ^synchronouslyFuseBounded: cells with: fcells  
+          ]
+)
+public prefixOf: f <Frame> ^ <Boolean> = (
+  (* Answer whether my shape is a prefix of f's or vice versa *)
+    dimensions size >= f dimensions size ifTrue: [^f isPrefixOf: self].
+   ^isPrefixOf: f
+)
+inPrefixRelationWith: f <Frame> ^ <Boolean> = (
+  (* Answer whether my shape is a prefix of f's or vice versa *)
+    dimensions size >= f dimensions size ifTrue: [^f isPrefixOf: self].
+   ^isPrefixOf: f
+)
+public isPrefixOf: f <Frame> ^ <Boolean> = (
+  (* Answer whether my shape is a prefix of f's. Must only be called if length(shape(f))  >= length(shape(self)) *)
+   dimensions with: (f dimensions copyFrom: 1 to: dimensions size) do: [:d <Integer | UnboundedDimension> :fd <Integer | UnboundedDimension> |
+      d = fd ifFalse: [^false]
+   ].
+   ^true
+)
+public reactivelyFuseCells: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[{T.S}]]> = ( 
+     cells isKindOfScalarHyperStream ifTrue: [
+        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
+        fcells isKindOfUnboundedHyperStream 
+           ifTrue: [^fuseUnbounded: fcells withScalar: cells].
+        ^fuseBounded: fcells withScalar: cells
+     ] ifFalse: [
+          cells isKindOfUnboundedHyperStream ifTrue: [
+                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
+                  ^reactivelyFuseUnbounded: cells with: fcells
+          ].
+          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
+          ^reactivelyFuseBounded: cells with: fcells  
+          ]
+)
+public synchronouslyFuse: f <Frame[S def]> ^ <Frame[{T.S}]> = (
+  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
+    (*  Check that f's shape is a prefix of my shape or vice versa *)
+     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
+     (* fuse *)
+     ^Frame: maxdims cells: (synchronouslyFuseCells: fcells) 
+)
+public reactivelyFuse: f <Frame[S def]> ^ <Frame[{T.S}]> = (
+  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
+    (*  Check that f's shape is a prefix of my shape or vice versa *)
+     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
+     (* fuse *)
+     ^Frame: maxdims cells: (reactivelyFuseCells: fcells)
+)
 ) : (
 )
 public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
