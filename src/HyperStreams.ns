@@ -176,11 +176,6 @@ public isComplete: b <Boolean> = (
   (*  do nothing, but check that no one tries to tell me I'm not complete *)
   assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
 )
-public take: n <Integer> ^ <Stream[T]> = (
-  (* Need to protect against taking more than the window size *)
-  assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
-  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
-)
 public map: f <[:T | R]>  ^ <HyperStream[R]> = (
   ^class fromList: (window collect:  [:e <HyperStream[T]> | e map: f]) dimensions: dimensions
 )
@@ -190,6 +185,14 @@ public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
 )
 public clone  = (
   ^class fromList: window dimensions: dimensions
+)
+public size ^ <Integer> = (
+  ^windows size
+)
+public take: n <Integer> ^ <BoundedHyperStream[T]> = (
+  (* Need to protect against taking more than the window size *)
+  assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
+  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
 )
 ) : (
 )
@@ -245,7 +248,7 @@ public rank ^ <Integer> = (
 )
 ) : (
 )
-class Iterator = (
+public class Iterator = (
   (* Abstract class at root of the iterator hierarchy for hyperstreams.  An iterator is a one dimensional sequence of elements of a type T.  In this module, they serve to represent a stream of hyperstreams that underlies a[n unbounded] hyperstream, and so T is usually HyperStream[S] for some S.*)
 ) (
 public hasNext ^ <Boolean> = (
