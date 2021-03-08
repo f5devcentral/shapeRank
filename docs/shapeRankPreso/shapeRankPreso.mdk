@@ -1,0 +1,373 @@
+Title         : Shape Rank 
+Subtitle:An Advanced Programming System for Machine Learning, Data Analytics and Reactive Programming
+Author        : Gilad Bracha
+Logo          : False
+Package: amsmath
+Script: scheduleTurn.js
+Script: CodeMirror/lib/codemirror.js
+Css: CodeMirror/lib/codemirror.css
+Script: CodeMirror/addon/display/autorefresh.js
+Script: primordialsoup.js 
+
+~ Snippet
+
+
+~
+
+[TITLE]
+
+
+
+# Motivation 
+
+## Mathematical Programming is on the Rise
+
+* Data analytics and Machine Learning are increasingly widespread and important.
+
+* But there is a large gap between the mathematics and the programming.  Reducing that gap can make those engaged in mathematical programming more productive.
+
+## Array Programming
+
+Array programming originated in the early 1960s with Iverson’s Turing-award winning APL.
+It was two generations ahead of its time. 
+
+## Example: Dot Product
+
+Dot product is defined as
+
+$\Sigma_{i =1}^n a_i \cdot b_i$, where $a$, $b$ are $n$-vectors.
+
+In a traditional imperative programming language, we'd implement the 
+above definition via something like:
+
+```
+c := 0;
+for i := 1 to n { c := c + a[i]*b[i];};
+```
+
+
+In ShapeRank, we write
+
+$reduce(+, a*b)$
+
+<div class="shapeRankEvaluator" expression = "reduce(+, 0, a*b)"></div>
+
+where $a$ and $b$ are given in the program below
+
+<div class="programPrelude"></div>
+
+## Advantages
+
+* Concise, clear notation, close to the underlying math
+* Iteration is implicit, based on shape of the data
+* No indexing errors
+* No infinite loops
+* Easily parallelizable
+* Makes you think different!
+
+## Array Programming, Statically Typed
+
+Recent research shows how we can augment array programming with static 
+typing, making it more  applicable to GPUs, TPUs and other accelerators.
+However, that work has remained largely theoretical; it has been 
+unclear how to incorporate it into a practical design.
+
+## Hyperstream Programming
+
+ShapeRank extends the ideas of APL to streams, in particular,
+multi-dimensional streams, which we call *hyperstreams*.
+
+
+## More than Just Programming Language
+
+We’ve seen a flowering of “Notebook” systems - Mathematica,
+ Matlab, Jupyter, Observable ….
+
+However, Notebooks have a long way to go. We seek to integrate advanced statically 
+typed programming with highly interactive live programming and user 
+customizable visualization and tooling
+
+Ultimately, we want something like Medium meets Arkiv meets 
+Mathematica - an open tool for both research and development 
+that advances the state of the art and gives users of 
+mathematical programming tools for development, collaboration 
+and dissemination.
+
+# Examples
+
+## Concepts
+
+Scalars: basic values like numbers, strings, structs
+
+Hyperstreams: Multi-dimensional streams, e.g.,
+
+<div class="shapeRankEvaluator" expression = "[1, 2, 3]"></div>
+  
+
+  $\begin{bmatrix}
+  2 &  4  & 8 \\
+  16 & 32 & 64 
+  \end{bmatrix}$
+
+
+Written as <div class="shapeRankEvaluator" expression = "[[2, 4, 8], [16, 32, 64]]"></div>
+
+
+Every hyperstream has a shape and a rank.
+
+ The shape is a vector of numbers indicating the size of each dimension.
+
+The rank is the number of dimensions.
+
+<div class="shapeRankEvaluator" expression = "rank([1, 2, 3])"></div>
+<div class="shapeRankEvaluator" expression = "rank([[2, 4, 8], [16, 32, 64]])"></div>
+
+$\forall a:rank(a) = length(shape(a))$
+
+Scalars are hyperstreams too!
+
+The shape of a scalar is the empty vector [].
+The rank of a scalar is 0
+
+<div class="shapeRankEvaluator" expression = "3"></div>
+  
+## Example : Extending Operations Pointwise
+
+$ a = [1, 2, 3]$
+
+<div class="shapeRankEvaluator" expression = "-a"></div>
+
+Implicitly, $map(-, a )$.
+
+## Example 2: Extending N-ary Operations Pointwise
+
+$ v_1 = [10, 20, 30]$
+
+$ v_2 = [100, 200, 300]$
+
+<div class="shapeRankEvaluator" expression = "v1 + v2"></div>
+
+Implicitly, $map(+, zip(v1 , v2 ))$.
+
+## Example 3: Replication
+
+$ a = [1, 2, 3]$
+
+
+<div class="shapeRankEvaluator" expression = "2*a"></div>
+Equivalent to $[2, 2, 2] \cdot a$
+
+Implicitly, $map(+, zip(replicate(2, [3]), a ))$.
+
+
+## Example 4: Arbitrary Rank
+
+
+<div class="shapeRankEvaluator" 
+  expression = 
+  "[10, 20, 30] + 2 * [[1, 2, 3], [4, 5, 6], [7, 8, 9]]">
+  </div>
+
+# Language Overview
+
+* Functional, statically typed
+* Only formal parameters require explicit types
+* Types may be:
+    * Hyperstream types
+    * Type variables, $\$T$
+    * dynamic
+
+Hyperstream types consist of 
+
+  * Shape (omitted for scalars)
+  * Base type (e.g., Int, Bool, record type)
+
+Types statically capture the shape of the data - its rank and the dimensions at each rank
+
+* Shapes are either
+  * Shape vectors - lists of dimensions
+  * Shape variables, @S
+  * Shape appends, S1::S2 (in restricted cases)
+
+*  Dimensions are given between brackets. A dimension may be:
+  * An integer
+  * A dimension variable $\$d$
+  * A sum of dimensions, $d_1 + d_2$
+  * Empty (don’t care)
+  * The unbounded dimension, ? (for streams; no sums allowed)
+  
+  ## Examples
+  
+
+
+$+(a: Int, b: Int): Int$
+
+$sum(x: []Int) = reduce(+, 0, x)$
+
+$append(a: [\$d1]\$T, b: [\$d2]\$T): [\$d1 + \$d2]\$T$
+
+$contains(v: @S\$T, x: \$T): Bool$
+
+
+A dimension variable or sum can be used as a type; it is 
+shorthand for the integer subset it denotes
+
+Example:
+
+
+$..(start: \$d1, end: \$d1 + \$d2): [\$d2 + 1]Int$
+
+where $..$ is the infix range operator, which produces
+a vector whose elements are the integers between its two
+arguments (inclusive).
+
+<div class="shapeRankEvaluator" expression = "10 .. 16"></div>
+
+A shape variable or append can be used as a type; It matches 
+specially marked integer vectors that specify a shape
+
+Example:
+
+$makeTensor(dims: @S, contents: []\$T): @S\$T$
+
+$makeTensor(@[2, 3], [1, 2, 3, 4, 5, 6])$
+
+<div class="shapeRankEvaluator" 
+  expression = "makeTensor(@[2, 3], [1, 2, 3, 4, 5, 6])">
+</div>
+  
+The use of $@$ as a prefix identifies an expression as a
+shape expression. This only effects the expression's
+type, not its value.
+
+In some cases, the shape of a hyperstream cannot be captured 
+statically, e.g.:
+
+<div class="shapeRankEvaluator" 
+  expression = 
+  "mask(
+    not(contains(outerProduct(
+         *, 2..7, 2..7), 2..7)),  
+         2..7)"></div>
+
+Type dynamic is useful here. A dynamically checked cast must 
+be used to use it where a type other than dynamic is expected.
+
+## Streams (WIP: TBD)
+
+Hyperstreams can have the unbounded dimension, $?$, denoting a stream of
+ indeterminate (and potentially infinite) length.
+ 
+ # Machine Learning
+ 
+## Some common functions:
+
+
+$\bf{func}$ $boolToFloat(b: Bool): Float = if$ $b$ $then$ $1.0$ $else$ $0.0$
+
+$\bf{func}$ $mean(x: []Float): Float = sum(x)/length(x)$
+
+$\bf{func}$ $softmax(x: [\$d]Float): [\$d]Float = e^x / sum(x)$
+
+${\bf func}\hbox{ }cross\_entropy(y: [\$d]Float, y\_prime: [\$d]Float): Float = 
+    -sum(y\_prime * log(y))$
+    
+${\bf func}\hbox{ }argmax(v: []Float]): Float =$
+$\hbox{    }fold(maxEntry, [0, -infinity], pair(v, indexes(v)))[2]\hbox{ }\bf{where}$ $maxEntry = (a: [2]Num, b: [2]Num)\{if$ $a[1] > b[1]$ $then$ $a$ $else$ $b\}$
+
+
+Examples:
+
+<div class="shapeRankEvaluator" 
+  expression = 
+  "matmul(
+     [[1, 2, 3, 4], 
+      [5, 6, 7, 8]], 
+     [[10, 20, 30], 
+      [40, 50, 60], 
+      [70, 80, 90], 
+      [100, 200, 300]])"></div>
+
+<div class="shapeRankEvaluator" 
+  expression = 
+  "matmul(
+     [[1, 2, 3, 4], 
+      [5, 6, 7, 8]], 
+      [10, 20, 30, 40])"></div>
+
+
+## Linear Classification
+
+The standard description of a linear classification model is
+
+
+${\bf func}\hbox{ }model(params: \{W:[\$cn][\$fn] Float, b: [\$cn] Float\}, x:)$
+$\hbox{ } = softmax(matmul(params.W,x) + params.b))$
+
+
+
+#### Training
+
+Prior to training the model, a loss function must be defined. A common formulation 
+is
+
+${\bf func}\hbox{ }loss(params: \{ W: [\$cn][\$fn]Float, b: [$cn]Float \},
+             data: [$batchSize]\{x: [\$fn]Float, yp: [\$cn]Float\}): Float =
+     avg(crossEntropyLoss(data.yp, model(params, data.x)))$
+     
+
+Using this loss function, training is defined via gradient descent, starting with 
+initial parameters for the model and the training data 
+
+${\bf func}\hbox{ }train(params: \{ W: [\$cn][\$fn]Float, b: [\$cn]Float \},$
+$\hbox{     }data: [\$batchSize]\{ x: [\$fn]Float, yp: [\$cn]Float \})$
+$\hbox{  }:\{ W: [\$cn][\$fn]Float, b: [\$cn]Float \} = gradientDescent(0.05, loss, params, data)$
+
+We can now train the model
+
+${\bf func}\hbox{ }trainedParams = fold(train, initParams, trainingSet)$
+
+
+We then reduce over an epoch, which consists of $\$bn$ batches : 
+
+
+
+#### Testing and Inference
+
+We can now test the accuracy of the trained model thus
+
+${\bf func}\hbox{ }infer(x: [\$fn]Float): Int = argmax(model(trainedParams, x))$
+
+$infer([[0.25, 0.65], [0.2, 0.9], [0.1, 0.1], [0.7, 0]])$
+
+
+
+
+# Next Steps
+
+Complete Implementation
+
+High performance Compiler
+
+Improve Tooling
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[reference manual]: http://research.microsoft.com/en-us/um/people/daan/madoko/doc/reference.html  "Madoko reference manual"

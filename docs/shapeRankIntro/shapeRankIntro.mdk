@@ -1,0 +1,160 @@
+Title         : Introducing ShapeRank
+Author        : Gilad Bracha
+Logo          : False
+Package: amsmath
+Script: scheduleTurn.js
+Script: CodeMirror/lib/codemirror.js
+Css: CodeMirror/lib/codemirror.css
+Script: CodeMirror/addon/display/autorefresh.js
+Script: primordialsoup.js 
+
+
+
+# Introducing ShapeRank 
+
+ShapeRank is a language designed to support data
+analysis, machine learning and reactive programming. In ShapeRank
+everything is a hyperstream - a multidimensional stream of data.
+
+Caveat: At the moment, ShapeRank is only a rudimentary
+prototype.
+
+Below is a ShapeRank evaluator. It shows a literal
+hyperstream. Hyperstreams are written as comma separated lists of expressions,
+delimited by square brackets.
+
+<div class="shapeRankEvaluator" expression = "[1, 2, 3]"> </div>
+
+The evaluator is live: you can edit the 
+expression and the result will recompute as you type. 
+
+
+A hyperstream has a shape, which is a vector of
+integers giving its dimensions. In our example, the shape of the
+hyperstream is [3]. A hyperstream has a rank, which is the length of 
+its shape,
+so our example has rank 1. The rank and shape are displayed below the
+result, to help you become familiar with the concepts.
+
+The contents of a hyperstream are a sequence of scalar
+values, or, recursively, hyperstreams; in our case, the scalar values 
+1, 2 and 3. Even scalars are hyperstreams: they have
+an empty shape, and rank 0. 
+</p>
+
+<div class="shapeRankEvaluator" expression = "3"> </div>
+
+<strong class="strong-star2">Note that the
+print out is a link</strong>. If you follow this link, it  takes you
+to a Newspeak object inspector which provides a gateway into the
+underlying Newspeak IDE. This allows us to interact with the ShapeRank
+implementation, which is written in Newspeak.
+
+We can write higher ranked hyperstreams by nesting them. The example below
+is a matrix with 3 rows and 2 columns. It has rank 2, and 
+shape $[3][2]$.
+
+<div class="shapeRankEvaluator" expression = "[[1, 2], [3, 4], [5, 6]]"></div>
+
+Functions are automatically mapped pointwise on hyperstreams
+
+<div class="shapeRankEvaluator" expression = "not [true, false]"></div>
+
+This holds for functions of any arity.
+
+<div class="shapeRankEvaluator" 
+  expression = "[1, 2, 3] + [10, 20, 30]">
+</div>
+
+It also holds for hyperstreams of any rank.
+
+<div class="shapeRankEvaluator" 
+  expression = "[[1, 2], [3, 4]] + [[10, 20], [30, 40]]"
+  >
+</div>  
+
+
+In mathematics, we often implicitly extend scalars to tensors when
+  operating on tensors. ShapeRank does this automatically for
+  you. Again, this true regardless of function arity, and works for
+  arbitrary ranked hyperstreams, as long as it makes sense.
+
+<div class="shapeRankEvaluator" expression = "2 * [1, 10, 100]"></div>
+  
+    As a simple example, consider the definition of dot product, 
+$\Sigma_{i = 1}^{n}a_i \cdot b_i$. In a conventional programming language, one would encode 
+this formula using a loop and destructive assignment. In ShapeRank, you can write
+
+<div class="shapeRankEvaluator" expression = "reduce(+, 0, a*b)"></div>
+  
+  There are two principle advantages:
+  
+  1. Concise, clear notation, close 
+  to the underlying math. Iteration is implicit, based on shape of the data. Therefore, there
+  are no indexing errors and no infinite loops.
+  
+  2. Parallelism. The notation is inherently parallel. The compiler does not need 
+  to extract parallelism through complex, slow and unreliable
+  analysis.
+
+Stream oriented programming encourages you to think about problems
+differently. Let's take a look at a rather strange example. Computing
+all primes up to given number, say 6. We'll start by creating a
+vector of all numbers between 2 and 6 (1 isn't very interesting for
+our purposes).
+
+<div class="shapeRankEvaluator" expression = "2..6"></div>
+
+Next, we'll use the outerProduct function to compute a matrix of all
+possible products between these numbers.
+
+<div class="shapeRankEvaluator" 
+  expression = "outerProduct(*, 2..6, 2..6)">
+</div>
+
+None of the numbers in the matrix are prime of course - they are all
+  the result of a multiplication of two other integers. Now, we can
+  check which elements of our original vector are contained in the
+  matrix. The result is a boolean vector
+  that corresponds to the original, with true in the position where a
+  match was found, and false otherwise. The entries that were found
+  cannot be prime.  The others are necessarily  prime, because we've
+  checked them against every possible product of natural numbers
+  smaller than themselves.
+
+<div class="shapeRankEvaluator" 
+  expression = "contains(
+    outerProduct(*, 2..6, 2..6), 
+    2..6
+    )">
+</div>
+
+It's convenient to negate our boolean vector, so that we have true in
+  positions that match prime numbers.
+
+<div class="shapeRankEvaluator" 
+  expression = "not(
+    contains(
+      outerProduct(*, 2..6, 2..6), 
+      2..6
+    )
+  )">
+</div>
+
+We can now use the boolean vector as a mask on the original vector to
+  obtain the actual prime numbers. You can change the numbers to
+  convince yourself that this holds. The algorithm is cubic, but it
+  might make sense given massive parallelism.
+
+<div class="shapeRankEvaluator" 
+  expression = "mask(
+    not(
+      contains(
+        outerProduct(*, 2..6, 2..6), 
+        2..6
+      )
+    ), 
+    2..6
+  )">
+</div>
+  
