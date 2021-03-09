@@ -459,7 +459,7 @@ public map: f <[:T | R]>  ^ <ScalarHyperStream[R]> = (
 )
 ) : (
 )
-class EmptyHyperStream = HyperStream rank: 0(
+class EmptyHyperStream = HyperStream rank: 0 (
 
 ) (
 public isBounded ^ <Boolean> = (
@@ -507,3 +507,4 @@ public clone = (
 )
 ) : (
 )
+
