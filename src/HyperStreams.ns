@@ -53,9 +53,6 @@ public iterator ^ <Iterator[T | HyperStream[T]]> = (
   suclassResponsibility
 )
 ) : (
-public  iteratingOver: i <Iterator>  ^ <UnboundedHyperStream> = (
-   ^UnboundedHyperStream iteratingOver: i
-)
 public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator]))
 )
@@ -71,25 +68,18 @@ public fromScalar: o <T def> ^ <ScalarHyperStream[T]> = (
 public empty ^ <EmptyHyperStream> = ( 
   ^EmptyHyperStream new
 )
-repeat: s  <HyperStream[T def]> dimension: d <Integer | UnboundedDimension> ^ <HyperStream[T]> = (
-   d isKindOfInteger ifTrue: [ 
-     (* Bounded case *)
-     | l <List[HyperStream[T]]> = List new: d. | (* Replicate s d times *)
-     1 to: d do: [:i <Integer> | l add: s clone].
-     ^fromList: l dimensions: {}, s dimensions.
-   ].
-   (* Unbounded case *)
-   ^iteratingOver: (ReplicatingIterator replicating: s by: d iterator) (* d has an iterator? *)
+public  iteratingOver: i <Iterator[HyperStream[T def]]>  ^ <UnboundedHyperStream[T]> = (
+   ^UnboundedHyperStream iteratingOver: i
 )
-public replicate: s  <HyperStream[T def]> dimensions: dims <List[Integer | UnboundedDimension]> ^ <HyperStream[T]> = (
-   (* Base case; we've stripped away all the dimensions, and just produce a copy of s *)
-   dims isEmpty ifTrue: [^s clone].
-   (* Recursively replicate for the tail of the dimensions, and replicate the result by the first dimension *)
-   ^repeat: (replicate: s dimensions: (dims copyFrom: 2 to: dims size)) dimension: dims first
+public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> = (
+  ^ConstantStream on:  k dimension: ds
+)
+public repeat:  k <T def> = (
+  ^repeat:  k dimension: {UnboundedDimension new}
 )
 )
 class ConstantStream on: k <T def> dimension: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
-(* A hyperstream , all of whose elements are equal to some constant  *)
+(* A hyperstream , all of whose elements are equal to some fixed elemnt  *)
   |
   constant <T> = k.
   |
@@ -302,7 +292,7 @@ public clone = (
 )
 class ReactiveZipIterator zipping: iters <List[Iterator]> = Iterator (
 (*
-Iterator for reactive function calls. Takes a list of iterators on the arguments, and produces an iterator for their zipped values. If any argument has a vaue ready, produce a list of zipped values. Iterators that do not have a next value re-use their previous values, which are kept in the lastValues slot. Of course, this can't work the first time  the iterator is called, since there are no "previous values".  This is a special case, tracked by the firstTime slot.
+Iterator for reactive function calls. Takes a list of iterators on the arguments, and produces an iterator for their zipped values. If any argument has a vaue ready, produce a list of zipped values. Iterators that do not have a next value re-use their previous values, which are kept in the lastValues slot. Of course, this can't work the first time  the iterator is called, since there are no \"previous values\".  This is a special case, tracked by the firstTime slot.
 *)
   |
   iterators <List[Iterator]> = iters.
@@ -459,7 +449,7 @@ public map: f <[:T | R]>  ^ <ScalarHyperStream[R]> = (
 )
 ) : (
 )
-class EmptyHyperStream = HyperStream rank: 0 (
+class EmptyHyperStream = HyperStream rank: 0(
 
 ) (
 public isBounded ^ <Boolean> = (
@@ -507,4 +497,3 @@ public clone = (
 )
 ) : (
 )
-
