@@ -276,9 +276,9 @@ the ASCII CR character followed by the ASCII LF character
 %% Declarations
 \bnf {Declaration} {
   \PUBLIC{}?
-  \synt{LetBinding}
+  (\synt{LetBinding}
   \alt \synt{FunctionDeclaration}
-  \alt \synt{TypeDeclaration}
+  \alt \synt{TypeDeclaration})
 }
 
 \bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList} \synt{TypeSigSuffix}}
