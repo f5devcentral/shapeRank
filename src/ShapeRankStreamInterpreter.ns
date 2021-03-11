@@ -433,13 +433,13 @@ public for: s <HyperStream[T def]> ^ <Instance> = (
   ^from: (List new add: s; yourself)
 )
 )
-class SynchronouslyFusedIterator fusing: i1<Iterator[Cell[T def]]> and: i2  <Iterator[Cell[S def]]> = Iterator (
+class SynchronouslyFusedIterator fusing: i1<Iterator[HyperStream[Cell[T def]]]> and: i2  <Iterator[HyperStream[Cell[S def]]]> = Iterator (
 (*
-Synchronous fusion of two iterators.
+Synchronous fusion of two iterators. Synchronously fusing two iterators means creating an iterator that hasNext if both iterator's hasNext is true, and whose next is the synchronous fusion of the next values of each iterator.   This is valid because we only fuse iterators of unbounded hyperstreams of frame cells.
 *)
   |
-  iterator1 <Iterator[Cell[T]]> = i1.
-  iterator2 <Iterator[Cell[S]]> = i2.
+  iterator1 <Iterator[HyperStream[Cell[T]]]> = i1.
+  iterator2 <Iterator[HyperStream[Cell[S]]]> = i2.
   |
 ) (
 public rank ^ <Integer> = (
@@ -452,17 +452,20 @@ public hasNext ^ <Boolean> = (
 (* A synchronously fused iterator's hasNext if both iterator's hasNext is true. *)
   ^iterator1 hasNext and: [iterator2 hasNext]
 )
-public next ^ <Cell[T | S]> = (
-  ^Cell from: iterator1 next contents,  iterator2 next contents
+public next ^ <HyperStream[Cell[T | S]]> = (
+  ^synchronouslyFuse: iterator1 next,  iterator2 next
 )
 ) : (
 )
-class ReactivelyFusedIterator fusing: i1<Iterator[Cell[T def]]> and: i2  <Iterator[Cell[S def]]> = Iterator (
+class ReactivelyFusedIterator fusing: i1<Iterator[HyperStream[Cell[T def]]]> and: i2  <Iterator[HyperStream[Cell[S def]]]> = Iterator (
+(*
+Reactive  fusion of two iterators. Reactively fusing two iterators means creating an iterator that hasNext if either iterator's hasNext is true, and whose next is the reactive fusion of the latest available values of each iterator.  This is valid because we only fuse iterators of unbounded hyperstreams of frame cells.
+*)
   |
-  iterator1 <Iterator[Cell[T]]> = i1.
-  iterator2 <Iterator[Cell[S]]> = i2.
-  last1 <Cell[T]>
-  last2 <Cell[S]>
+  iterator1 <Iterator[HyperStream[Cell[T]]]> = i1.
+  iterator2 <Iterator[HyperStream[Cell[S]]]> = i2.
+  last1 <HyperStream[Cell[T]]>
+  last2 <HyperStream[Cell[S]]>
   |
 ) (
 public clone = (
@@ -474,10 +477,10 @@ public rank ^ <Integer> = (
 public hasNext ^ <Boolean> = (
   ^iterator1 hasNext or: [iterator2 hasNext]
 )
-public next ^ <Cell[T | S]> = (
+public next ^ <HyperStream[Cell[T | S]]> = (
    iterator1 hasNext ifTrue: [last1:: iterator1 next].
    iterator2 hasNext ifTrue: [last2:: iterator2 next].
-  ^Cell from: last1 contents,  last2 contents
+  ^reactivelyFuse: last1 with: last2
 )
 ) : (
 )
@@ -566,32 +569,6 @@ zipFrames: l <List[Frame]> ^ <Frame[List]> = (
   zippedCells <HyperStream[Cell[List]]> = cellsFor: dims from: zipped.
   |
   ^Frame dimensions: dims cells: zippedCells.
-)
-computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
-  | 
-  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
-  maxFrame <Frame>
-  replicatedFrames <List[Frame]>
-  zippedFrame <Frame[List[HyperStream]]>
-  resultFrame <Frame>
-  |
-(* replicate & zip *)
-  zippedFrame:: argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
-  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
-  callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
-  ] ifEmpty: [emptyFrame].
-  (*replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
-(* zip *)
-  zippedFrame:: zipFrames: replicatedFrames. *)
-(* map *)
-  resultFrame:: zippedFrame map: [:argVector <List[HyperStream]> | 
-   | result  <HyperStream> | 
-   pushActivation:  (Activation of: callee from: argVector).
-   result:: callee body eval.
-   popActivation.
-   result.
-  ].
-  ^resultFrame asStream.  
 )
 fuseScalar: s1 <ScalarHyperStream[Cell[S1 def]]> withScalar: s2 <ScalarHyperStream[Cell[S2 def]]> ^ <ScalarHyperStream[Cell[S1 | S2]]> = (
 (*
@@ -704,6 +681,29 @@ To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream
        fusedSubstreams add: (synchronouslyFuse: ue with: ve)
      ]. 
   ^HyperStream fromList: fusedSubstreams
+)
+computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
+  | 
+  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
+  maxFrame <Frame>
+  replicatedFrames <List[Frame]>
+  zippedFrame <Frame[List[HyperStream]]>
+  resultFrame <Frame>
+  |
+(* replicate & zip *)
+  zippedFrame:: argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
+  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
+  callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
+  ] ifEmpty: [emptyFrame].
+(* map *)
+  resultFrame:: zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
+   pushActivation:  (Activation of: callee from: argVector).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ].
+  ^resultFrame asStream.  
 )
 ) : (
 )

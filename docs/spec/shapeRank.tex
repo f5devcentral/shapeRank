@@ -435,16 +435,16 @@ Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elem
 {\em
 Note that the $h_i$ may include both bounded and unbounded streams. If any of the $h_i$ are bounded, then the result of $zip_{sync_k}$ is bounded, and it's length is that of the shortest of the $h_i$. If all  the $h_i$ are unbounded, then $zip_{sync_k}$ is unbounded, with a dynamic size that is the smallest of the dynamic sizes of the $h_i$.
 
-Of necessity, the number of available elements of $h_sync$ at any time is no more than the
+Of necessity, the number of available elements of $h_{sync}$ at any time is no more than the
 
 An important property of $zip_{sync_k}$ is that it synchronizes its inputs.
 }
 
-The function $zip_{react_k}$  produces a hyperstream $h_{react}$, whose first element is $(h_{1_1}, \ldots, h_{k_1})$. When the number of available elements of any of $h_i$ increases, an element $(h_{1_{n_1}}, \ldots, h_{k_{n_k}})$ may be appended to $h_react$. The precise decision of when to add new elements to $h_{react}$ is up to the
+The function $zip_{react_k}$  produces a hyperstream $h_{react}$, whose first element is $(h_{1_1}, \ldots, h_{k_1})$. When the number of available elements of any of $h_i$ increases, an element $(h_{1_{n_1}}, \ldots, h_{k_{n_k}})$ may be appended to $h_{react}$. The precise decision of when to add new elements to $h_{react}$ is up to the
 implementation, which should make a best-effort to add elements promptly.
 
 {\em
-The value of $h_{react}$ is non-deterministic. The first value is produced when all of the $h_i$ have an available value, just as with $h_sync$. From that point on, however,
+The value of $h_{react}$ is non-deterministic. The first value is produced when all of the $h_i$ have an available value, just as with $h_{sync}$. From that point on, however,
 new values may be added whenever any one of the $h_i$ has a new available value. No guarantees are made as to whether such a value will be added and when. It is quite possible that some of the $h_i$ will have a new available value, while others do not. In such cases, for any $h_i$ that doesn't have a new value,  the last available value is reused.
 It is also possible that multiple new values may have become available on any or all of the $h_i$, in which case some values will be skipped.
 
