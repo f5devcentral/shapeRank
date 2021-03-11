@@ -331,20 +331,6 @@ public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
 		  ShapeVariableReferenceAST named: id value position: {atSign start. id end}
 		]  
 )
-public function ^ <CombinatorialParser[FunctionAST]> = (
-  ^super function wrapper:
-		[:fkw <Symbol> 
-		:id_token <Token> 
-		:lp <Token> 
-		:params <List[ParamterAST]> 
-		:rp <Token> 
-		:rt <{Token. TypeAST} | Nil> 
-		:eq <Token>  
-		:body <ExprAST>  | 
-                | returnType = rt isNil ifFalse: [rt last]. |
-		FunctionAST  named: id_token value parameters: params returnType: returnType body: body position: {fkw start. body end}
-		]
-)
 public expr ^ <CombinatorialParser[ExprAST]> = (
   ^super expr wrapper:
 		[:at <Token | Nil>  :w <WhereAST> |
@@ -366,6 +352,21 @@ public unknownDimension  ^ <CombinatorialParser[UnknownDimensionAST]> = (
 		[:qm <Token> |
 		  UnknownDimensionAST position: {qm start. qm end}
 		] 
+)
+public function ^ <CombinatorialParser[FunctionAST]> = (
+  ^super function wrapper:
+		[:syncKw <Symbol | Nil> 
+        :fkw <Symbol> 
+		:id_token <Token> 
+		:lp <Token> 
+		:params <List[ParamterAST]> 
+		:rp <Token> 
+		:rt <{Token. TypeAST} | Nil> 
+		:eq <Token>  
+		:body <ExprAST>  | 
+                | returnType = rt isNil ifFalse: [rt last].  sync <Boolean> = syncKw isNil not. |
+		FunctionAST  named: id_token value parameters: params returnType: returnType body: body isSync: sync position: {fkw start. body end}
+		]
 )
 ) : (
 )

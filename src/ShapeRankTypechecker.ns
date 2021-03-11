@@ -1320,7 +1320,7 @@ public subtypeOf: t <TypeAST> ^ <Boolean> = (
 )
 ) : (
 )
-public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b position: p (
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> isSync: isSync <Boolean> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b isSync: isSync position: p (
 (*
 Even though ShapeRank has no user-defined HOFs, we need to typecheck the built-in HOFs, such as reduce.
 Calls to such HOFs take functions are arguments, and the calls must be checked.  In such a call,
@@ -1377,6 +1377,10 @@ public typecheckDeclaration = (
     ]
 )
 ) : (
+public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = (
+  (* Convenience factory to pass default reactivity *)
+  ^named: n parameters: ps returnType: t body: b isSync: false position: p 
+)
 )
 public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
 ) (
@@ -1583,20 +1587,6 @@ revisedRerankParams ^ <List[ParamAST]> = (
     computeDimVars.
     ^eta1 parameters collect: [:p <ParameterAST> |  revisedRerankParam: p].
 )
-public revisedEtaExpansion  ^ <FunctionAST> = (
-  | 
-  newParams <List[ParameterAST]> = revisedRerankParams. 
-  args <List[ExprAST]> = eta1 body arguments collect: [:a <ExprAST> | a clone].
-  revisedBody <CallAST> = 
-    CallAST function: eta1 body functionName arguments: args position: eta1 body position.
-  |
-  ^FunctionAST 
-      named: 'rerank', fun 
-      parameters: newParams 
-      returnType: nil 
-      body: revisedBody
-      position: {0. 0}.
-)
 constrains: eq <CanonicalDimension> dimension: d <DimensionVariableAST> ^ <Boolean> = (
   ^(eq variables at: d) ~= 0
 )
@@ -1644,6 +1634,21 @@ reranked function.
   ].
   #TODO yourself.
   (* Do further type variable unification as required by prefix constraint *)
+)
+public revisedEtaExpansion  ^ <FunctionAST> = (
+  | 
+  newParams <List[ParameterAST]> = revisedRerankParams. 
+  args <List[ExprAST]> = eta1 body arguments collect: [:a <ExprAST> | a clone].
+  revisedBody <CallAST> = 
+    CallAST function: eta1 body functionName arguments: args position: eta1 body position.
+  |
+  ^FunctionAST 
+      named: 'rerank', fun 
+      parameters: newParams 
+      returnType: nil 
+      body: revisedBody
+      isSync: eta1 isSynchronous
+      position: {0. 0}.
 )
 ) : (
 )

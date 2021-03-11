@@ -379,12 +379,13 @@ public isKindOfExprAST ^ <Boolean> = (
 )
 ) : (
 )
-public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = AST position: p (
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> body: b <ExprAST> isSync: isSync <Boolean> position: p <{Integer. Integer}> = AST position: p (
 |
   public id <String> = n.
   public parameters <List[ParameterAST]> = ps.
   public returnTypeSlot <TypeAST> ::= t.
   public body  <ExprAST> = b.
+  public isSynchronous <Boolean> = isSync.
 |
 ) (
 public = other <Object> ^ <Boolean> = (

@@ -167,7 +167,7 @@ public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> body: b <ExprAST> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b position: p (
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> body: b <ExprAST> isSync: isSync <Boolean> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b isSync: isSync position: p (
 |
 	public scope <Scope> = Scope new.
 |
@@ -186,6 +186,10 @@ public isHOF ^ <Boolean> = (
   ^false
 )
 ) : (
+public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = (
+  (* Convenience factory to pass default reactivity *)
+  ^named: n parameters: ps returnType: t body: b isSync: false position: p 
+)
 )
 public class FunctionTypeAST parameterTypes: ps <List[TypeAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = super FunctionTypeAST parameterTypes: ps returnType: t position: p (
 ) (
@@ -292,26 +296,6 @@ module.
 *)
 | dimVarCounter <Integer> ::= 0. |
 ) (
-public etaExpansion  ^ <FunctionAST> = (
-  | 
-  result <FunctionAST> 
-  newParams <List[ParameterAST]> 
-  ast <FunctionAST | LetAST> = (programScope lookup: fun) at: #ast.
-  f <FunctionAST> call <CallAST> 
-  args <List[ExprAST]> = List new: ranks size.
-  |
-  f:: ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
-	    assert: [ast isKindOfLetAST] message: 'Function or let binding expected for reranking'.
-	    ast expression eval.
-	  ].
-  newParams:: rerankParamsOf: f.
-  newParams do: [:param <ParameterAST> | 
-	args add: ( IdentifierAST named: param id position: {0. 0})
-	].
-  call:: CallAST function: fun arguments: args  position: {0. 0}.
-  result:: FunctionAST named: 'rerank', fun parameters: newParams returnType: nil body: call position: {0. 0}.
-  ^result
-)
 rerankParam: p <ParameterAST>  to: r <Integer> ^ <ParameterAST> = (
   ^ParameterAST named: p id type: (rerankType: p type to: r) position: {0. 0}
 )
@@ -339,6 +323,26 @@ CallAST ^ <CallAST class> = (
        we just need the standard one.
   *)
   ^outer Scopes CallAST
+)
+public etaExpansion  ^ <FunctionAST> = (
+  | 
+  result <FunctionAST> 
+  newParams <List[ParameterAST]> 
+  ast <FunctionAST | LetAST> = (programScope lookup: fun) at: #ast.
+  f <FunctionAST> call <CallAST> 
+  args <List[ExprAST]> = List new: ranks size.
+  |
+  f:: ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
+	    assert: [ast isKindOfLetAST] message: 'Function or let binding expected for reranking'.
+	    ast expression eval.
+	  ].
+  newParams:: rerankParamsOf: f.
+  newParams do: [:param <ParameterAST> | 
+	args add: ( IdentifierAST named: param id position: {0. 0})
+	].
+  call:: CallAST function: fun arguments: args  position: {0. 0}.
+  result:: FunctionAST named: 'rerank', fun parameters: newParams returnType: nil isSync: f isSynchronous body: call position: {0. 0}.
+  ^result
 )
 ) : (
 )
