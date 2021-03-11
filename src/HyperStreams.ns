@@ -71,10 +71,10 @@ public empty ^ <EmptyHyperStream> = (
 public  iteratingOver: i <Iterator[HyperStream[T def]]>  ^ <UnboundedHyperStream[T]> = (
    ^UnboundedHyperStream iteratingOver: i
 )
-public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> = (
+public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> ^ <ConstantStream[T]> = (
   ^ConstantStream on:  k dimension: ds
 )
-public repeat:  k <T def> = (
+public repeat:  k <T def> ^ <ConstantStream[T]> = (
   ^repeat:  k dimension: {UnboundedDimension new}
 )
 )
@@ -393,9 +393,9 @@ public isKindOfUnboundedDimension ^ <Boolean> = (
 )
 ) : (
 )
-class ScalarHyperStream scalarValue: s =  HyperStream rank: 0 (
+class ScalarHyperStream scalarValue: s <T def> =  HyperStream rank: 0 (
   |
-  constant = s.
+  constant <T> = s.
   iterator <Iterator[T]> = Iterator new.
   |
     window:: List new withAll: {s}.
