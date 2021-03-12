@@ -76,9 +76,6 @@ public declarationSection ^ <CombinatorialParser[List[FunctionAST | LetAST]]> = 
   ^super declarationSection wrapper:
     [:decls <List[FunctionAST | LetAST]> :sc <Token> | decls]  
 )
-public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
-  ^super declaration plus
-)
 public dotExpr ^ <CombinatorialParser[StructDotAST]> = (
   ^super dotExpr wrapper:
     [:fst :rst | | lst = List new addFirst: fst; addAll: rst; yourself. |
@@ -337,10 +334,6 @@ public expr ^ <CombinatorialParser[ExprAST]> = (
 		  nil = at ifTrue: [w] ifFalse: [w isShape: true]
 		]
 )
-public declaration = (
-(* expose method publicly for tools *)
-  ^super declaration
-)
 public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
   ^super dimensionVariable wrapper:
 		[:dollarSign <Token> :idToken <Token> :bang <Token | Nil> |
@@ -353,13 +346,20 @@ public unknownDimension  ^ <CombinatorialParser[UnknownDimensionAST]> = (
 		  UnknownDimensionAST position: {qm start. qm end}
 		] 
 )
+public declaration ^ <CombinatorialParser[FunctionAST | LetAST]> = (
+  ^super declaration wrapper:
+		[:access <Token | Nil> :d <FunctionAST | LetAST> |
+           #TODO. (* ignoring access modifier for now *)
+           d  
+        ]
+)
 public function ^ <CombinatorialParser[FunctionAST]> = (
   ^super function wrapper:
-		[:syncKw <Symbol | Nil> 
+		[:syncKw <Token | Nil> 
         :fkw <Symbol> 
 		:id_token <Token> 
 		:lp <Token> 
-		:params <List[ParamterAST]> 
+		:params <List[ParameterAST]> 
 		:rp <Token> 
 		:rt <{Token. TypeAST} | Nil> 
 		:eq <Token>  
@@ -367,6 +367,9 @@ public function ^ <CombinatorialParser[FunctionAST]> = (
                 | returnType = rt isNil ifFalse: [rt last].  sync <Boolean> = syncKw isNil not. |
 		FunctionAST  named: id_token value parameters: params returnType: returnType body: body isSync: sync position: {fkw start. body end}
 		]
+)
+public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
+  ^declaration plus
 )
 ) : (
 )

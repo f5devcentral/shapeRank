@@ -106,7 +106,7 @@ let = tokenFromSymbol: #let.
 publicKw = tokenFromSymbol: #public.
 
 program = declarationSection opt, expr, eoi.
-declaration = publicKw?, (function | letBinding).
+declaration = publicKw opt, (function | letBinding).
 declarationSection = declaration plus, semicolon.
 function = sync opt, func, identifier,  lparen, params, rparen, (colon , type) opt,  equalSign, expr.
 letBinding = let, identifier, equalSign, expr.

@@ -56,9 +56,6 @@ public iterator ^ <Iterator[T | HyperStream[T]]> = (
 public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator]))
 )
-public fromList: l <List[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam[T]> = (
-  ^BoundedHyperStream fromList: l dimensions: dimensions
-)
 public zipSynchronous: streams <List[HyperStream]> ^ <HyperStream[List]> = (
   ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s <HyperStream> | s iterator]))
 )
@@ -76,6 +73,9 @@ public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> ^ <
 )
 public repeat:  k <T def> ^ <ConstantStream[T]> = (
   ^repeat:  k dimension: {UnboundedDimension new}
+)
+public fromList: l <List[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam[T]> = (
+  ^BoundedHyperStream fromList: l dimensions: ds
 )
 )
 class ConstantStream on: k <T def> dimension: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
@@ -176,13 +176,17 @@ public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
 public clone  = (
   ^class fromList: window dimensions: dimensions
 )
-public size ^ <Integer> = (
-  ^windows size
-)
 public take: n <Integer> ^ <BoundedHyperStream[T]> = (
   (* Need to protect against taking more than the window size *)
   assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
   ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
+)
+public size ^ <Integer> = (
+  ^window size
+)
+window = (
+  (* Make available in lexical scope, so Iterator can access *)
+  ^super window
 )
 ) : (
 )
@@ -395,10 +399,10 @@ public isKindOfUnboundedDimension ^ <Boolean> = (
 )
 class ScalarHyperStream scalarValue: s <T def> =  HyperStream rank: 0 (
   |
-  constant <T> = s.
-  iterator <Iterator[T]> = Iterator new.
+  public constant <T> = s.
+  public iterator <Iterator[T]> = Iterator new.
   |
-    window:: List new withAll: {s}.
+    window:: List withAll: {s}.
     dimensions:: List new.
 ) (
 class Iterator = outer HyperStreams Iterator (
@@ -446,6 +450,9 @@ public clone = (
 )
 public map: f <[:T | R]>  ^ <ScalarHyperStream[R]> = (
   ^class scalarValue: (f value: constant)
+)
+public asScalar ^ <Object> = (
+  ^constant
 )
 ) : (
 )

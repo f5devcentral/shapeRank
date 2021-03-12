@@ -170,19 +170,19 @@ public isPrefixOf: f <Frame> ^ <Boolean> = (
    ].
    ^true
 )
-public reactivelyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
-  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
-    (*  Check that f's shape is a prefix of my shape or vice versa *)
-     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
-     (* fuse *)
-     ^Frame: maxdims cells: (reactivelyFuse: cells with: fcells)
-)
 public synchronouslyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
   | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
     (*  Check that f's shape is a prefix of my shape or vice versa *)
      (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
      (* fuse *)
      ^Frame: maxdims cells: (synchronouslyFuse: cells with: f cells) 
+)
+public reactivelyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
+  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
+    (*  Check that f's shape is a prefix of my shape or vice versa *)
+     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
+     (* fuse *)
+     ^Frame dimensions: maxdims cells: (reactivelyFuse: cells with: f cells)
 )
 ) : (
 )
@@ -424,7 +424,7 @@ class Cell from: l  <List[HyperStream[T def]]> = (
 A Cell is a substream of a hyperstream that needs to be delivered to a function as a unit, rather than having the function map over it.  When used by a Frame representing an individual argument, the Cell houses a single stream representing an individual argument. When used in a zipped frame that consolidates all arguments of a function, the Cell holds a list of hyperstreams, each corresponding to one argument. The cell accepts and stores the stream(s) in a list for uniformity.
 *)
   |
-  public contents <List[HyperStream[T]]> = s.
+  public contents <List[HyperStream[T]]> = l.
   |
 ) (
 ) : (

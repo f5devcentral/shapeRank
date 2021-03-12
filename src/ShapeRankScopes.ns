@@ -341,7 +341,7 @@ public etaExpansion  ^ <FunctionAST> = (
 	args add: ( IdentifierAST named: param id position: {0. 0})
 	].
   call:: CallAST function: fun arguments: args  position: {0. 0}.
-  result:: FunctionAST named: 'rerank', fun parameters: newParams returnType: nil isSync: f isSynchronous body: call position: {0. 0}.
+  result:: FunctionAST named: 'rerank', fun parameters: newParams returnType: nil body: call isSync: f isSynchronous position: {0. 0}.
   ^result
 )
 ) : (
