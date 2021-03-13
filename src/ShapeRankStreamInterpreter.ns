@@ -21,6 +21,7 @@ Runtime values are represented by instances of HyperStream subclasses.  These ar
   callStack <List[Activation]> = List new. 
   emptyFrame = Frame dimensions: {} cells: HyperStream empty.
   specialEvaluators <Map[Symbol, [List[ExprAST] | List[HyperStream]]]> = computeSpecialEvaluators.
+  public Tensor = TensorFactory new.
   |
 ) (
 class Activation of: f <FunctionAST> from: argVector <List[Stream]> = (
@@ -36,7 +37,7 @@ public at: k <Symbol> ifAbsent: blk <[Stream]> ^ <Stream> = (
   1 to: function parameters size do: [:i <Integer> |
   (function parameters at: i) id = k ifTrue: [ | arg |
     arg:: arguments at: i.
-    arg isKindOfAbstractStream ifFalse: [arg:: scalar: arg].
+    arg isKindOfHyperStream ifFalse: [arg:: scalar: arg].
     ^arg
     ]
   ].
@@ -109,18 +110,18 @@ public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position
 public eval ^ <Tensor> = (
   ^computeFunction: callee arguments: evaluateArguments
 )
-evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <Tensor | AST> = (
+evaluateArguments = (
+   | result = List new: arguments size. |
+   1 to: arguments size do: [:i <Integer> | result add: (evaluateArgument: (arguments at: i) for: (callee parameters at: i))].
+   ^result
+)
+evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <HyperStream | AST> = (
   ^(param isHOF and: [arg isKindOfBlockAST not]) ifTrue: [
         | ast ::= (scope lookup: arg id ifAbsent:
                      [^(currentActivation at: arg id)]) at: #ast. |
         ast isKindOfParameterAST ifTrue: [^(currentActivation at: ast id)].
         Tensor dimensions: {} contents: {ast}
      ] ifFalse: [arg eval]
-)
-evaluateArguments = (
-   | result = List new: arguments size. |
-   1 to: arguments size do: [:i <Integer> | result add: (evaluateArgument: (arguments at: i) for: (callee parameters at: i))].
-   ^result
 )
 ) : (
 )
@@ -294,108 +295,6 @@ public isKindOfBlock = (
 )
 ) : (
 )
-class Tensor dimensions: ds <List[Integer]> contents: cs <List[Object]> = (
-(*
-A Tensor is either scalar or not. It is scalar iff it is of rank 0.
-A non-scalar Tensor contains a list of subtensors stored in its #contents. A scalar Tensor
-has an empty #dimensions list, and contains a single non-Tensor in #contents.
-*)
-|
-  public dimensions <List[Integer]> = ds.
-  public contents <List[Object]> = cs.
-|
-) (
-public = other <Object> ^ <Boolean> = (
-  (isScalar & other isScalar) ifTrue: [^asScalar = other asScalar].
-  other isKindOfTensor ifFalse: [^false].
-  other dimensions  with:  dimensions do: [:od :d | od = d ifFalse: [^false]].
-  other contents with: contents do: [:oe :e | oe = e ifFalse: [^false]].
-  ^true.
-)
-public asScalar ^ <Object> = (
-  | c |
-  isScalar ifFalse: [Error signal: printString, ' is not a scalar'].
-  c:: contents at: 1.
-  c isKindOfTensor ifTrue: [^c asScalar].
-  ^c
-)
-public contains: element = (
-   isScalar ifTrue: [^self = element].
-   contents do: [:subtensor <Tensor> | (subtensor contains: element) ifTrue: [^true]].
-   ^false
-)
-public hasRank ^ <Boolean> = (
-   ^true
-)
-public isKindOfTensor ^ <Boolean> = (
-  ^true
-)
-public isScalar ^ <Boolean> = (
-| c |
-  ^rank = 0 and: [
-  contents size = 1 and: [
-    c:: contents at: 1. 
-    c isKindOfTensor not or: [c isScalar]
-    ]
-  ]
-)
-public map: f <[Object | T def]> ^ <Tensor[T]> = (
-  | newContents = contents collect: f.
-    newDimensions = (newContents size > 0 and: [newContents first isKindOfTensor])
-                    ifTrue: [
-                      | myDim = dimensions size > 0
-                                  ifTrue: [{dimensions first}]
-                                  ifFalse: [dimensions]. |
-                        myDim, newContents first dimensions]
-                    ifFalse: dimensions. |
-  ^Tensor dimensions: newDimensions contents: newContents
-)
-public max: t <Tensor> ^ <Tensor> = (
- (* should check that either my shape is a prefix of t's or vice versa *)
-  dimensions size > t dimensions size ifTrue: [^self].
-  ^t
-)
-public printOn: stream <CharOutputStream> = (
-      rank > 0 ifTrue: [
-     stream nextPutAll: '['.
-         contents do: [:e | e printOn: stream] separatedBy: [ stream nextPutAll: ', ']. 
-         stream nextPutAll: ']'.
-      ]
-      ifFalse: [(contents at: 1) printOn: stream]
-)
-public printString ^ <String> = (
-  | contentString <String> |
-      contentString:: ''.
-      ^rank > 0 ifTrue: [
-     contents do: [:e | contentString:: contentString, e printString] 
-          separatedBy: [contentString:: contentString, ', '].
-     '[', contentString, ']'.
-      ]
-      ifFalse: [(contents at: 1) printString]
-)
-public rank ^ <Integer> = (
-  ^dimensions size
-)
-public shape ^ <ShapeAST> = (
-  | dims <List[DimensionNumber]> = dimensions collect: [:d <Integer> | DimensionNumberAST number: d position: {0. 0} ]. |
-  ^ShapeVectorAST dimensions: dims position: {0. 0}
-)
-public hash ^ <Integer> = (
-  dimensions hash bitXor: [contents hash].
-)
-public cellsOfShape: cds <List[Integer]> ^ <HyperStream> = (
-  assert: [rank >= cds size] message: 'Cells larger than Stream!'.
-  rank = cds size ifTrue: [^{self}].
-  ^(contents collect: [:e <Tensor> | e cellsOfShape: cds]) flatten
-)
-public asStream ^ <HyperStream> = (
-  | subtensors <List[HyperStream]>  |
-  isScalar ifTrue: [^HyperStream fromScalar: self asScalar].
-  subtensors:: contents collect: [:subtensor <Tensor> | subtensor asStream].
-  ^HyperStream fromList: subtensors dimensions: dimensions
-)
-) : (
-)
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
 ) (
 appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
@@ -481,6 +380,18 @@ public next ^ <HyperStream[Cell[T | S]]> = (
    iterator1 hasNext ifTrue: [last1:: iterator1 next].
    iterator2 hasNext ifTrue: [last2:: iterator2 next].
   ^reactivelyFuse: last1 with: last2
+)
+) : (
+)
+class TensorFactory = (
+) (
+public dimensions: ds <List[Integer]> contents: cs <List[Object]> = (
+  0 = ds size ifTrue: [
+    cs isEmpty ifTrue: [^HyperStream empty].
+    assert: [cs size  = 1] message: 'Cannot have scalar with multiple elements'.
+    ^HyperStream fromScalar: cs first.
+    ].
+  ^HyperStream fromList: cs dimensions: ds
 )
 ) : (
 )

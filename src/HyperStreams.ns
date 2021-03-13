@@ -52,6 +52,13 @@ public take: n <Integer> ^ <HyperStream[T]> = (
 public iterator ^ <Iterator[T | HyperStream[T]]> = (
   suclassResponsibility
 )
+public isScalar ^ <Boolean> = (
+  subclassResponsibility
+)
+public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
+ (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
+   ^map: f
+)
 ) : (
 public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator]))
@@ -119,6 +126,9 @@ public map: f <[:T | R]>  ^ <HyperStream[R]> = (
 )
 public iterator ^ <Iterator[T | HyperStream[T]]> = (
   ^Iterator new
+)
+public isScalar ^ <Boolean> = (
+  ^false (* Is this the right answer?*)
 )
 ) : (
 )
@@ -188,6 +198,22 @@ window = (
   (* Make available in lexical scope, so Iterator can access *)
   ^super window
 )
+public isScalar ^ <Boolean> = (
+  ^false
+)
+public isKindOfTensor ^ <Boolean> = (
+  (* Needed for compatibility with old tests *)
+  ^true 
+)
+public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
+ (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
+  ^window collect: f
+)
+public contents ^ <List[HyperStream[T]]> = (
+  (* For temporary compatibility with old tests *)
+  #BOGUS. 
+  ^window
+)
 ) : (
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> = HyperStream rank: i rank (
@@ -213,6 +239,14 @@ public take: n <Integer> ^ <HyperStream[T]> = (
 )
 public clone = (
   ^class iteratingOver: iterator clone
+)
+public isScalar ^ <Boolean> = (
+  ^false
+)
+public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
+ (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
+  ^class iteratingOver: (iterator map: f) dimensions: dimensions 
+
 )
 ) : (
 )
@@ -448,11 +482,17 @@ public take: n <Integer> ^ <Stream[T]> = (
 public clone = (
  ^class scalarValue: constant
 )
-public map: f <[:T | R]>  ^ <ScalarHyperStream[R]> = (
-  ^class scalarValue: (f value: constant)
-)
 public asScalar ^ <Object> = (
   ^constant
+)
+public isKindOfTensor ^ <Boolean> = (
+  (* Needed for compatibility with old tests *)
+  ^true 
+)
+public map: f <[:T | R]>  ^ <HyperStream> = (
+  | result <R> = f value: constant. | 
+  result isKindOfHyperStream ifTrue: [^result].
+  ^class scalarValue: result
 )
 ) : (
 )
@@ -487,6 +527,13 @@ public clone = (
 )
 public iterator ^ <Iterator[T | HyperStream[T]]> = (
   ^EmptyIterator new
+)
+public isScalar ^ <Boolean> = (
+  ^false (* Is this the right answer?*)
+)
+public isKindOfTensor ^ <Boolean> = (
+  (* Needed for compatibility with old tests *)
+  ^true 
 )
 ) : (
 )
