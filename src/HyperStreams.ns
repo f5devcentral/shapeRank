@@ -205,14 +205,20 @@ public isKindOfTensor ^ <Boolean> = (
   (* Needed for compatibility with old tests *)
   ^true 
 )
-public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
- (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
-  ^window collect: f
-)
 public contents ^ <List[HyperStream[T]]> = (
   (* For temporary compatibility with old tests *)
   #BOGUS. 
   ^window
+)
+public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
+ (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
+ | 
+ collected <List[HyperStream[R]]> = window collect: f.
+ dimHead <List[Integer | UnboundedDimension]> = List withAll: {dimensions first}.
+ dimTail <List[Integer | UnboundedDimension]> = 
+   collected isEmpty ifFalse: [collected first dimensions] ifTrue: [List new].
+ |
+  ^class fromList: collected dimensions: dimHead,  dimTail. 
 )
 ) : (
 )

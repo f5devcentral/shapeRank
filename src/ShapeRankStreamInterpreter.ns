@@ -133,6 +133,7 @@ The cells themselves are provided as a hyperstream.
   public dimensions  <List[Integer | UnboundedDimension]> = ds.
   public cells <HyperStream[Cell[T]]> = cs.
 |
+assert: [cs isKindOfHyperStream] message: 'Unexpected cells argument'.
 ) (
 public hasRank ^ <Boolean> = (
    ^true
@@ -150,9 +151,6 @@ public map: f <[T | X def]> ^ <Frame[X]> = (
   ^Frame 
         dimensions: dimensions 
         cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)])
-)
-public asStream ^ <HyperStream[T]> = (
-  ^cells map: [:c <Cell[T]> | c contents ]
 )
 public prefixOf: f <Frame> ^ <Boolean> = (
   (* Answer whether my shape is a prefix of f's or vice versa *)
@@ -184,6 +182,9 @@ public reactivelyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
      (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
      (* fuse *)
      ^Frame dimensions: maxdims cells: (reactivelyFuse: cells with: f cells)
+)
+public asStream ^ <HyperStream[T]> = (
+  ^cells map: [:c <Cell[T]> | c contents size = 1 ifTrue:  [c contents first] ifFalse: [c contents] ]
 )
 ) : (
 )

@@ -890,6 +890,26 @@ public testPolyReduce = (
   assert: (result contents at: 2) asScalar equals: 2.  
   assert: (result contents at: 3) asScalar equals: 3.
 )
+public testIdentity_vector = (
+  | result = interpretFileNamed: 'identity_vector'. |
+  assert: result rank equals: 1. 
+  assert: result contents size equals: 2.
+  assert: (result contents at: 1) asScalar equals: 3.
+  assert: (result contents at: 2) asScalar equals: 4.
+)
+public testIdentity_matrix = (
+  | result = interpretFileNamed: 'identity_matrix'. |
+  assert: result rank equals: 2.
+  assert: result contents size equals: 3.
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 2.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 4.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 5.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 6.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 7.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 8.
+)
 ) : (
 TEST_CONTEXT = ()
 )
