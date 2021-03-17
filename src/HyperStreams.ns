@@ -133,6 +133,9 @@ public iterator ^ <Iterator[T | HyperStream[T]]> = (
 public isScalar ^ <Boolean> = (
   ^false (* Is this the right answer?*)
 )
+public contains: element <Object> ^ <Boolean> = (
+  ^element = constant
+)
 ) : (
 )
 public class BoundedHyperStream fromList: l <List[HyperStream[T]]> dimensions: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
