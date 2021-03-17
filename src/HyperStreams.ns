@@ -116,11 +116,6 @@ public isComplete: b  <Boolean> = (
 )
 public clone = (
 )
-public take: n <Integer> ^ <HyperStream[T]> = (
-  | l <List> = List new: n. |
-  1 to: n do: [:i <Integer> | l add: constant].
-  ^BoundedStream fromList: l dimensions: {}
-)
 public filter: f <[:T | Boolean]> ^ <HyperStream[T]> = (
   (f value: constant) ifTrue: [^self] ifFalse: [^EmptyStream].
 )
@@ -135,6 +130,17 @@ public isScalar ^ <Boolean> = (
 )
 public contains: element <Object> ^ <Boolean> = (
   ^element = constant
+)
+public take: n <Integer> ^ <HyperStream[T]> = (
+  | l <List> = List new: n. |
+  1 to: n do: [:i <Integer> | l add: constant].
+  ^BoundedStream fromList: l dimensions: {n}
+)
+public hash ^ <Integer> = (
+  ^constant hash bitXor: class hash
+)
+public = other <Object> ^ <Boolean>  = (
+  ^constant = other constant
 )
 ) : (
 )
@@ -185,17 +191,8 @@ public isComplete: b <Boolean> = (
 public map: f <[:T | R]>  ^ <HyperStream[R]> = (
   ^class fromList: (window collect:  [:e <HyperStream[T]> | e map: f]) dimensions: dimensions
 )
-public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
-  | dtail = dimensions copy from: 2 to: dimensions size. |
-  ^class fromList: (window select: [:e <HyperStream[T]> | e filter: f]) dimensions: {UnboundedDimension new}, dtail 
-)
 public clone  = (
   ^class fromList: window dimensions: dimensions
-)
-public take: n <Integer> ^ <BoundedHyperStream[T]> = (
-  (* Need to protect against taking more than the window size *)
-  assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
-  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimensions
 )
 public size ^ <Integer> = (
   ^window size
@@ -216,6 +213,19 @@ public contents ^ <List[HyperStream[T]]> = (
   #BOGUS. 
   ^window
 )
+public contains: element <Object> ^ <Boolean> = (
+   window detect: [: hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
+   ^true
+)
+public take: n <Integer> ^ <BoundedHyperStream[T]> = (
+| 
+dimHead <List[Integer | UnboundedDimension]> = List withAll: {n}.
+dimTail <List[Integer | UnboundedDimension]> = dimensions copyFrom: 2 to: rank. 
+|
+  (* Need to protect against taking more than the window size *)
+  assert: [n <= window size] message: 'Attempt to access a bounded stream past its end'.
+  ^class fromList: (window copyFrom: 1 to: n) dimensions: dimHead,  dimTail
+)
 public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
  (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
  | 
@@ -224,11 +234,21 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
  dimTail <List[Integer | UnboundedDimension]> = 
    collected isEmpty ifFalse: [collected first dimensions] ifTrue: [List new].
  |
-  ^class fromList: collected dimensions: dimHead,  dimTail. 
+  ^class fromList: collected dimensions: dimHead,  dimTail
 )
-public contains: element <Object> ^ <Boolean> = (
-   window detect: [: hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
-   ^true
+public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
+  | dtail = dimensions copy from: 2 to: dimensions size. |
+  (* dimension computation is dubious at best *)
+  ^class fromList: (window select: [:e <HyperStream[T]> | e filter: f]) dimensions: {UnboundedDimension new}, dtail 
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfBoundedHyperStream ifFalse: [^false].
+  other dimensions  with:  dimensions do: [:od :d | od = d ifFalse: [^false]].
+  other contents with: contents do: [:oe :e | oe = e ifFalse: [^false]].
+  ^true.
+)
+public hash ^ <Integer> = (
+  ^dimensions hash bitXor: contents hash.
 )
 ) : (
 )
@@ -267,6 +287,14 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
 public contains: element <Object> ^ <Boolean> = (
   (* Presumably, only checks available window *)
    Error signal: 'contains: still unimplemented for unbounded streams'
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfUnboundedHyperStream ifFalse: [^false].
+  other dimensions with:  dimensions do: [:od :d | od = d ifFalse: [^false]].
+  ^iterator = other iterator
+)
+public hash ^ <Integer> = (
+  ^iterator hash bitXor: class hash
 )
 ) : (
 )
@@ -516,6 +544,18 @@ public map: f <[:T | R]>  ^ <HyperStream> = (
 )
 public contains: element <Object> ^ <Boolean> = (
    ^constant = element
+)
+public contents ^ <List[HyperStream[T]]> = (
+  (* For temporary compatibility with old tests *)
+  #BOGUS. 
+  ^List withAll: {constant}
+)
+public = other <Object> ^ <Boolean> = (
+  other isScalar ifTrue: [^constant = other constant].
+  ^false.
+)
+public hash ^ <Integer> = (
+  ^constant hash bitXor: class hash
 )
 ) : (
 )

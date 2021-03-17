@@ -388,7 +388,7 @@ public shape ^ <ShapeAST> = (
   ^ShapeVectorAST dimensions: dims position: {0. 0}
 )
 public hash ^ <Integer> = (
-  dimensions hash bitXor: [contents hash].
+  ^dimensions hash bitXor: contents hash.
 )
 ) : (
 )

@@ -97,10 +97,7 @@ public eval ^<Tensor> = (
 public evalOn: t <HyperStream | Record | ParameterAST> ^<HyperStream> = (
   t isKindOfParameterAST ifTrue: [^evalOn: (currentActivation at: t id)].
   t isKindOfRecord ifTrue: [^t data at: label ifAbsent: [ assert: false. nil]]. (* is this right? *)
-  t isKindOfHyperStream ifTrue: [
-    | ret = t map: [:v | evalOn: v]. |
-    t isScalar ifTrue: [^ret contents at: 1] ifFalse: [^ret]
-  ].
+  t isKindOfHyperStream ifTrue: [^t map: [:v | evalOn: v]].
   Error signal: 'Could not index non-struct object'.
 )
 ) : (
