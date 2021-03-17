@@ -808,13 +808,6 @@ public testNumericSubtypes = (
   assertIsScalar: result.
   assert: result asScalar equals: (100.1 asFloat).
 )
-public testNoReturn = (
-(*  dummy(x: Int) = x; dummy(3) *)
-  | result = interpretFileNamed: 'noReturn'. |
-  assert: [result isKindOfTensor] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 0.
-  assert: result asScalar equals: 3.
-)
 public testScalarDotScalar = (
   | result = interpretCompilationUnit: '{a: 1}.a'. |
   assertIsScalar: result.
@@ -909,6 +902,13 @@ public testIdentity_matrix = (
   assert: ((result contents at: 2) contents at: 2) asScalar equals: 6.
   assert: ((result contents at: 3) contents at: 1) asScalar equals: 7.
   assert: ((result contents at: 3) contents at: 2) asScalar equals: 8.
+)
+public testNoReturn = (
+(*  dummy(x: Int) = x; dummy(3) *)
+  | result = interpretFileNamed: 'noReturn'. |
+  assert: [result isKindOfTensor] description: 'Tensor type expected!'.
+  assert: result rank equals: 0.
+  assert: result asScalar equals: 3.
 )
 ) : (
 TEST_CONTEXT = ()

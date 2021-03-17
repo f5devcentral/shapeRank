@@ -59,6 +59,9 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
  (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
    ^map: f
 )
+public contains: element <Object> ^ <Boolean> = (
+   subclassResponsibility
+)
 ) : (
 public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator]))
@@ -220,6 +223,10 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
  |
   ^class fromList: collected dimensions: dimHead,  dimTail. 
 )
+public contains: element <Object> ^ <Boolean> = (
+   window detect: [: hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
+   ^true
+)
 ) : (
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> = HyperStream rank: i rank (
@@ -253,6 +260,10 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
  (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
   ^class iteratingOver: (iterator map: f) dimensions: dimensions 
 
+)
+public contains: element <Object> ^ <Boolean> = (
+  (* Presumably, only checks available window *)
+   Error signal: 'contains: still unimplemented for unbounded streams'
 )
 ) : (
 )
@@ -500,6 +511,9 @@ public map: f <[:T | R]>  ^ <HyperStream> = (
   result isKindOfHyperStream ifTrue: [^result].
   ^class scalarValue: result
 )
+public contains: element <Object> ^ <Boolean> = (
+   ^constant = element
+)
 ) : (
 )
 class EmptyHyperStream = HyperStream rank: 0(
@@ -540,6 +554,9 @@ public isScalar ^ <Boolean> = (
 public isKindOfTensor ^ <Boolean> = (
   (* Needed for compatibility with old tests *)
   ^true 
+)
+public contains: element <Object> ^ <Boolean> = (
+   ^false
 )
 ) : (
 )
