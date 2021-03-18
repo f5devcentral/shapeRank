@@ -188,9 +188,6 @@ public isComplete: b <Boolean> = (
   (*  do nothing, but check that no one tries to tell me I'm not complete *)
   assert: [b] message: 'Attempt to assert bunded stream is incomplete!'
 )
-public map: f <[:T | R]>  ^ <HyperStream[R]> = (
-  ^class fromList: (window collect:  [:e <HyperStream[T]> | e map: f]) dimensions: dimensions
-)
 public clone  = (
   ^class fromList: window dimensions: dimensions
 )
@@ -249,6 +246,13 @@ public = other <Object> ^ <Boolean> = (
 )
 public hash ^ <Integer> = (
   ^dimensions hash bitXor: contents hash.
+)
+public map: f <[:T | R]>  ^ <HyperStream[R]> = (
+  | 
+  newWindow <List[HyperStream[R]]> = window collect:  [:e <HyperStream[T]> | e map: f]. 
+  dimStart <Integer> = List withAll: {dimensions first}.
+  |
+  ^class fromList: newWindow dimensions: dimStart, newWindow first dimensions
 )
 ) : (
 )
