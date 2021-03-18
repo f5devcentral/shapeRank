@@ -654,5 +654,19 @@ identity([[3, 4], [5, 6], [7, 8]])
 
 '
 )
+test_manual_rerank2 ^ <String> = (
+^'func append_rows(a: [$d1]$T, b: [$d2]$T): [$d1 + $d2]$T = append(a, b);
+
+append_rows([[1, 2, 3]], [[4, 5, 6]])
+
+'
+)
+test_manual_rerank3 ^ <String> = (
+^'func rotate_rows(x: [$d]$T, y: Int):[$d]$T  = rotate(x, y);
+
+rotate_rows([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 1)
+
+'
+)
 ) : (
 )

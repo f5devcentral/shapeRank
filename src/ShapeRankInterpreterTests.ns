@@ -910,6 +910,35 @@ public testNoReturn = (
   assert: result rank equals: 0.
   assert: result asScalar equals: 3.
 )
+public testManualRerank2 = (
+  | result = interpretFileNamed: 'manual_rerank2'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 1.
+  assert: (result dimensions at: 2) equals: 6.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 1.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 4) asScalar equals: 4.
+  assert: ((result contents at: 1) contents at: 5) asScalar equals: 5.
+  assert: ((result contents at: 1) contents at: 6) asScalar equals: 6.
+)
+public testManualRerank3 = (
+  | result = interpretFileNamed: 'manual_rerank3'. |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 2. 
+  assert: (result dimensions at: 1) equals: 3.
+  assert: (result dimensions at: 2) equals: 3.
+  assert: ((result contents at: 1) contents at: 1) asScalar equals: 2.
+  assert: ((result contents at: 1) contents at: 2) asScalar equals: 3.
+  assert: ((result contents at: 1) contents at: 3) asScalar equals: 1.
+  assert: ((result contents at: 2) contents at: 1) asScalar equals: 20.
+  assert: ((result contents at: 2) contents at: 2) asScalar equals: 30.
+  assert: ((result contents at: 2) contents at: 3) asScalar equals: 10.
+  assert: ((result contents at: 3) contents at: 1) asScalar equals: 200.
+  assert: ((result contents at: 3) contents at: 2) asScalar equals: 300.
+  assert: ((result contents at: 3) contents at: 3) asScalar equals: 100.
+)
 ) : (
 TEST_CONTEXT = ()
 )
