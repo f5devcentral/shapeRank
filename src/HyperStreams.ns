@@ -210,10 +210,6 @@ public contents ^ <List[HyperStream[T]]> = (
   #BOGUS. 
   ^window
 )
-public contains: element <Object> ^ <Boolean> = (
-   window detect: [: hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
-   ^true
-)
 public take: n <Integer> ^ <BoundedHyperStream[T]> = (
 | 
 dimHead <List[Integer | UnboundedDimension]> = List withAll: {n}.
@@ -253,6 +249,10 @@ public map: f <[:T | R]>  ^ <HyperStream[R]> = (
   dimStart <Integer> = List withAll: {dimensions first}.
   |
   ^class fromList: newWindow dimensions: dimStart, newWindow first dimensions
+)
+public contains: element <Object> ^ <Boolean> = (
+   window detect: [:hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
+   ^true
 )
 ) : (
 )
@@ -546,9 +546,6 @@ public map: f <[:T | R]>  ^ <HyperStream> = (
   result isKindOfHyperStream ifTrue: [^result].
   ^class scalarValue: result
 )
-public contains: element <Object> ^ <Boolean> = (
-   ^constant = element
-)
 public contents ^ <List[HyperStream[T]]> = (
   (* For temporary compatibility with old tests *)
   #BOGUS. 
@@ -560,6 +557,10 @@ public = other <Object> ^ <Boolean> = (
 )
 public hash ^ <Integer> = (
   ^constant hash bitXor: class hash
+)
+public contains: element <Object> ^ <Boolean> = (
+   element isKindOfScalarHyperStream ifTrue: [^constant = element asScalar].
+   ^constant = element
 )
 ) : (
 )

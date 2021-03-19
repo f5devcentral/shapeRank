@@ -236,13 +236,21 @@ public eval  ^ <Tensor> = (
 public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <{Integer. Integer}> = 
   super ShapeCastAST expression: e to: s position: p (
 ) (
-ensure: t <Tensor>  conformsTo: s <ShapeAST> ^ <Boolean> = (
-  ^t shape = shape
-)
 public eval  ^ <Tensor> = (
   | result <Tensor> = expression eval. |
   (ensure: result conformsTo: shape) ifFalse: [Error signal: 'Runtime type error: cast failed'].
   ^result
+)
+ensure: t <Tensor>  conformsTo: s <ShapeAST> ^ <Boolean> = (
+  ^shape = (shapeOf: t)
+)
+shapeOf: t <HyperStream> ^ <ShapeVectorAST> = (
+ | 
+ dims  = t dimensions collect: [:d <Integer | UnboundedDimension> | 
+    d isKindOfInteger ifTrue: [DimensionNumberAST number: d position: {0. 0}] ifFalse: [UnknownDimensionAST new]
+    ]. 
+  |
+  ^ShapeVectorAST dimensions: dims position: {0. 0}
 )
 ) : (
 )
@@ -626,6 +634,9 @@ computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <Hy
    result.
   ].
   ^resultFrame asStream.  
+)
+UnknownDimensionAST ^ <UnknownDimensionAST class> = (
+  ^super UnknownDimensionAST
 )
 ) : (
 )
