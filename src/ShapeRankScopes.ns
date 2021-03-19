@@ -873,14 +873,6 @@ slice: t <Tensor> dimension: k <Integer> index: i <Integer> ^ <Tensor> = (
    k + 1 to: t rank do: [:d <integer> | resultDims add: (t dimensions at: d)].
   ^Tensor dimensions: resultDims contents: (t contents flatMap: [:e <Object> | slice: e dimension: k -1 index: i])
 )
-tensorToContent: t <Tensor> ^ <List[Object]> = (
-	assert: [t rank = 1] message: 'dimensions must be given by a vector'.
-	^t contents
-)
-tensorToDimensions: t <Tensor> ^ <List[Integer]> = (
-	assert: [t rank = 1] message: 'contents must be given by a vector'.
-	^t contents collect: [:e <Tensor> | e contents at: 1]
-)
 toVectorContents: t <Tensor> = (
   | newContents = List new. |
   t rank = 1 ifTrue: [^t contents].
@@ -894,18 +886,6 @@ unitTo: t <TypeAST> ^ <FunctionTypeAST> = (
 )
 unitType ^ <TypeIdAST> = (
   ^TypeIdAST named: #Unit position: {0. 0}
-)
-subdivide: contents <List[Object]> by: dims <List[Integer]> offset: offset <Integer> ^ <Tensor>  = (
-  | majorAxis <Integer> tail <List[Integer]> resultContents <List[Integer]> elementSize <Integer> |
-  dims isEmpty ifTrue: [ ^Tensor dimensions: {} contents: {contents at: offset + 1}].
-  majorAxis:: dims first.
-  tail:: dims copyFrom: 2 to: dims size.
-  elementSize:: tail reduce: [:d1 :d2  | d1 * d2] ifEmpty: [1].
-  resultContents:: List new: majorAxis.
-  1 to: majorAxis do: [:i |
-	resultContents add: (subdivide: contents by: tail offset: (i - 1) * elementSize + offset)
-	].
-  ^Tensor dimensions: dims contents: resultContents
 )
 primitiveDivide ^ <FunctionAST> = (
   | 
@@ -1234,21 +1214,6 @@ primitiveApply ^ <FunctionAST> = (
       IdentifierAST named: #x position: {0. 0}} position: {0. 0}. |
   ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
 )
-primitiveContains ^ <FunctionAST> = (
-  (* contains(v: @S$T, x: $T): Bool *)
-|
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST  named: #S position: {0. 0}.
-  t1 = TensorTypeAST shape: S type: T position: {0. 0}.
-  p1 = ParameterAST named: #v type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #x type: T asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:tensor :element | 
-      Tensor dimensions: {} contents: {tensor contains: element}
-	].
-|
-  ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
 primitiveAppend ^ <FunctionAST> = (
 (*  append(a: [$d1]::@S $T, b: [$d2]::@S $T):[$d1 + $d2]::@S $T *)
   | 
@@ -1403,6 +1368,47 @@ primitiveOuterProduct ^ <FunctionAST> = (
    returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
   |
   ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+primitiveContains ^ <FunctionAST> = (
+  (* contains(v: @S$T, x: $T): Bool *)
+|
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST  named: #S position: {0. 0}.
+  t1 = TensorTypeAST shape: S type: T position: {0. 0}.
+  p1 = ParameterAST named: #v type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #x type: T asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:tensor :element | 
+      Tensor dimensions: {} contents: {tensor contains: element}
+	].
+|
+  ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+tensorToDimensions: t <Tensor> ^ <List[Integer]> = (
+	assert: [t rank = 1] message: 'dimensions must be given by a vector'.
+	^t contents collect: [:e <Tensor> | e contents at: 1]
+)
+tensorToContent: t <Tensor> ^ <List[Object]> = (
+	assert: [t rank = 1] message: 'contents must be given by a vector'.
+	^t contents
+)
+subdivide: contents <List[Object]> by: dims <List[Integer]> offset: offset <Integer> ^ <Tensor>  = (
+  | majorAxis <Integer> tail <List[Integer]> resultContents <List[Tensor]> elementSize <Integer> |
+  dims isEmpty ifTrue: [
+    | 
+    maybeScalar = contents at: offset + 1. 
+    tensorContents = maybeScalar isKindOfScalarHyperStream ifTrue: [maybeScalar asScalar] ifFalse: [maybeScalar].
+    |
+    ^Tensor dimensions: {} contents: {tensorContents}
+    ].
+  majorAxis:: dims first.
+  tail:: dims copyFrom: 2 to: dims size.
+  elementSize:: tail reduce: [:d1 :d2  | d1 * d2] ifEmpty: [1].
+  resultContents:: List new: majorAxis.
+  1 to: majorAxis do: [:i |
+	resultContents add: (subdivide: contents by: tail offset: (i - 1) * elementSize + offset)
+	].
+  ^Tensor dimensions: dims contents: resultContents
 )
 ) : (
 )
