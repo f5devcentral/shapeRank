@@ -28,6 +28,7 @@ private LetAST = asts LetAST.
 private NumAST = asts NumAST.
 private ParameterAST = asts ParameterAST.
 private ProgramAST = asts ProgramAST.
+private ProgramHeaderAST = asts ProgramHeaderAST.
 private RerankAST = asts RerankAST.
 private ShapeAppendAST = asts ShapeAppendAST.
 private ShapeCastAST = asts ShapeCastAST.
@@ -309,19 +310,6 @@ newDimVarName ^ <String> = (
    dimVarCounter:: dimVarCounter + 1.
    ^'$$d', dimVarCounter printString
 )
-public program ^ <CombinatorialParser[ProgramAST]> = (
-  ^super program wrapper:
-		[:fs <List[FunctionAST | LetAST]>  : e <ExprAST> :ei | 
-		|
-		ds <List[FunctionAST | LetAST]> = nil = fs ifTrue: [List new]
-		  ifFalse: [fs].
-		start <Integer> = ds isEmpty ifTrue: [e start]
-		  ifFalse: [ds first start].
-		|
-		
-		ProgramAST declarations: ds expression: e position: {start. e end}
-		]
-)
 public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
   ^super shapeVariable wrapper:
 		[:atSign <Token> :id <Token> |
@@ -370,6 +358,34 @@ public function ^ <CombinatorialParser[FunctionAST]> = (
 )
 public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
   ^declaration plus
+)
+public program ^ <CombinatorialParser[ProgramAST]> = (
+  ^super program wrapper:
+		[:hdr <ProgramHeaderAST>  :fs <List[FunctionAST | LetAST]>  : e <ExprAST> :ei | 
+		|
+		ds <List[FunctionAST | LetAST]> = nil = fs ifTrue: [List new]
+		  ifFalse: [fs].
+		start <Integer> = ds isEmpty ifTrue: [e start]
+		  ifFalse: [ds first start].
+		|
+		
+		ProgramAST declarations: ds expression: e position: {start. e end}
+		]
+)
+public programHeader = (
+(* programHeader = programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
+  ^super programHeader wrapper: [:pkw <Symbol> 
+		:id_token <Token> 
+		:lp <Token> 
+		:params <List[ParameterAST]> 
+		:rp <Token> 
+		:rt <{Token. TypeAST} | Nil> |
+        | 
+        returnType = rt isNil ifFalse: [rt last]. 
+        end = rt isNil ifTrue: [rp end] ifFalse: [returnType end].
+        |
+		ProgramHeaderAST  named: id_token value parameters: params returnType: returnType position: {pkw start. end}
+  ]
 )
 ) : (
 )

@@ -284,6 +284,10 @@ public fn: args <{String. List[{String. Object}]. Object. Object}> ^<FunctionAST
     body = astOf: (args at: 4). |
   ^FunctionAST named: name parameters: params returnType: rt body: body isSync: false position: {0. 0}
 )
+public testProgramDecl = (
+  | result = parseCompilationUnit: 'program P(x: String) func dummy(x: Int): Int = x; append(3, 4)'. |
+  assert: [result isKindOfProgramAST] description: 'Program expected'.
+)
 ) : (
 TEST_CONTEXT = ()
 )
