@@ -26,7 +26,7 @@ Runtime values are represented by instances of HyperStream subclasses.  These ar
 ) (
 class Activation of: f <FunctionAST> from: argVector <List[Stream]> = (
 |
-  function <FunctionAST> = f.
+  function <FunctionAST | ProgramAST> = f.
   public arguments <List[Stream]> = argVector.
 |
 ) (
@@ -223,6 +223,16 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
 public eval ^ <Tensor> = (
   ^expression eval.
 )
+public body ^ <ExprAST> = (
+(* Emulate FunctionAST protocol *)
+  ^expression
+)
+public evaluateWithArguments: args <List[HyperStream]> ^ <HyperStream> = (
+(* 
+We treat the invocation of a program like a function invocation.
+*)
+  ^computeFunction: self arguments: args
+)
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
 (* For compatibility with older version *)
@@ -402,6 +412,22 @@ public dimensions: ds <List[Integer]> contents: cs <List[Object]> = (
     ^HyperStream fromScalar: cs first.
     ].
   ^HyperStream fromList: cs dimensions: ds
+)
+) : (
+)
+class DataAST forStream: s <HyperStream> = AST position: {0. 0} (
+(*
+A dummy AST node representing an external input to the program. 
+
+External inputs have no syntactic representation by definition, but since this is an AST interpreter, everything we evaluate has to be represented as an AST. Hence the dummy AST.  The argument s is the value of the external input, and evaluation simply returns it.
+*)
+	|
+    public binding <HyperStream> = s.
+	|
+) (
+public eval ^ <HyperStream> = (
+(* Return the value this node represents. *)
+  ^binding
 )
 ) : (
 )
@@ -616,11 +642,12 @@ To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream
       ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
   ^HyperStream fromList: fusedSubstreams dimensions: dims
 )
+UnknownDimensionAST ^ <UnknownDimensionAST class> = (
+  ^super UnknownDimensionAST
+)
 computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
-  | 
-  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
-  maxFrame <Frame>
-  replicatedFrames <List[Frame]>
+  |  (* frame *)
+  argFrames <List[Frame]> = frameArguments: args of: callee.
   zippedFrame <Frame[List[HyperStream]]>
   resultFrame <Frame>
   |
@@ -639,8 +666,25 @@ computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <Hy
   ].
   ^resultFrame asStream.  
 )
-UnknownDimensionAST ^ <UnknownDimensionAST class> = (
-  ^super UnknownDimensionAST
+computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
+  |  (* frame *)
+  argFrames <List[Frame]> = frameArguments: args of: callee.
+  (* replicate & zip *)
+  zippedFrame <Frame[List[HyperStream]]> = argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
+  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
+    callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
+    ] ifEmpty: [emptyFrame].
+  (* map *)    
+  resultFrame <Frame> = zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
+   pushActivation:  (Activation of: callee from: argVector).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ].
+  | 
+  
+  ^resultFrame asStream.  
 )
 ) : (
 )

@@ -1,12 +1,13 @@
 Newspeak3
 'Root'
-class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs = (
 |
 	private Stopwatch = platform kernel Stopwatch.
 	private Parser = parsing Parser.
 	private TestContext = minitest TestContext.
+    private HyperStream = hs isNil ifFalse: [hs HyperStream].
 
-      supplier = s.
+     supplier = s.
 |
 ) (
 public class InterpreterTests = TestContext (
@@ -939,8 +940,25 @@ public testManualRerank3 = (
   assert: ((result contents at: 3) contents at: 2) asScalar equals: 300.
   assert: ((result contents at: 3) contents at: 3) asScalar equals: 100.
 )
+interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
+   ^(Parser new program parseString: string) evaluateWithArguments: args
+)
+interpretFileNamed: fn <String> withArguments: args <List[HyperStream]> ^ <HyperStream> = (
+  ^interpretCompilationUnit: (supplier supplyTestNamed: fn) withArguments: args
+)
+public testProgramIdentity_3 = (
+  | 
+  args = List withAll: {HyperStream fromScalar: 3}.
+  result = interpretFileNamed: 'program_identity_3' withArguments: args. 
+  |
+  assertIsScalar: result.
+  assert: result asScalar equals: 3.
+)
 ) : (
 TEST_CONTEXT = ()
 )
 ) : (
+usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+  ^usingPlatform: platform parsing: parsing minitest: minitest supplier: s streams: nil
+)
 )
