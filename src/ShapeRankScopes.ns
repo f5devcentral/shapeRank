@@ -616,9 +616,6 @@ alpha: T1 <TypeAST> toBeta: T2 <TypeAST> toGamma: T3  <TypeAST> ^ <FunctionTypeA
 booleanType ^ <TypeIdAST> = (
   ^TypeIdAST named: #Bool position: {0. 0}
 )
-computeFunction: fun <FunctionAST> arguments: args <List[Tensor]> = (
-  subclassResponsibility
-)
 index: t <Tensor> by: indices <List[Integer]> ^ <FunctionAST> = (
 (* Not typed as a function, but by built-in type rule *)
 	assert: [indices size = t rank] message: 'number of indices must match tensor rank'.	
@@ -689,46 +686,6 @@ primitiveArgmax ^ <FunctionAST> = (
   ].
   |
   ^FunctionAST named: #argmax parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
-)
-primitiveGradientDescent ^ <FunctionAST> = (
-(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
-  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
-    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
-    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
-    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
-    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
-    S = TypeVariableReferenceAST named: #S position: {0. 0}.
-    dS = TensorTypeAST shape: s type: S position: {0. 0}.
-    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
-    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
-    p2 = ParameterAST named: #loss type: F position: {0. 0}.
-    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
-    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
-    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
-    rt = T.
-    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
-      | tf = Tensorflow usingPlatform: platform nodeAPI: api tensorClass: Tensor. 
-        fun = loss asScalar.
-        paramsS = params asScalar.
-        paramKeys = paramsS isKindOfRecord
-                      ifFalse: [ assert: false ]
-                      ifTrue: [ paramsS data keys asArray sort: [:a :b | (cmp: a with: b) = #lt]].
-        paramContents = paramKeys collect: [:k | paramsS data at: k ].
-        backIntoRecord = [:ls | | data = Map new. |
-          (1 to: paramKeys size) do: [:i |
-            data at: (paramKeys at: i) put: (ls at: i). 
-          ].
-          Record contents: data
-        ].
-        gdResult = tf gradientDescent: lr
-                      lossFunction: [:p | computeFunction: fun arguments: {
-                        Tensor dimensions: {} contents: {backIntoRecord value: p}.
-                        otherParams
-                      }] params: paramContents. |
-      Tensor dimensions: {} contents: {backIntoRecord value: gdResult}
-    ].
-  |
-  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
 )
 primitiveIf  ^ <FunctionAST> = (
 (* if(c: Bool, t: $T, e: $T): $T *)
@@ -1121,89 +1078,6 @@ primitiveMakeTensor ^ <FunctionAST> = (
   |
   ^FunctionAST named: #makeTensor parameters: ps returnType: returnType body: body position: {0. 0}
 )
-primitiveInnerProduct ^ <FunctionAST> = (
-(* 
-innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
-*)
-  | 
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  R = TypeVariableReferenceAST named: #R position: {0. 0}.
-  Q = TypeVariableReferenceAST named: #Q position: {0. 0}.
-  F <FunctionAST> = alpha: R toBeta: R toGamma: Q.
-  G <FunctionAST> = alpha: T toBeta: S toGamma: R.
-  s1 = ShapeVariableReferenceAST named: #X position: {0. 0}.
-  s2 = ShapeVariableReferenceAST named: #Y position: {0. 0}.
-  n = DimensionVariableReferenceAST named: #n position: {0. 0}.
-  commonDim = ShapeVectorAST dimensions: {n} position: {0. 0}.
-  sv1 = ShapeAppendAST shape: s1 to: commonDim  position: {0. 0}.
-  sv2 = ShapeAppendAST shape: commonDim to: s2  position: {0. 0}.
-  rs = ShapeAppendAST shape: s1 to: s2  position: {0. 0}.
-  t1 = TensorTypeAST shape: sv1 type: T position: {0. 0}.
-  t2 = TensorTypeAST shape: sv2 type: S position: {0. 0}.
-  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p4 = ParameterAST named: #g type: G asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3. p4}.
-  body = PrimitiveBodyAST block: [:a :b :f :g |  
-	| 
-	sum = f asScalar. 
-	prod = g asScalar.
-	matrix = List new.
-	list 
-      fold = (currentProgram scope lookup: #fold) at: #ast.
-      sumAsTensor = Tensor dimensions: {} contents: {sum}.
-      zero = Tensor dimensions: {} contents: {0}.
-	|
-
-	1 to: (a dimensions at: 1) do: [:i  |
-		list:: List new.
-		1 to: (b dimensions at: b rank) do: [:j |
-		| r = computeFunction: prod arguments: {slice: a dimension: 1 index: i. slice: b dimension: b rank index: j}. |
-		list add: (computeFunction: fold arguments: {sumAsTensor. zero. r}).
-		].
-	      matrix add: (Tensor dimensions: b dimensions contents: list).
-	].
-	Tensor dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
-	            contents: matrix
-	]. 
-   returnType = TensorTypeAST shape: rs type: Q position: {0. 0}.
-  |
-  ^FunctionAST named: #innerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
-)
-primitiveFold ^ <FunctionAST> = (
-(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
-  |
-  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
-  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  PT = TensorTypeAST shape: P type: T position: {0. 0}.
-  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
-  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
-  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
-  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
-  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
-  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
-  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
-  p3 = ParameterAST named: #x type: tx position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
-  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
-  body = PrimitiveBodyAST block: [:f :acc :x |
-    | fun = f asScalar.
-      lst = List new add: acc; addAll: x contents; yourself. |
-      lst reduce: [:a :c |
-        computeFunction: fun arguments: {a. c}
-      ].
-    ].
-  |
-  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
-)
 primitiveApply ^ <FunctionAST> = (
 (* apply(f: @R$X -> @S$Y, x: @R$X): @S$Y *)
   | R = ShapeVariableReferenceAST named: #R position: {0. 0}.
@@ -1255,32 +1129,6 @@ reducibleFunction_s ^ <FunctionTypeAST> = (
   |
   ^FunctionTypeAST parameterTypes: {t. t} returnType: t position: {0. 0}
 )
-primitiveReduce ^ <FunctionAST> = (
-(*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
-  | 
-  d3 = DimensionVariableReferenceAST named: #d3 position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
-  t2 = TensorTypeAST shape: S type: T position: {0. 0}.
-  F <FunctionAST> = reducibleFunction_s.
-  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.
-  sv3 = ShapeVectorAST dimensions: {d3} position: {0. 0}.  
-  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.
-  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  rt = TensorTypeAST shape: s2 type: T position: {0. 0}.
-  body = PrimitiveBodyAST block: [:f :acc :x |  | fun = f asScalar.|
-	x contents reduce: [:a :c |
-		computeFunction: fun arguments: {a. c}
-		].
-	]. 
-  |
-  ^FunctionAST  named: #reduce parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
-)
 addHOFs = (
  hofs add: #fold; add: #outerProduct; add: #reduce; add: #scan; add: #apply.
  primitives
@@ -1291,89 +1139,6 @@ addHOFs = (
    add: primitiveReduce;
    add: primitiveScan;
    add: primitiveGradientDescent
-)
-primitiveScan ^ <FunctionAST> = (
-(*  scan(f: @S $T-> @S $T-> @S $T, acc: @S $T, x:[d]::@R::@S $T):[d]::@R::@S $T *)
-  | 
-  d = DimensionVariableReferenceAST named: #d position: {0. 0}.
-  F <FunctionAST> = reducibleFunction_s.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
-  t2 = TensorTypeAST shape: S type: T position: {0. 0}. 
-  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.  
-  sv3 = ShapeVectorAST dimensions: {d} position: {0. 0}.
-  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.  
-  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  body = PrimitiveBodyAST block: [:f :acc :x |  
-	| 
-	fun = f asScalar. 
-	list = List new. 
-	
-	|
-	x contents inject: acc into: [:a :c |
-		| r = computeFunction: fun arguments: {a. c}. |
-		list add: r.
-		r
-		].
-	Tensor dimensions: x dimensions contents: list
-	]. 
-  |
-  ^FunctionAST  named: #scan parameters: ps returnType: t3 body: body position: {0. 0}  
-)
-primitiveOuterProduct ^ <FunctionAST> = (
-(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
-  | 
-  T1 = TypeVariableReferenceAST named: #T1 position: {0. 0}.
-  T2 = TypeVariableReferenceAST named: #T2 position: {0. 0}.
-  T3 = TypeVariableReferenceAST named: #T3 position: {0. 0}.
-  s1 = ShapeVariableReferenceAST named: #S1 position: {0. 0}.
-  s2 = ShapeVariableReferenceAST named: #S2 position: {0. 0}.
-  s3 = ShapeVariableReferenceAST named: #S3 position: {0. 0}.
-  tpf1 = TensorTypeAST shape: s1 type: T1 position: {0. 0}.  
-  tpf2 = TensorTypeAST shape: s2 type: T2 position: {0. 0}.
-  tpf3 = TensorTypeAST shape: s3 type: T3 position: {0. 0}.
-  F <FunctionAST> = alpha: tpf1 toBeta: tpf2 toGamma: tpf3.
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.  
-  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
-  s4 = ShapeVariableReferenceAST named: #S4 position: {0. 0}.
-  s5 = ShapeVariableReferenceAST named: #S5 position: {0. 0}.
-  sa1 = ShapeAppendAST shape: sv1 to: s4 position: {0. 0}.
-  as = ShapeAppendAST shape: sa1 to: s1 position: {0. 0}.
-  sa2 = ShapeAppendAST shape: sv2 to: s5 position: {0. 0}.
-  bs = ShapeAppendAST shape: sa2 to: s2 position: {0. 0}.  
-  rs = ShapeAppendAST shape: sa1 to: (ShapeAppendAST shape: sa2 to: s3 position: {0. 0})  position: {0. 0}.
-  t1 = TensorTypeAST shape: as type: T1 position: {0. 0}.
-  t2 = TensorTypeAST shape: bs type: T2 position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p3 = ParameterAST named: #b type: t2 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  body = PrimitiveBodyAST block: [:f :a :b |  
-	| 
-	fun = f asScalar. 
-	matrix = List new.
-	list 
-	|
-	a contents do: [:x  |
-		list:: List new.
-		b contents do: [:y |
-		| r = computeFunction: fun arguments: {x. y}. |
-		list add: r.
-		].
-	      matrix add: (Tensor dimensions: b dimensions contents: list).
-	].
-	Tensor dimensions: a dimensions, b dimensions contents: matrix
-	]. 
-   returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
-  |
-  ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
 )
 primitiveContains ^ <FunctionAST> = (
   (* contains(v: @S$T, x: $T): Bool *)
@@ -1418,6 +1183,238 @@ subdivide: contents <List[Object]> by: dims <List[Integer]> offset: offset <Inte
 )
 computeCall: fun <FunctionAST> arguments: args <List[Tensor]> = (
   subclassResponsibility
+)
+primitiveGradientDescent ^ <FunctionAST> = (
+(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
+  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
+    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
+    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
+    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
+    S = TypeVariableReferenceAST named: #S position: {0. 0}.
+    dS = TensorTypeAST shape: s type: S position: {0. 0}.
+    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
+    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
+    p2 = ParameterAST named: #loss type: F position: {0. 0}.
+    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
+    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
+    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
+    rt = T.
+    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
+      | tf = Tensorflow usingPlatform: platform nodeAPI: api tensorClass: Tensor. 
+        fun = loss asScalar.
+        paramsS = params asScalar.
+        paramKeys = paramsS isKindOfRecord
+                      ifFalse: [ assert: false ]
+                      ifTrue: [ paramsS data keys asArray sort: [:a :b | (cmp: a with: b) = #lt]].
+        paramContents = paramKeys collect: [:k | paramsS data at: k ].
+        backIntoRecord = [:ls | | data = Map new. |
+          (1 to: paramKeys size) do: [:i |
+            data at: (paramKeys at: i) put: (ls at: i). 
+          ].
+          Record contents: data
+        ].
+        gdResult = tf gradientDescent: lr
+                      lossFunction: [:p | computeCall: fun arguments: {
+                        Tensor dimensions: {} contents: {backIntoRecord value: p}.
+                        otherParams
+                      }] params: paramContents. |
+      Tensor dimensions: {} contents: {backIntoRecord value: gdResult}
+    ].
+  |
+  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
+)
+primitiveInnerProduct ^ <FunctionAST> = (
+(* 
+innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
+*)
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  R = TypeVariableReferenceAST named: #R position: {0. 0}.
+  Q = TypeVariableReferenceAST named: #Q position: {0. 0}.
+  F <FunctionAST> = alpha: R toBeta: R toGamma: Q.
+  G <FunctionAST> = alpha: T toBeta: S toGamma: R.
+  s1 = ShapeVariableReferenceAST named: #X position: {0. 0}.
+  s2 = ShapeVariableReferenceAST named: #Y position: {0. 0}.
+  n = DimensionVariableReferenceAST named: #n position: {0. 0}.
+  commonDim = ShapeVectorAST dimensions: {n} position: {0. 0}.
+  sv1 = ShapeAppendAST shape: s1 to: commonDim  position: {0. 0}.
+  sv2 = ShapeAppendAST shape: commonDim to: s2  position: {0. 0}.
+  rs = ShapeAppendAST shape: s1 to: s2  position: {0. 0}.
+  t1 = TensorTypeAST shape: sv1 type: T position: {0. 0}.
+  t2 = TensorTypeAST shape: sv2 type: S position: {0. 0}.
+  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p4 = ParameterAST named: #g type: G asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3. p4}.
+  body = PrimitiveBodyAST block: [:a :b :f :g |  
+	| 
+	sum = f asScalar. 
+	prod = g asScalar.
+	matrix = List new.
+	list 
+      fold = (currentProgram scope lookup: #fold) at: #ast.
+      sumAsTensor = Tensor dimensions: {} contents: {sum}.
+      zero = Tensor dimensions: {} contents: {0}.
+	|
+
+	1 to: (a dimensions at: 1) do: [:i  |
+		list:: List new.
+		1 to: (b dimensions at: b rank) do: [:j |
+		| r = computeCall: prod arguments: {slice: a dimension: 1 index: i. slice: b dimension: b rank index: j}. |
+		list add: (computeCall: fold arguments: {sumAsTensor. zero. r}).
+		].
+	      matrix add: (Tensor dimensions: b dimensions contents: list).
+	].
+	Tensor dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
+	            contents: matrix
+	]. 
+   returnType = TensorTypeAST shape: rs type: Q position: {0. 0}.
+  |
+  ^FunctionAST named: #innerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+primitiveOuterProduct ^ <FunctionAST> = (
+(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
+  | 
+  T1 = TypeVariableReferenceAST named: #T1 position: {0. 0}.
+  T2 = TypeVariableReferenceAST named: #T2 position: {0. 0}.
+  T3 = TypeVariableReferenceAST named: #T3 position: {0. 0}.
+  s1 = ShapeVariableReferenceAST named: #S1 position: {0. 0}.
+  s2 = ShapeVariableReferenceAST named: #S2 position: {0. 0}.
+  s3 = ShapeVariableReferenceAST named: #S3 position: {0. 0}.
+  tpf1 = TensorTypeAST shape: s1 type: T1 position: {0. 0}.  
+  tpf2 = TensorTypeAST shape: s2 type: T2 position: {0. 0}.
+  tpf3 = TensorTypeAST shape: s3 type: T3 position: {0. 0}.
+  F <FunctionAST> = alpha: tpf1 toBeta: tpf2 toGamma: tpf3.
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.  
+  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
+  s4 = ShapeVariableReferenceAST named: #S4 position: {0. 0}.
+  s5 = ShapeVariableReferenceAST named: #S5 position: {0. 0}.
+  sa1 = ShapeAppendAST shape: sv1 to: s4 position: {0. 0}.
+  as = ShapeAppendAST shape: sa1 to: s1 position: {0. 0}.
+  sa2 = ShapeAppendAST shape: sv2 to: s5 position: {0. 0}.
+  bs = ShapeAppendAST shape: sa2 to: s2 position: {0. 0}.  
+  rs = ShapeAppendAST shape: sa1 to: (ShapeAppendAST shape: sa2 to: s3 position: {0. 0})  position: {0. 0}.
+  t1 = TensorTypeAST shape: as type: T1 position: {0. 0}.
+  t2 = TensorTypeAST shape: bs type: T2 position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p3 = ParameterAST named: #b type: t2 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  body = PrimitiveBodyAST block: [:f :a :b |  
+	| 
+	fun = f asScalar. 
+	matrix = List new.
+	list 
+	|
+	a contents do: [:x  |
+		list:: List new.
+		b contents do: [:y |
+		| r = computeCall: fun arguments: {x. y}. |
+		list add: r.
+		].
+	      matrix add: (Tensor dimensions: b dimensions contents: list).
+	].
+	Tensor dimensions: a dimensions, b dimensions contents: matrix
+	]. 
+   returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
+  |
+  ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+primitiveScan ^ <FunctionAST> = (
+(*  scan(f: @S $T-> @S $T-> @S $T, acc: @S $T, x:[d]::@R::@S $T):[d]::@R::@S $T *)
+  | 
+  d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  F <FunctionAST> = reducibleFunction_s.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
+  t2 = TensorTypeAST shape: S type: T position: {0. 0}. 
+  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.  
+  sv3 = ShapeVectorAST dimensions: {d} position: {0. 0}.
+  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.  
+  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  body = PrimitiveBodyAST block: [:f :acc :x |  
+	| 
+	fun = f asScalar. 
+	list = List new. 
+	
+	|
+	x contents inject: acc into: [:a :c |
+		| r = computeCall: fun arguments: {a. c}. |
+		list add: r.
+		r
+		].
+	Tensor dimensions: x dimensions contents: list
+	]. 
+  |
+  ^FunctionAST  named: #scan parameters: ps returnType: t3 body: body position: {0. 0}  
+)
+primitiveReduce ^ <FunctionAST> = (
+(*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
+  | 
+  d3 = DimensionVariableReferenceAST named: #d3 position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
+  t2 = TensorTypeAST shape: S type: T position: {0. 0}.
+  F <FunctionAST> = reducibleFunction_s.
+  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.
+  sv3 = ShapeVectorAST dimensions: {d3} position: {0. 0}.  
+  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.
+  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  rt = TensorTypeAST shape: s2 type: T position: {0. 0}.
+  body = PrimitiveBodyAST block: [:f :acc :x |  | fun = f asScalar.|
+	x contents reduce: [:a :c |
+		computeCall: fun arguments: {a. c}
+		].
+	]. 
+  |
+  ^FunctionAST  named: #reduce parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveFold ^ <FunctionAST> = (
+(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
+  |
+  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
+  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  PT = TensorTypeAST shape: P type: T position: {0. 0}.
+  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
+  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
+  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
+  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
+  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
+  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
+  p3 = ParameterAST named: #x type: tx position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
+  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
+  body = PrimitiveBodyAST block: [:f :acc :x |
+    | fun = f asScalar.
+      lst = List new add: acc; addAll: x contents; yourself. |
+      lst reduce: [:a :c |
+        computeCall: fun arguments: {a. c}
+      ].
+    ].
+  |
+  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
 )
 ) : (
 )

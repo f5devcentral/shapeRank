@@ -645,27 +645,6 @@ To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream
 UnknownDimensionAST ^ <UnknownDimensionAST class> = (
   ^super UnknownDimensionAST
 )
-computeFunction: callee <FunctionAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
-  |  (* frame *)
-  argFrames <List[Frame]> = frameArguments: args of: callee.
-  zippedFrame <Frame[List[HyperStream]]>
-  resultFrame <Frame>
-  |
-(* replicate & zip *)
-  zippedFrame:: argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
-  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
-  callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
-  ] ifEmpty: [emptyFrame].
-(* map *)
-  resultFrame:: zippedFrame map: [:argVector <List[HyperStream]> | 
-   | result  <HyperStream> | 
-   pushActivation:  (Activation of: callee from: argVector).
-   result:: callee body eval.
-   popActivation.
-   result.
-  ].
-  ^resultFrame asStream.  
-)
 computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
   |  (* frame *)
   argFrames <List[Frame]> = frameArguments: args of: callee.

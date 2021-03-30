@@ -425,30 +425,6 @@ public DimensionNumberAST ^ <DimensionNumberAST class> = (
 public ShapeVectorAST ^ <ShapeVectorAST class> = (
   ^super ShapeVectorAST
 )
-computeFunction: callee <FunctionAST> arguments: args <List[Tensor]> = (
-  | 
-  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
-  maxFrame <Frame>
-  replicatedFrames <List[Frame]>
-  zippedFrame <Frame>
-  resultFrame <Frame>
-  |
-(* replicate *)
-  maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
-	f1 max: f2
-	] ifEmpty: [emptyFrame].
-  replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
-  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
-(* map*)
-  resultFrame:: zippedFrame map: [:argVector <List[Tensor]> | 
-	 | result  <Frame> | 
-	 pushActivation:  (Activation of: callee from: argVector).
-	 result:: callee body eval.
-	 popActivation.
-	 result.
-	].
-  ^resultFrame asTensor.  
-)
 computeSpecialEvaluators ^ <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = (
   | ses <Map[Symbol, [List[ExprAST] | List[Tensor]]]> = Map new. scanReduceBlock <[List[ExprAST] | List[Tensor]]>  |
   scanReduceBlock:: [:args <List[ExprAST]> | 
