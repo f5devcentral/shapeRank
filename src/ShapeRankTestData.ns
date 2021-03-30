@@ -668,5 +668,11 @@ rotate_rows([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 1)
 
 '
 )
+test_program_identity_3 ^ <String> = (
+^'program identity3(x: Int) func identity(x: Int):Int = x;
+
+3
+'
+)
 ) : (
 )

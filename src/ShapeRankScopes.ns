@@ -17,7 +17,7 @@ Traditionally, we would probably write this class as a visitor. Here, we choose 
 Scopes map names of functions and parameters to instances of ScopeEntry, which in turn map names of properties to the corresponding values.
 
 In practice, the language is so simple that the only scopes are those of a function, which defines its parameters, and of
-the entire program, which defines its functions.
+the entire program, which defines its functions and parameters (external inputs).
 
 We define the various primitives the language supports here so that we can add them to the program scope. 
 it might be cleaner to define these in the interpreter, but their signatures are needed by the typechecker as well.
@@ -244,6 +244,8 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
   | public scope ::= Scope new. public topLevelScope = scope. |
 
   primitives do: [:d <FunctionAST> | scope at: d id putNode: d].
+  (* User parameters can shadow primitives *)
+  header parameters do: [:param <ParameterAST> | scope at: param id putNode: param].
 
   (* prelude functions all see the whole prelude scope *)
    prelude do: [:d  <FunctionAST | LetAST> |
@@ -252,17 +254,12 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
    ].
 
   (* declarations see earlier declarations, but not themselves *)
-   declarations do: [:d  <FunctionAST | LetAST> | addToScope: d].
+   declarations do: [:d  <FunctionAST | LetAST> | addDeclarationToScope: d].
    e scope nestIn: scope.
    currentProgram:: self.
 ) (
-addToScope: d <FunctionAST | LetAST> = (
-  | nextScope <Scope> |
-     d scope nestIn: scope.
-     nextScope:: Scope new.
-     nextScope nestIn: scope.
-     nextScope at: d id putNode: d.
-     scope:: nextScope.
+public standardPrelude ^ <List[FunctionAST | LetAST]> = (
+  ^prelude
 )
 public addDeclaration: d <FunctionAST | LetAST> = (
   | 
@@ -276,7 +273,7 @@ public addDeclaration: d <FunctionAST | LetAST> = (
   existingDecl isNil 
     ifTrue: [
       declarations add: d.
-      addToScope: d
+      addDeclarationToScope: d
     ] (* add new declaration *)
     ifFalse: [
       declarations at: (declarations indexOf: existingDecl) put: d.
@@ -284,8 +281,13 @@ public addDeclaration: d <FunctionAST | LetAST> = (
     ].
   (* replace existing declaration *)
 )
-public standardPrelude ^ <List[FunctionAST | LetAST]> = (
-  ^prelude
+addDeclarationToScope: d <FunctionAST | LetAST> = (
+  | nextScope <Scope> |
+     d scope nestIn: scope.
+     nextScope:: Scope new.
+     nextScope nestIn: scope.
+     nextScope at: d id putNode: d.
+     scope:: nextScope.
 )
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (

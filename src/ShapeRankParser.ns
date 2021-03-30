@@ -359,6 +359,25 @@ public function ^ <CombinatorialParser[FunctionAST]> = (
 public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
   ^declaration plus
 )
+public programHeader = (
+(* programHeader = programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
+  ^super programHeader wrapper: [:pkw <Symbol> 
+		:id_token <Token> 
+		:lp <Token> 
+		:ps <List[ParameterAST]> 
+		:rp <Token> 
+		:rt <{Token. TypeAST} | Nil> |
+        | 
+        params <List[ParameterAST]> = ps isNil ifTrue: [List new] ifFalse: [ps].
+        returnType = rt isNil ifFalse: [rt last]. 
+        end = rt isNil ifTrue: [rp end] ifFalse: [returnType end].
+        |
+		ProgramHeaderAST  named: id_token value parameters: params returnType: returnType position: {pkw start. end}
+  ]
+)
+dummyHeader ^ <ProgramHeaderAST> = (
+  ^ProgramHeaderAST named: '''Anonymous Program''' parameters: List new returnType: nil position: {0. 0}
+)
 public program ^ <CombinatorialParser[ProgramAST]> = (
   ^super program wrapper:
 		[:hdr <ProgramHeaderAST>  :fs <List[FunctionAST | LetAST]>  : e <ExprAST> :ei | 
@@ -367,25 +386,11 @@ public program ^ <CombinatorialParser[ProgramAST]> = (
 		  ifFalse: [fs].
 		start <Integer> = ds isEmpty ifTrue: [e start]
 		  ifFalse: [ds first start].
+		header <ProgramHeaderAST> = hdr isNil ifTrue: [dummyHeader] ifFalse: [hdr].        
 		|
-		
-		ProgramAST declarations: ds expression: e position: {start. e end}
+
+		ProgramAST header: header declarations: ds expression: e position: {start. e end}
 		]
-)
-public programHeader = (
-(* programHeader = programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
-  ^super programHeader wrapper: [:pkw <Symbol> 
-		:id_token <Token> 
-		:lp <Token> 
-		:params <List[ParameterAST]> 
-		:rp <Token> 
-		:rt <{Token. TypeAST} | Nil> |
-        | 
-        returnType = rt isNil ifFalse: [rt last]. 
-        end = rt isNil ifTrue: [rp end] ifFalse: [returnType end].
-        |
-		ProgramHeaderAST  named: id_token value parameters: params returnType: returnType position: {pkw start. end}
-  ]
 )
 ) : (
 )
