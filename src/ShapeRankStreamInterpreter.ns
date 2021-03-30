@@ -104,9 +104,6 @@ public evalOn: t <HyperStream | Record | ParameterAST> ^<HyperStream> = (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
 ) (
-public eval ^ <Tensor> = (
-  ^computeFunction: callee arguments: evaluateArguments
-)
 evaluateArguments = (
    | result = List new: arguments size. |
    1 to: arguments size do: [:i <Integer> | result add: (evaluateArgument: (arguments at: i) for: (callee parameters at: i))].
@@ -119,6 +116,9 @@ evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <HyperStream | AST> 
         ast isKindOfParameterAST ifTrue: [^(currentActivation at: ast id)].
         Tensor dimensions: {} contents: {ast}
      ] ifFalse: [arg eval]
+)
+public eval ^ <Tensor> = (
+  ^computeCall: callee arguments: evaluateArguments
 )
 ) : (
 )
@@ -231,7 +231,7 @@ public evaluateWithArguments: args <List[HyperStream]> ^ <HyperStream> = (
 (* 
 We treat the invocation of a program like a function invocation.
 *)
-  ^computeFunction: self arguments: args
+  ^computeCall: self arguments: args
 )
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (

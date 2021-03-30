@@ -106,9 +106,6 @@ public eval ^<Tensor> = (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
 ) (
-public eval ^ <Tensor> = (
-  ^computeFunction: callee arguments: evaluateArguments
-)
 evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <Tensor | AST> = (
   ^(param isHOF and: [arg isKindOfBlockAST not]) ifTrue: [
         | ast ::= (scope lookup: arg id ifAbsent:
@@ -121,6 +118,9 @@ evaluateArguments = (
    | result = List new: arguments size. |
    1 to: arguments size do: [:i <Integer> | result add: (evaluateArgument: (arguments at: i) for: (callee parameters at: i))].
    ^result
+)
+public eval ^ <Tensor> = (
+  ^computeCall: callee arguments: evaluateArguments
 )
 ) : (
 )
@@ -530,6 +530,30 @@ zipFrame: l <List[Frame]> ^ <Frame>  = (
 	zippedCells add: element.
 	].
   ^Frame dimensions: dims cells: zippedCells.
+)
+computeCall: callee <FunctionAST> arguments: args <List[Tensor]> = (
+  | 
+  argFrames <List[Frame]> = frameArguments: args of: callee. (* frame *)
+  maxFrame <Frame>
+  replicatedFrames <List[Frame]>
+  zippedFrame <Frame>
+  resultFrame <Frame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <Frame> :f2 <Frame> |
+	f1 max: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <Frame> | f replicateToMatch: maxFrame dimensions].
+  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
+(* map*)
+  resultFrame:: zippedFrame map: [:argVector <List[Tensor]> | 
+	 | result  <Frame> | 
+	 pushActivation:  (Activation of: callee from: argVector).
+	 result:: callee body eval.
+	 popActivation.
+	 result.
+	].
+  ^resultFrame asTensor.  
 )
 ) : (
 )

@@ -1,12 +1,13 @@
 Newspeak3
 'Root'
 class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs = (
-|
+|   (* Imports *)
 	private Stopwatch = platform kernel Stopwatch.
 	private Parser = parsing Parser.
+    private List = platform collections List.
 	private TestContext = minitest TestContext.
     private HyperStream = hs isNil ifFalse: [hs HyperStream].
-
+    (* Module variables *)
      supplier = s.
 |
 ) (
@@ -958,7 +959,7 @@ public testProgramIdentity_3 = (
 TEST_CONTEXT = ()
 )
 ) : (
-usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+public usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
   ^usingPlatform: platform parsing: parsing minitest: minitest supplier: s streams: nil
 )
 )

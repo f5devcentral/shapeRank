@@ -533,6 +533,9 @@ public hash ^<Integer> = (
 public isKindOfProgramAST ^ <Boolean> = (
   ^true
 )
+public parameters ^ <List[ParameterAST]> = (
+  ^header parameters
+)
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
 (* For compatibility with older version *)

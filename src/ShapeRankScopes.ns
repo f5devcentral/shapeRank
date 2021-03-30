@@ -1416,6 +1416,9 @@ subdivide: contents <List[Object]> by: dims <List[Integer]> offset: offset <Inte
 	].
   ^Tensor dimensions: dims contents: resultContents
 )
+computeCall: fun <FunctionAST> arguments: args <List[Tensor]> = (
+  subclassResponsibility
+)
 ) : (
 )
 ) : (
