@@ -7,12 +7,37 @@ class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minites
     private List = platform collections List.
 	private TestContext = minitest TestContext.
     private HyperStream = hs isNil ifFalse: [hs HyperStream].
+    private Iterator = hs isNil ifFalse: [hs Iterator].
     (* Module variables *)
      supplier = s.
 |
 ) (
 public class InterpreterTests = TestContext (
 ) (
+class TestIterator nextFunction: f <[:T | Nil | T]> rank: r <Integer> limit: n <Integer>  = Iterator (
+(*
+An iterator for testing ShapeRank. It will lazily produce n elements and stop. Each element must be of rank r-1.  The next element is produced by feeding the previous element to the closure f.  If f is fed nil, it produces the initial value in the sequence.
+*)
+	|
+	nextFunction  <[T]> = f.
+    public rank <Integer> = r.
+    count ::= 0.
+    last <T>
+	|
+) (
+public clone  = (
+  ^class nextFunction: nextFunction limit: limit
+)
+public hasNext ^ <Boolean> = (
+  ^count < limit
+)
+public next ^ <T> = (
+  count:: count + 1.
+  last:: nextFunction value: last.
+  ^last
+)
+) : (
+)
 assertIsScalar: result  = (
   assert: [result isKindOfTensor] description: 'Tensor expected!'. 
   assert: [result isScalar] description: 'Scalar expected!'. 
@@ -954,6 +979,18 @@ public testProgramIdentity_3 = (
   |
   assertIsScalar: result.
   assert: result asScalar equals: 3.
+)
+public testTwice_Stream  = (
+  | 
+  threes = HyperStream iteratingOver: (TestIterator nextFunction: [:dontCare | 3] rank: 1 limit: 10).
+  result = interpretFileNamed: 'twice_stream' withArguments: {threes}.
+  |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result hasNext].
+     assert: [result next asScalar] equals: 6.
+  ].
+  assert: [result hasNext not].
 )
 ) : (
 TEST_CONTEXT = ()
