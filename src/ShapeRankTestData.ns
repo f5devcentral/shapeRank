@@ -698,12 +698,6 @@ test_append_streams3 ^ <String> = (
 append(s1, s2)
 '
 )
-test_stream_contains ^ <String> = (
-^'program streamContains(s: [][]Int): Boolean;
-
-contains(s, 9)
-'
-)
 test_pointwiseSyncStream ^ <String> = (
 ^'program pointwiseStream(s1: [?] Int, s2: [?] Int): [?] Int sync func pv(a: Int, b: Int): Int = a*b;
 
@@ -747,6 +741,12 @@ test_referential_transparency = (
 sync func pair(a: $T, b: $T): [2]$T = [a, b]
 sync func foo(a: [?]$T, b: [?]$T, c: $T): [2][?]$T = pair(a, b);
 foo(s, s, s)'
+)
+test_stream_contains ^ <String> = (
+^'program streamContains(s: [][]Int): Boolean;
+
+contains(s, 512)
+'
 )
 ) : (
 )
