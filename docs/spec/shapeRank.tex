@@ -339,7 +339,7 @@ A {\em module declaration} is a mathematical function between modules [\ref{modu
 \subsubsection{Module Declaration Invocation}
 \label{moduleDeclarationInvocation}
 
-A module declaration may be invoked to produce a module. Syntactically, a {\em module invocation} has the form of a function call, except that all its arguments must denote modules.
+A module declaration may be invoked to produce a module. Syntactically, a {\em module invocation} has the form of a function call [\ref{calls}], except that all its arguments must denote modules.
 A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the public declarations of $m$.
 
 {\em firm up. Substitution of arguments, key vs. value, define public access ...}
@@ -348,15 +348,13 @@ A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the 
 \label{programsAndIO}
 
 A {\em program} consists of an optional  {\em program signature}, followed by an optional  series of declarations, a semicolon and an expression.
-A program signature is exactly like a function signature []\ref{functionSignature}, but it specifies the name of the program as whole. In addition it specifies the type of each of the program's parameters, and, optionally, it's result type.  Unlike a function, a program is not invoked a by function call [\ref{functionCalls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
+A program signature is exactly like a function signature [\ref{functions}], but it specifies the name of the program as whole. In addition it specifies the type of each of the program's parameters, and, optionally, it's result type.  Unlike a function, a program is not invoked a by function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
 
 {\em 
 Thus, ShapeRank has no constructs for I/O in the traditional sense.
 }
 
-{\em The type of a parameter will specify its element type and its shape (and therefore its rank). }
-
-If the keyword \SYNC precedes the keyword \FUNC, the function is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
+If the keyword \SYNC precedes the keyword \PROGRAM, the program is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
 
 
