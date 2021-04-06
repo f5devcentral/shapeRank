@@ -63,20 +63,11 @@ public contains: element <Object> ^ <Boolean> = (
    subclassResponsibility
 )
 ) : (
-public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
-  ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator]))
-)
-public zipSynchronous: streams <List[HyperStream]> ^ <HyperStream[List]> = (
-  ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s <HyperStream> | s iterator]))
-)
 public fromScalar: o <T def> ^ <ScalarHyperStream[T]> = (
   ^ScalarHyperStream scalarValue: o
 )
 public empty ^ <EmptyHyperStream> = ( 
   ^EmptyHyperStream new
-)
-public  iteratingOver: i <Iterator[HyperStream[T def]]>  ^ <UnboundedHyperStream[T]> = (
-   ^UnboundedHyperStream iteratingOver: i
 )
 public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> ^ <ConstantStream[T]> = (
   ^ConstantStream on:  k dimension: ds
@@ -86,6 +77,20 @@ public repeat:  k <T def> ^ <ConstantStream[T]> = (
 )
 public fromList: l <List[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam[T]> = (
   ^BoundedHyperStream fromList: l dimensions: ds
+)
+public UnboundedDimension = (
+  ^outer HyperStreams UnboundedDimension
+)
+public  iteratingOver: i <Iterator[HyperStream[T def]]>  dimensions: ds <List[Integer | UnboundedDimension]>  ^ <UnboundedHyperStream[T]> = (
+   ^UnboundedHyperStream iteratingOver: i dimensions: ds
+)
+public zipSynchronous: streams <List[HyperStream]> ^ <HyperStream[List]> = (
+  ^iteratingOver: (SynchronousZipIterator iterators: (streams collect: [:s <HyperStream> | s iterator])) dimensions: streams first  dimensions
+)
+public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
+ | dimTail <List[Integer | UnboundedDimension]> = streams first dimensions copyFrom: 2 to: streams first dimensions size. |
+
+  ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator])) dimensions: {UnboundedDimension new}, dimTail
 )
 )
 class ConstantStream on: k <T def> dimension: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
@@ -256,11 +261,12 @@ public contains: element <Object> ^ <Boolean> = (
 )
 ) : (
 )
-public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> = HyperStream rank: i rank (
+public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: i rank (
   |
-  iterator <Iterator[HyperStream[T]]> = i.
+  public iterator <Iterator[HyperStream[T]]> = i.
   public isComplete <Boolean> ::= false.
   |
+  dimensions:: ds.
 ) (
 public isKindOfUnboundedHyperStream ^ <Boolean> = (
   ^true
@@ -273,12 +279,6 @@ public map: f <[:T | R]>  ^ <HyperStream[R]> = (
 )
 public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
   ^class iteratingOver: (iterator map: [:e <HyperStream[T]> | e filter: f]) dimensions: dimensions 
-)
-public take: n <Integer> ^ <HyperStream[T]> = (
-  ^class iteratingOver: (iterator take: n)
-)
-public clone = (
-  ^class iteratingOver: iterator clone
 )
 public isScalar ^ <Boolean> = (
   ^false
@@ -300,6 +300,13 @@ public = other <Object> ^ <Boolean> = (
 public hash ^ <Integer> = (
   ^iterator hash bitXor: class hash
 )
+public clone = (
+  ^class iteratingOver: iterator clone dimensions: dimensions
+)
+public take: n <Integer> ^ <HyperStream[T]> = (
+  | dimTail = dimensions copyFrom: 2 to: dimensions size. |
+  ^class iteratingOver: (iterator take: n)  dimensions:  {n}, dimTail
+)
 ) : (
 )
 class MappedIterator mapping: f <[:T | R]> on: i <Iterator> =  DerivedIterator fromIterator: i (
@@ -317,7 +324,7 @@ public clone = (
 )
 class DerivedIterator fromIterator: i <Iterator[T def]> =  Iterator (
   |
-  iterator <Iterator[T]>
+  iterator <Iterator[T]> = i.
   |
 ) (
 public hasNext ^ <Boolean> = (

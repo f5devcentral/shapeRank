@@ -667,16 +667,6 @@ test_program_identity_3 ^ <String> = (
 3
 '
 )
-test_twice_stream ^ <String> = (
-^'program twiceStream(s: Int) sync func twice(x: Int):Int = 2*x;
-
-twice(s)
-'
-)
-test_double_stream ^ <String> = (
-^'program doubleStream(s: Int) ; s*2
-'
-)
 test_append_streams1 ^ <String> = (
 ^'program testAppendStreams1(s: [d]Int): [d + 3] Int;
  
@@ -718,24 +708,6 @@ scan(+, 0, s)
 
 '
 )
-test_pair_stream_sync3 ^ <String> = (
-^'program pairStream3(s1: $E, s2: $E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair(s1, s2)
-'
-)
-test_pair_stream_sync2 ^ <String> = (
-^'program pairStream2(s: $E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair(s, [2, 4, 8, 16])
-'
-)
-test_pair_stream_sync1 ^ <String> = (
-^'program pairStream1(s: $E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair([1, 2, 3, 4], s)
-'
-)
 test_referential_transparency = (
 ^'program referentialTransparency(s: []$E):[?][2] [?]
 sync func pair(a: $T, b: $T): [2]$T = [a, b]
@@ -743,9 +715,41 @@ sync func foo(a: [?]$T, b: [?]$T, c: $T): [2][?]$T = pair(a, b);
 foo(s, s, s)'
 )
 test_stream_contains ^ <String> = (
-^'program streamContains(s: [][]Int): Boolean;
+^'program streamContains(s: [][]Int)
+func dummy(z: Int) = 3
+;
 
 contains(s, 512)
+'
+)
+test_pair_stream_sync1 ^ <String> = (
+^'program pairStream1(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair([1, 2, 3, 4], s)
+'
+)
+test_pair_stream_sync3 ^ <String> = (
+^'program pairStream3(s1: []$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s1, s2)
+'
+)
+test_pair_stream_sync2 ^ <String> = (
+^'program pairStream2(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s, [2, 4, 8, 16])
+'
+)
+test_double_stream ^ <String> = (
+^'program doubleStream(s:[] Int) 
+func dummy(x: Int): Int = x
+; s*2
+'
+)
+test_twice_stream ^ <String> = (
+^'program twiceStream(s: []Int) sync func twice(x: Int):Int = 2*x;
+
+twice(s)
 '
 )
 ) : (

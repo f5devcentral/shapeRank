@@ -2448,7 +2448,7 @@ public hash ^ <integer> = (
 )
 ) : (
 )
-public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = super ProgramAST header: hdr declarations: ds expression: e position: p (
+public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> isSynchronous: isSync <Boolean> position: p <{Integer. Integer}> = super ProgramAST header: hdr declarations: ds expression: e isSynchronous: isSync position: p (
 ) (
 public computeType ^<TypeAST> = (
    cachedSyntheticVariables = Map new.
@@ -2458,7 +2458,7 @@ public computeType ^<TypeAST> = (
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
 (* For compatibility with older version *)
-  ^header: nil declarations: ds expression: e position: p
+  ^header: nil declarations: ds expression: e isSynchronous: true position: p
 )
 )
 public ParameterAST ^ <ParameterAST class> = (

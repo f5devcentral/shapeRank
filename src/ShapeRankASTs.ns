@@ -511,12 +511,13 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
+public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> isSynchronous: isSync <Boolean> position: p <{Integer. Integer}> = 
   AST position: p (
 |
     public header = hdr.
 	public declarations <List[FunctionAST | LetAST]> = ds.
 	public expression <ExprAST> = e.
+    public isSynchronous <Boolean> = isSync.
 |
 ) (
 public = other <Object> ^ <Boolean> = (
@@ -539,7 +540,7 @@ public parameters ^ <List[ParameterAST]> = (
 ) : (
 public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
 (* For compatibility with older version *)
-  ^header: nil declarations: ds expression: e position: p
+  ^header: nil declarations: ds expression: e isSynchronous: true position: p
 )
 )
 public class RerankAST reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}> = ExprAST position: p (

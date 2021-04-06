@@ -44,6 +44,7 @@ private TypeIdAST  = asts TypeIdAST.
 private TypeVariableReferenceAST  = asts TypeVariableReferenceAST.
 private BoundedTypeAST = asts BoundedTypeAST.
 private TypeStructAST = asts TypeStructAST.
+private UnknownDimensionAST = asts UnknownDimensionAST.
 private WhereAST = asts WhereAST.
 
 private MessageNotUnderstood = platform kernel MessageNotUnderstood.
@@ -389,7 +390,7 @@ public program ^ <CombinatorialParser[ProgramAST]> = (
 		header <ProgramHeaderAST> = hdr isNil ifTrue: [dummyHeader] ifFalse: [hdr].        
 		|
 
-		ProgramAST header: header declarations: ds expression: e position: {start. e end}
+		ProgramAST header: header declarations: ds expression: e isSynchronous: true position: {start. e end}
 		]
 )
 ) : (
