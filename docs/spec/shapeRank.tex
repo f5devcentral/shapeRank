@@ -95,7 +95,7 @@ whose remainder is given by the shape of the elements of $s$.
 \subsection{Reactivity and Synchronicity}
 \label{reactivityAndSynchronicity}
 
-A function is {\em reactive} if it may fire whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
+A program or function [\ref{functions}] is {\em reactive} if it may fire whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
 
 \subsection{Access Control}
 \label{accessControl}
@@ -344,7 +344,19 @@ A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the 
 
 {\em firm up. Substitution of arguments, key vs. value, define public access ...}
 
+\section{Programs and I/O}
+\label{programsAndIO}
 
+A {\em program} consists of an optional  {\em program signature}, followed by an optional  series of declarations, a semicolon and an expression.
+A program signature is exactly like a function signature []\ref{functionSignature}, but it specifies the name of the program as whole. In addition it specifies the type of each of the program's parameters, and, optionally, it's result type.  Unlike a function, a program is not invoked a by function call [\ref{functionCalls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
+
+{\em 
+Thus, ShapeRank has no constructs for I/O in the traditional sense.
+}
+
+{\em The type of a parameter will specify its element type and its shape (and therefore its rank). }
+
+If the keyword \SYNC precedes the keyword \FUNC, the function is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
 
 

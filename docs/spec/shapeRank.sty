@@ -267,7 +267,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\ParamList#1{\LPAREN{} \CommaList{#1}{} \RPAREN}
 \def\ParamListOp#1{\LPAREN{} \CommaListOp{#1}{} \RPAREN}
 
-\bnf{Program}{(\PROGRAM{} \synt{FunctionSignatureOptionalReturn})? \synt{Declaration}? \synt{Expression}}
+\bnf{Program}{(\SYNC? \PROGRAM{} \synt{FunctionSignatureOptionalReturn})? \synt{Declaration}? \synt{Expression}}
 
 \bnf {Parameter} {\VALIDENT{} \synt{TypeSigSuffix}}
 \bnf {PropertyName} {\VALIDENT{} \alt \synt{StringLiteral}}
