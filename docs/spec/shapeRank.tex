@@ -440,7 +440,7 @@ A function $g(a_1, \ldots, a_k)$ may be {\em mapped} on to a frame $f_h$, writte
 Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elements, $ i \in 1..k, k \ge 0$:
 
  The function $zip_{sync_k}$ produces a hyperstream $h_{sync} \triangleq (h_{1_1}, \ldots, h_{k_1}), \ldots, (h_{1_n}, \ldots, h_{k_n})$ where $n = min(s_i), i \in 1..k$.
- The number of available elements of $h_sync$ at any time is no more than $min(n_i), i \in 1..k$
+ The number of available elements of $h_{sync}$ at any time is no more than $min(n_i), i \in 1..k$
 
 {\em
 Note that the $h_i$ may include both bounded and unbounded streams. If any of the $h_i$ are bounded, then the result of $zip_{sync_k}$ is bounded, and it's length is that of the shortest of the $h_i$. If all  the $h_i$ are unbounded, then $zip_{sync_k}$ is unbounded, with a dynamic size that is the smallest of the dynamic sizes of the $h_i$.
@@ -556,7 +556,9 @@ The type of a string literal is \STRING.
 
 \HyperstreamLiteral
 
-Hyperstream literals denote hyperstreams [\ref{hyperstreams}] of fixed length. 
+Hyperstream literals denote hyperstreams [\ref{concepts}] of fixed length. 
+
+{\em Note that one cannot specify an empty hyperstream literal. An empty hyperstream may be created as a result of some computation, but experience with languages in the APL family indicates that a literal form is not necessary.}
 
 
 \subsection{Struct Literals}
@@ -574,6 +576,11 @@ Let $s \triangleq \LCURLY{}p_1\COLON{} e_1\COMMA{} \ldots \COMMA{} p_n\COLON{} e
 \label{dotExpressions}
 
 A {\em dot expression} provides a way to access a member of a struct [\ref{structTypes}] or builtin type.
+
+{\em
+Respecify as a syntax for a function? That would make it clear that it maps over streams like everything else.
+Problem being that the type system cannot express such a function, so we have to be careful how we phrase  this.
+}
 
 \DotExpression{}
 
@@ -620,7 +627,7 @@ The expression $e_1 \theta e_2$ where $\theta\LPAREN{}p_1\COLON{} T \LT: \NUMBER
 \label{additiveExpressions}
 
 An {\em additive expression} is either a multiplicative expression [\ref{multiplicativeExpressions}] or the application of an additive operator to two additive expressions.
-An {\em additive operator} is one of the operators \RANGE{}, \PLUS{}  and \MINUS{}.  The \RANGE{} operator produces a bounded stream, $s$, of length $start - stop + 1$, where $start$ is the  first argument to \RANGE{} and  $stop$ is its second argument. The  first  element of $s$ is $start$ and each succeeding element is the natural number succeeding its predecessor. The \PLUS{} and \MINUS{} operators implement IEEE double addition and subtraction, respectively.
+An {\em additive operator} is one of the operators \RANGE{}, \PLUS{}  and \MINUS{}.  The \RANGE{} operator produces a bounded stream, $s$, of length $stop - start + 1$, where $start$ is the  first argument to \RANGE{} and  $stop$ is its second argument. The  first  element of $s$ is $start$ and each succeeding element is the natural number succeeding its predecessor. The \PLUS{} and \MINUS{} operators implement IEEE double addition and subtraction, respectively.
 
 \AdditiveExpression{}
 \AdditiveOp{}
