@@ -1003,42 +1003,6 @@ threes ^ <UnboundedHyperStream> = (
 twoToThe9th ^ <UnboundedHyperStream> = (
   ^HyperStream iteratingOver: (TestIterator nextFunction: [:i | i isNil ifFalse: [i*2] ifTrue: [1]] rank: 1 limit: 10)  dimensions: {10}
 )
-public testDoubleStream  = (
-  | result = interpretFileNamed: 'double_stream' withArguments: {threes}. |
-  assert: result isKindOfUnboundedHyperStream.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: [result iterator next asScalar] equals: 6.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testDoubleStream2  = (
-  | result = interpretFileNamed: 'double_stream' withArguments: {twoToThe9th}. |
-  assert: result isKindOfUnboundedHyperStream.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: [result iterator next asScalar] equals: 2 ** i.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testTwice_Stream  = (
-  | result = interpretFileNamed: 'twice_stream' withArguments: {threes}. |
-  assert: result isKindOfUnboundedHyperStream.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: [result iterator next asScalar] equals: 6.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testTwice_Stream2  = (
-  | result = interpretFileNamed: 'twice_stream' withArguments: {twoToThe9th}. |
-  assert: result isKindOfUnboundedHyperStream.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: [result iterator next asScalar] equals: 2 ** i.
-  ].
-  assert: [result hasNext not].
-)
 public testPointwiseSyncStream = (
   | 
   result = interpretFileNamed: 'pointwiseSyncStream' withArguments: {threes. twoToThe9th}.
@@ -1088,6 +1052,42 @@ public testPairStreamSync3 = (
      assert: [result iterator hasNext].
      assert: ((result iterator next) contents at: 1) asScalar equals: 3.
      assert: ((result iterator next) contents at: 2) asScalar equals: 2**(i-1).
+  ].
+  assert: [result iterator hasNext not].
+)
+public testTwice_Stream  = (
+  | result = interpretFileNamed: 'twice_stream' withArguments: {threes}. |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result iterator hasNext].
+     assert: (result iterator next asScalar) equals: 6.
+  ].
+  assert: [result iterator hasNext not].
+)
+public testTwice_Stream2  = (
+  | result = interpretFileNamed: 'twice_stream' withArguments: {twoToThe9th}. |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result iterator hasNext].
+     assert: (result iterator next asScalar) equals: 2 ** i.
+  ].
+  assert: [result hasNext not].
+)
+public testDoubleStream  = (
+  | result = interpretFileNamed: 'double_stream' withArguments: {threes}. |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result iterator hasNext].
+     assert: (result iterator next asScalar) equals: 6.
+  ].
+  assert: [result iterator hasNext not].
+)
+public testDoubleStream2  = (
+  | result = interpretFileNamed: 'double_stream' withArguments: {twoToThe9th}. |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result iterator hasNext].
+     assert: (result iterator next asScalar) equals: 2 ** i.
   ].
   assert: [result iterator hasNext not].
 )
