@@ -577,22 +577,17 @@ Let $s \triangleq \LCURLY{}p_1\COLON{} e_1\COMMA{} \ldots \COMMA{} p_n\COLON{} e
 
 A {\em dot expression} provides a way to access a member of a struct [\ref{structTypes}] or builtin type.
 
-{\em
-Respecify as a syntax for a function? That would make it clear that it maps over streams like everything else.
-Problem being that the type system cannot express such a function, so we have to be careful how we phrase  this.
-}
-
 \DotExpression{}
 
 Let $m \triangleq e\DOT{}p$.
 
 Evaluation of $m$ proceeds as follows:
 
-The expression $e$ is evaluated to $v$. The value of $m$ is the value $v_p$ of the field $p$ of $v$.
+The value of $m$ is the value of the call expression [\ref{calls}] $dot_T(e)$, where $dot_T$ is defined as if by the function declaration  [\ref{functions}] $\FUNC{}$ $dot_T(x: T): T_k = x.p$,  $T = \LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY$ is the type of $e$, and $p_k = p$.
 
-Let $T$ be the type of $e$. If $T = \LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY$ where $p_k = p$, then the type of $m$ is $T_k$. 
+The type of $m$ is $T_k$. 
 
-It is a compile-time error if $T$ does not have a member named $p$. 
+It is a compile-time error if $T$ is not a struct type [\ref{structTypes}] with a member named $p$. 
 
 \subsection{Member Expressions}
 \label{memberExpression}
