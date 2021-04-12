@@ -342,10 +342,13 @@ public declaration ^ <CombinatorialParser[FunctionAST | LetAST]> = (
            d  
         ]
 )
+public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
+  ^declaration plus
+)
 public function ^ <CombinatorialParser[FunctionAST]> = (
   ^super function wrapper:
 		[:syncKw <Token | Nil> 
-        :fkw <Symbol> 
+        :fkw <Token> 
 		:id_token <Token> 
 		:lp <Token> 
 		:params <List[ParameterAST]> 
@@ -357,29 +360,31 @@ public function ^ <CombinatorialParser[FunctionAST]> = (
 		FunctionAST  named: id_token value parameters: params returnType: returnType body: body isSync: sync position: {fkw start. body end}
 		]
 )
-public prelude ^<CombinatorialParser[List[FunctionAST | LetAST]]> = (
-  ^declaration plus
+dummyHeader ^ <ProgramHeaderAST> = (
+  ^ProgramHeaderAST named: '''Anonymous Program''' parameters: List new returnType: nil isSync: false position: {0. 0}
 )
 public programHeader = (
-(* programHeader = programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
-  ^super programHeader wrapper: [:pkw <Symbol> 
+(* programHeader = sync opt, programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
+  ^super programHeader wrapper: [
+        :syncKw <Token>
+        :pkw <Token> 
 		:id_token <Token> 
 		:lp <Token> 
 		:ps <List[ParameterAST]> 
 		:rp <Token> 
-		:rt <{Token. TypeAST} | Nil> |
-        | 
+		:rt <{Token. TypeAST} | Nil> | 
+        |
+        sync <Boolean> = syncKw isNil not.
         params <List[ParameterAST]> = ps isNil ifTrue: [List new] ifFalse: [ps].
         returnType = rt isNil ifFalse: [rt last]. 
+        start = sync ifTrue: [syncKw start] ifFalse: [pkw start].
         end = rt isNil ifTrue: [rp end] ifFalse: [returnType end].
         |
-		ProgramHeaderAST  named: id_token value parameters: params returnType: returnType position: {pkw start. end}
+		ProgramHeaderAST named: id_token value parameters: params returnType: returnType isSync: sync position: {start. end}
   ]
 )
-dummyHeader ^ <ProgramHeaderAST> = (
-  ^ProgramHeaderAST named: '''Anonymous Program''' parameters: List new returnType: nil position: {0. 0}
-)
 public program ^ <CombinatorialParser[ProgramAST]> = (
+(* programHeader opt, declarationSection opt, expr, eoi *)
   ^super program wrapper:
 		[:hdr <ProgramHeaderAST>  :fs <List[FunctionAST | LetAST]>  : e <ExprAST> :ei | 
 		|
@@ -390,7 +395,7 @@ public program ^ <CombinatorialParser[ProgramAST]> = (
 		header <ProgramHeaderAST> = hdr isNil ifTrue: [dummyHeader] ifFalse: [hdr].        
 		|
 
-		ProgramAST header: header declarations: ds expression: e isSynchronous: true position: {start. e end}
+		ProgramAST header: header declarations: ds expression: e position: {header start. e end}
 		]
 )
 ) : (

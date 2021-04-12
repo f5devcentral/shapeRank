@@ -217,8 +217,8 @@ public eval ^ <Tensor> = (
 )
 ) : (
 )
-public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> isSynchronous: isSync <Boolean> position: p <{Integer. Integer}> = 
-  super ProgramAST header: hdr declarations: ds expression: e isSynchronous: isSync position: p (
+public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
+  super ProgramAST header: hdr declarations: ds expression: e position: p (
 ) (
 public eval ^ <Tensor> = (
   ^expression eval.
@@ -234,10 +234,6 @@ We treat the invocation of a program like a function invocation.
   ^computeCall: self arguments: args
 )
 ) : (
-public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
-(* For compatibility with older version *)
-  ^header: nil declarations: ds expression: e isSynchronous: false position: p
-)
 )
 public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 
   super RerankAST reranking: fn to: rs  position: p (

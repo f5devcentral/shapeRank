@@ -511,13 +511,12 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> isSynchronous: isSync <Boolean> position: p <{Integer. Integer}> = 
+public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   AST position: p (
 |
     public header = hdr.
 	public declarations <List[FunctionAST | LetAST]> = ds.
 	public expression <ExprAST> = e.
-    public isSynchronous <Boolean> = isSync.
 |
 ) (
 public = other <Object> ^ <Boolean> = (
@@ -537,11 +536,10 @@ public isKindOfProgramAST ^ <Boolean> = (
 public parameters ^ <List[ParameterAST]> = (
   ^header parameters
 )
-) : (
-public declarations: ds <List[FunctionAST | LetAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = (
-(* For compatibility with older version *)
-  ^header: nil declarations: ds expression: e isSynchronous: true position: p
+public isSynchronous ^ <Boolean> = (
+  ^header isSynchronous
 )
+) : (
 )
 public class RerankAST reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}> = ExprAST position: p (
 |
@@ -997,18 +995,15 @@ public hash ^<Integer> = (
 )
 ) : (
 )
-public class ProgramHeaderAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = AST position: p (
+public class ProgramHeaderAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TypeAST>  isSync: s <Boolean> position: p <{Integer. Integer}> = AST position: p (
   |
   public id <String> = n.
   public parameters <List[ParameterAST]> = ps.
   public returnTypeSlot <TypeAST> ::= t.
+  public isSynchronous <Boolean> = s.
   |
 ) (
 ) : (
-public parameters: ps <List[ParameterAST]> returnType: t <TypeAST> position: p  = (
-(* Temporary *)
-  ^named: nil parameters: ps  returnType: t position: p 
-)
 )
 emptyShape ^ <ShapeVectorAST> = (
   ^ShapeVectorAST dimensions: {} position: {0. 0}

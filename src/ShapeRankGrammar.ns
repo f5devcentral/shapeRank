@@ -106,7 +106,7 @@ let = tokenFromSymbol: #let.
 publicKw = tokenFromSymbol: #public.
 programKw = tokenFromSymbol: #program.
 
-programHeader = programKw, identifier,  lparen, params, rparen, (colon , type) opt.
+programHeader = sync opt, programKw, identifier,  lparen, params, rparen, (colon , type) opt.
 program = programHeader opt, declarationSection opt, expr, eoi.
 declaration = publicKw opt, (function | letBinding).
 declarationSection = declaration plus, semicolon.

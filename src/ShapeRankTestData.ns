@@ -688,23 +688,10 @@ test_append_streams3 ^ <String> = (
 append(s1, s2)
 '
 )
-test_pointwiseSyncStream ^ <String> = (
-^'program pointwiseStream(s1: [?] Int, s2: [?] Int): [?] Int sync func pv(a: Int, b: Int): Int = a*b;
-
-pv(s1, s2)
-'
-)
 test_reduce ^ <String> = (
 ^'func dummy(x: Int): Int = x;
 
 reduce(+, 0, [[1, 2, 3], [4, 5, 6]])
-
-'
-)
-test_stream_scan ^ <String> = (
-^'program streamScan(s: []Int): Int;
-
-scan(+, 0, s)
 
 '
 )
@@ -714,40 +701,53 @@ sync func pair(a: $T, b: $T): [2]$T = [a, b]
 sync func foo(a: [?]$T, b: [?]$T, c: $T): [2][?]$T = pair(a, b);
 foo(s, s, s)'
 )
+test_double_stream ^ <String> = (
+^'sync program doubleStream(s:[] Int) 
+func dummy(x: Int): Int = x
+; s*2
+'
+)
+test_pair_stream_sync1 ^ <String> = (
+^'sync program pairStream1(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair([1, 2, 3, 4], s)
+'
+)
+test_pair_stream_sync2 ^ <String> = (
+^'sync program pairStream2(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s, [2, 4, 8, 16])
+'
+)
+test_pair_stream_sync3 ^ <String> = (
+^'sync program pairStream3(s1: []$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s1, s2)
+'
+)
+test_pointwiseSyncStream ^ <String> = (
+^'sync program pointwiseStream(s1: [?] Int, s2: [?] Int): [?] Int sync func pv(a: Int, b: Int): Int = a*b;
+
+pv(s1, s2)
+'
+)
 test_stream_contains ^ <String> = (
-^'program streamContains(s: [][]Int)
+^'sync program streamContains(s: [][]Int)
 func dummy(z: Int) = 3
 ;
 
 contains(s, 512)
 '
 )
-test_pair_stream_sync1 ^ <String> = (
-^'program pairStream1(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+test_stream_scan ^ <String> = (
+^'sync program streamScan(s: []Int): Int;
 
-pair([1, 2, 3, 4], s)
-'
-)
-test_pair_stream_sync3 ^ <String> = (
-^'program pairStream3(s1: []$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+scan(+, 0, s)
 
-pair(s1, s2)
-'
-)
-test_pair_stream_sync2 ^ <String> = (
-^'program pairStream2(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair(s, [2, 4, 8, 16])
-'
-)
-test_double_stream ^ <String> = (
-^'program doubleStream(s:[] Int) 
-func dummy(x: Int): Int = x
-; s*2
 '
 )
 test_twice_stream ^ <String> = (
-^'program twiceStream(s: []Int) sync func twice(x: Int):Int = 2*x;
+^'sync program twiceStream(s: []Int) sync func twice(x: Int):Int = 2*x;
 
 twice(s)
 '
