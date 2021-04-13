@@ -26,9 +26,6 @@ An iterator for testing ShapeRank. It will lazily produce n elements and stop. E
     limit <Integer> = n.
 	|
 ) (
-public clone  = (
-  ^class nextFunction: nextFunction limit: limit
-)
 public hasNext ^ <Boolean> = (
   ^count < limit
 )
@@ -36,6 +33,9 @@ public next ^ <T> = (
   count:: count + 1.
   last:: nextFunction value: last.
   ^HyperStream fromScalar: last
+)
+public clone  = (
+  ^class nextFunction: nextFunction rank: rank limit: limit
 )
 ) : (
 )
@@ -980,11 +980,6 @@ public testProgramIdentity_3 = (
   |
   assertIsScalar: result.
   assert: result asScalar equals: 3.
-)
-public testStreamContains_false1 = (
-  | result = interpretFileNamed: 'stream_contains' withArguments: {threes}. |
-  assertIsScalar: result. 
-  assert: result  asScalar equals: false.
 )
 public testStreamContains_true1 = (
   | result = interpretFileNamed: 'stream_contains' withArguments: {twoToThe9th}. |

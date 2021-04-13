@@ -731,14 +731,6 @@ test_pointwiseSyncStream ^ <String> = (
 pv(s1, s2)
 '
 )
-test_stream_contains ^ <String> = (
-^'sync program streamContains(s: [][]Int)
-func dummy(z: Int) = 3
-;
-
-contains(s, 512)
-'
-)
 test_stream_scan ^ <String> = (
 ^'sync program streamScan(s: []Int): Int;
 
@@ -750,6 +742,14 @@ test_twice_stream ^ <String> = (
 ^'sync program twiceStream(s: []Int) sync func twice(x: Int):Int = 2*x;
 
 twice(s)
+'
+)
+test_stream_contains ^ <String> = (
+^'sync program streamContains(s: @S Int)
+func dummy(z: Int) = 3
+;
+
+contains(s, 512)
 '
 )
 ) : (

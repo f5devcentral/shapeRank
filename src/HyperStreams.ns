@@ -266,6 +266,7 @@ public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]
   public iterator <Iterator[HyperStream[T]]> = i.
   public isComplete <Boolean> ::= false.
   |
+  window:: List new.
   dimensions:: ds.
 ) (
 public isKindOfUnboundedHyperStream ^ <Boolean> = (
@@ -288,10 +289,6 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
   ^class iteratingOver: (iterator map: f) dimensions: dimensions 
 
 )
-public contains: element <Object> ^ <Boolean> = (
-  (* Presumably, only checks available window *)
-   Error signal: 'contains: still unimplemented for unbounded streams'
-)
 public = other <Object> ^ <Boolean> = (
   other isKindOfUnboundedHyperStream ifFalse: [^false].
   other dimensions with:  dimensions do: [:od :d | od = d ifFalse: [^false]].
@@ -306,6 +303,25 @@ public clone = (
 public take: n <Integer> ^ <HyperStream[T]> = (
   | dimTail = dimensions copyFrom: 2 to: dimensions size. |
   ^class iteratingOver: (iterator take: n)  dimensions:  {n}, dimTail
+)
+public hasNext ^ <Boolean> = (
+  ^iterator haNext
+)
+public next ^ <HyperStream[T]> = (
+  | n <HyperStream[T]> = iterator next. |
+  window add: n.
+  ^n
+)
+public contains: element <Object> ^ <Boolean> = (
+  (* Semantics of contains on hyperstreams are non-deterministic. We may never return a reult, but if we do, it is always the same.
+       This implementation is depth first, but others may differ
+  *)
+   | it = iterator clone. |
+   [true] whileTrue: [
+      it hasNext 
+        ifTrue: [(it next contains: element) ifTrue: [^true]]
+        ifFalse: [isComplete ifTrue: [^false]]
+   ]
 )
 ) : (
 )
