@@ -245,7 +245,10 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
 
   primitives do: [:d <FunctionAST> | scope at: d id putNode: d].
   (* User parameters can shadow primitives *)
-  header parameters do: [:param <ParameterAST> | scope at: param id putNode: param].
+  header parameters do: [:param <ParameterAST> | 
+    scope at: param id putNode: param.
+    param type addTypeVariablesTo: scope.
+    ].
 
   (* prelude functions all see the whole prelude scope *)
    prelude do: [:d  <FunctionAST | LetAST> |

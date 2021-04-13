@@ -501,9 +501,6 @@ class ScalarHyperStream scalarValue: s <T def> =  HyperStream rank: 0 (
 class Iterator = outer HyperStreams Iterator (
   | accessed <Boolean> ::= false. |
 ) (
-public hasNext ^ <Boolean> = (
-  ^accessed
-)
 public next ^ <T> = (
   ^accessed ifFalse: [accessed:: true. constant] ifTrue: [Error signal: 'scalar iterator exhausted']
 )
@@ -512,6 +509,9 @@ public clone = (
 )
 public rank ^ <Integer> = (
   ^0
+)
+public hasNext ^ <Boolean> = (
+  ^accessed not
 )
 ) : (
 )

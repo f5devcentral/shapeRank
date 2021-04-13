@@ -35,7 +35,7 @@ public hasNext ^ <Boolean> = (
 public next ^ <T> = (
   count:: count + 1.
   last:: nextFunction value: last.
-  ^last
+  ^HyperStream fromScalar: last
 )
 ) : (
 )
@@ -1071,15 +1071,6 @@ public testTwice_Stream2  = (
      assert: [result iterator hasNext].
      assert: (result iterator next asScalar) equals: 2 ** i.
   ].
-  assert: [result hasNext not].
-)
-public testDoubleStream  = (
-  | result = interpretFileNamed: 'double_stream' withArguments: {threes}. |
-  assert: result isKindOfUnboundedHyperStream.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: (result iterator next asScalar) equals: 6.
-  ].
   assert: [result iterator hasNext not].
 )
 public testDoubleStream2  = (
@@ -1089,7 +1080,14 @@ public testDoubleStream2  = (
      assert: [result iterator hasNext].
      assert: (result iterator next asScalar) equals: 2 ** i.
   ].
-  assert: [result iterator hasNext not].
+)
+public testDoubleStream  = (
+  | result = interpretFileNamed: 'double_stream' withArguments: {threes}. |
+  assert: result isKindOfUnboundedHyperStream.
+  1 to: 10 do: [:i |
+     assert: [result iterator hasNext].
+     assert: (result iterator next asScalar) equals: 6.
+  ].
 )
 ) : (
 TEST_CONTEXT = ()
