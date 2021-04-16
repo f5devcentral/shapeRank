@@ -986,70 +986,6 @@ public testStreamContains_true1 = (
   assertIsScalar: result. 
   assert: result  asScalar equals: true.
 )
-public testStreamContains_true2 = (
-  | result = interpretFileNamed: 'stream_contains' 
-     withArguments: {HyperStream fromList: {twoToThe9th. threes} dimensions: {2. HyperStream UnboundedDimension new}}. |
-  assertIsScalar: result. 
-  assert: result  asScalar equals: true.
-)
-threes ^ <UnboundedHyperStream> = (
-  ^HyperStream iteratingOver: (TestIterator nextFunction: [:dontCare | 3] rank: 1 limit: 10) dimensions: {10}
-)
-twoToThe9th ^ <UnboundedHyperStream> = (
-  ^HyperStream iteratingOver: (TestIterator nextFunction: [:i | i isNil ifFalse: [i*2] ifTrue: [1]] rank: 1 limit: 10)  dimensions: {10}
-)
-public testPointwiseSyncStream = (
-  | 
-  result = interpretFileNamed: 'pointwiseSyncStream' withArguments: {threes. twoToThe9th}.
-  |
-  assert: result rank equals: 1.
-  assert: result isKindOfUnboundedHyperStream.  
-  assert: (result dimensions at: 1) equals: 10.
-  1 to: 10 do: [:i |
-     assert: [result  iterator hasNext].
-     assert: result iterator next asScalar equals: 2**(i-1) * 3.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testPairStreamSync2 = (
-  |  result = interpretFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
-  assert: result rank equals: 2.
-  assert: result isKindOfUnboundedHyperStream.  
-  assert: (result dimensions at: 1) equals: HyperStream UnboundedDimension new.
-  assert: (result dimensions at: 2) equals: 2.
-  1 to: 4 do: [:i |
-     assert: [result iterator hasNext].
-     assert: ((result iterator next) contents at: 1) asScalar equals: 3.
-     assert: ((result iterator next) contents at: 2) asScalar equals: 2**i.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testPairStreamSync1 = (
-  |  result = interpretFileNamed: 'pair_stream_sync1' withArguments: {threes}. |
-  assert: result rank equals: 2.
-  assert: result isKindOfUnboundedHyperStream.  
-  assert: (result dimensions at: 1) equals: 4.
-  assert: (result dimensions at: 2) equals: 2.
-  1 to: 4 do: [:i |
-     assert: [result iterator hasNext].
-     assert: ((result iterator next) contents at: 1) asScalar equals: i.
-     assert: ((result iterator next) contents at: 2) asScalar equals: 3.
-  ].
-  assert: [result iterator hasNext not].
-)
-public testPairStreamSync3 = (
-  |  result = interpretFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
-  assert: result rank equals: 2.
-  assert: result isKindOfUnboundedHyperStream.  
-  assert: (result dimensions at: 1) equals: 10.
-  assert: (result dimensions at: 2) equals: 2.
-  1 to: 10 do: [:i |
-     assert: [result iterator hasNext].
-     assert: ((result iterator next) contents at: 1) asScalar equals: 3.
-     assert: ((result iterator next) contents at: 2) asScalar equals: 2**(i-1).
-  ].
-  assert: [result iterator hasNext not].
-)
 public testTwice_Stream  = (
   | result = interpretFileNamed: 'twice_stream' withArguments: {threes}. |
   assert: result isKindOfUnboundedHyperStream.
@@ -1083,6 +1019,73 @@ public testDoubleStream  = (
      assert: [result iterator hasNext].
      assert: (result iterator next asScalar) equals: 6.
   ].
+)
+public testPairStreamSync1 = (
+  |  result = interpretFileNamed: 'pair_stream_sync1' withArguments: {threes}. |
+  assert: result rank equals: 2.
+  assert: result isKindOfBoundedHyperStream.  
+  assert: (result dimensions at: 1) equals: 4.
+  assert: (result dimensions at: 2) equals: 2.
+  1 to: 4 do: [:i | | next |
+     assert: [result iterator hasNext].
+     next:: result iterator next.
+     assert: (next contents at: 1) asScalar equals: i.
+     assert: (next contents at: 2) asScalar equals: 3.
+  ].
+  assert: [result iterator hasNext not].
+)
+twoToThe9th ^ <UnboundedHyperStream> = (
+  ^HyperStream iteratingOver: (TestIterator nextFunction: [:i | i isNil ifFalse: [i*2] ifTrue: [1]] rank: 1 limit: 10)  dimensions: {HyperStream unboundedDimension}
+)
+threes ^ <UnboundedHyperStream> = (
+  ^HyperStream iteratingOver: (TestIterator nextFunction: [:dontCare | 3] rank: 1 limit: 10) dimensions: {HyperStream unboundedDimension}
+)
+public testStreamContains_true2 = (
+  | result = interpretFileNamed: 'stream_contains' 
+     withArguments: {HyperStream fromList: {twoToThe9th. threes} dimensions: {2. HyperStream unboundedDimension}}. |
+  assertIsScalar: result. 
+  assert: result  asScalar equals: true.
+)
+public testPointwiseSyncStream = (
+  | 
+  result = interpretFileNamed: 'pointwiseSyncStream' withArguments: {threes. twoToThe9th}.
+  |
+  assert: result rank equals: 1.
+  assert: result isKindOfUnboundedHyperStream.  
+  assert: (result dimensions at: 1) equals: HyperStream unboundedDimension.
+  1 to: 10 do: [:i |
+     assert: [result  iterator hasNext].
+     assert: result iterator next asScalar equals: 2**(i-1) * 3.
+  ].
+  assert: [result iterator hasNext not].
+)
+public testPairStreamSync3 = (
+  |  result = interpretFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
+  assert: result rank equals: 2.
+  assert: result isKindOfUnboundedHyperStream.  
+  assert: (result dimensions at: 1) equals: HyperStream unboundedDimension.
+  assert: (result dimensions at: 2) equals: 2.
+  1 to: 10 do: [:i | | next |
+     assert: [result iterator hasNext].
+     next:: result iterator next.
+     assert: (next contents at: 1) asScalar equals: 3.
+     assert: (next contents at: 2) asScalar equals: 2**(i-1).
+  ].
+  assert: [result iterator hasNext not].
+)
+public testPairStreamSync2 = (
+  |  result = interpretFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
+  assert: result rank equals: 2.
+  assert: result isKindOfUnboundedHyperStream.  
+  assert: (result dimensions at: 1) equals: HyperStream unboundedDimension.
+  assert: (result dimensions at: 2) equals: 2.
+  1 to: 4 do: [:i | | next |
+     assert: [result iterator hasNext].
+     next:: result iterator next.
+     assert: (next contents at: 1) asScalar equals: 3.
+     assert: (next contents at: 2) asScalar equals: 2**i.
+  ].
+  assert: [result iterator hasNext not].
 )
 ) : (
 TEST_CONTEXT = ()

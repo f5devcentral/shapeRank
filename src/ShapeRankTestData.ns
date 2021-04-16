@@ -707,24 +707,6 @@ func dummy(x: Int): Int = x
 ; s*2
 '
 )
-test_pair_stream_sync1 ^ <String> = (
-^'sync program pairStream1(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair([1, 2, 3, 4], s)
-'
-)
-test_pair_stream_sync2 ^ <String> = (
-^'sync program pairStream2(s: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair(s, [2, 4, 8, 16])
-'
-)
-test_pair_stream_sync3 ^ <String> = (
-^'sync program pairStream3(s1: []$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
-
-pair(s1, s2)
-'
-)
 test_pointwiseSyncStream ^ <String> = (
 ^'sync program pointwiseStream(s1: [?] Int, s2: [?] Int): [?] Int sync func pv(a: Int, b: Int): Int = a*b;
 
@@ -750,6 +732,24 @@ func dummy(z: Int) = 3
 ;
 
 contains(s, 512)
+'
+)
+test_pair_stream_sync3 ^ <String> = (
+^'sync program pairStream3(s1: [?]$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s1, s2)
+'
+)
+test_pair_stream_sync2 ^ <String> = (
+^'sync program pairStream2(s: [?]$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair(s, [2, 4, 8, 16])
+'
+)
+test_pair_stream_sync1 ^ <String> = (
+^'sync program pairStream1(s: [?]$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+
+pair([1, 2, 3, 4], s)
 '
 )
 ) : (

@@ -72,14 +72,8 @@ public empty ^ <EmptyHyperStream> = (
 public repeat:  k <T def> dimension: ds <List[Integer | UnboundedDimension]> ^ <ConstantStream[T]> = (
   ^ConstantStream on:  k dimension: ds
 )
-public repeat:  k <T def> ^ <ConstantStream[T]> = (
-  ^repeat:  k dimension: {UnboundedDimension new}
-)
 public fromList: l <List[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]> ^ <BoundedHyperSteam[T]> = (
   ^BoundedHyperStream fromList: l dimensions: ds
-)
-public UnboundedDimension = (
-  ^outer HyperStreams UnboundedDimension
 )
 public  iteratingOver: i <Iterator[HyperStream[T def]]>  dimensions: ds <List[Integer | UnboundedDimension]>  ^ <UnboundedHyperStream[T]> = (
    ^UnboundedHyperStream iteratingOver: i dimensions: ds
@@ -91,6 +85,12 @@ public zipReactive: streams <List[HyperStream]> ^ <HyperStream[List]> = (
  | dimTail <List[Integer | UnboundedDimension]> = streams first dimensions copyFrom: 2 to: streams first dimensions size. |
 
   ^iteratingOver: (ReactiveZipIterator zipping: (streams collect: [:s <HyperStream> | s iterator])) dimensions: {UnboundedDimension new}, dimTail
+)
+public unboundedDimension = (
+  ^UnboundedDimension new
+)
+public repeat:  k <T def> ^ <ConstantStream[T]> = (
+  ^repeat:  k dimension: {UnboundedDimension new}
 )
 )
 class ConstantStream on: k <T def> dimension: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
@@ -313,7 +313,7 @@ public next ^ <HyperStream[T]> = (
   ^n
 )
 public contains: element <Object> ^ <Boolean> = (
-  (* Semantics of contains on hyperstreams are non-deterministic. We may never return a reult, but if we do, it is always the same.
+  (* Semantics of contains on hyperstreams are non-deterministic. We may never return a result, but if we do, it is always the same.
        This implementation is depth first, but others may differ
   *)
    | it = iterator clone. |
@@ -642,6 +642,8 @@ public rank ^ <Integer> = (
 public clone = (
 )
 ) : (
+)
+public unbounded = (
 )
 ) : (
 )
