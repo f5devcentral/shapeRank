@@ -1,5 +1,5 @@
 Newspeak3
-'ShapeRank'
+'Root'
 class ShapeRankDemo packageUsing: manifest = (
 (*
 Quick and dirty demo of ShapeRank in the browser.
@@ -13,16 +13,17 @@ Copyright 2014-2017 Google Inc.
         private ShapeRankASTs = manifest ShapeRankASTs.
         private ShapeRankScopes = manifest ShapeRankScopes.
         private ShapeRankTypechecker = manifest ShapeRankTypechecker.
-        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
         private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
-        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration.
+        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankStreamInterpreterTestsConfiguration.
         private ShapeRankTypecheckerTests = manifest ShapeRankTypecheckerTests.
         private ShapeRankTypecheckerTestsConfiguration = manifest ShapeRankTypecheckerTestsConfiguration.
         private ShapeRankTestData = manifest ShapeRankTestData.
         private CollectionUtils = manifest CollectionUtils.
+        private HyperStreams = manifest HyperStreams.
         private Tensorflow = manifest Tensorflow.
         private NodeAPI = manifest NodeAPI.
 |) (
@@ -53,6 +54,7 @@ public main: platform args: args = (
 	parser
 	Evaluator
     utils
+    hyperstreams
 	Scopes
 	Typechecker
 	interpreter
@@ -60,6 +62,7 @@ public main: platform args: args = (
 	|
 	
     utils:: CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.
 	Scopes::
 	(ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
     Typechecker::
@@ -67,7 +70,8 @@ public main: platform args: args = (
 	     Typechecker.
      interpreter:: ShapeRankInterpreter usingPlatform: platform
 	                                    asts: Typechecker
-                                        collectionUtils: utils.
+                                        collectionUtils: utils
+                                        streams: hyperstreams.
      Evaluator:: interpreter Evaluator.
         parsers:: CombinatorialParsing usingPlatform: platform.
         grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
