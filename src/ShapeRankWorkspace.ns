@@ -334,11 +334,6 @@ class PrimitivePresenter onSubject: s = Presenter onSubject: s (
 ) : (
 )
 class TensorPresenter onSubject: s = Presenter onSubject: s () (
-shapeString ^ <String> = (
-  | result = subject tensor reflectee shape printString. |
-  result isEmpty ifTrue: [^'[]'].
-  ^result
-)
 public isKindOfTensorPresenter ^ <Boolean> = (
   ^true
 )
@@ -349,7 +344,7 @@ definition = (
   ^(column: {
       row: {label: 'Tensor'. blank: 4. label: subject tensor reflectee printString}.      
       row: {label: 'rank'. blank: 4.  label: subject tensor reflectee rank printString}.
-      row: {label: 'shape'. blank: 4. label: shapeString}.
+      row: {label: 'shape'. blank: 4. label: subject shapeString}.
     }) color: (Color h: 240 s: 0.05 asFloat v: 0.9 asFloat)
 )
 ) : (
@@ -366,6 +361,10 @@ public isKindOfTensorSubject ^ <Boolean> = (
 )
 isMyKind: other <Subject> ^ <Boolean> = (
   ^other isKindOfTensorSubject
+)
+public shapeString ^ <String> = (
+  | dims <String> = tensor reflectee dimensions reduce: [:ds <String> :d <Integer | UnknownDimension>  | ds, ', ', (dimensionString: d1) ] ifEmpty: ['']. |
+  ^'[', dims, ']'
 )
 ) : (
 )
