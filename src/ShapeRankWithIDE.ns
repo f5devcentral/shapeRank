@@ -10,7 +10,7 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private ShapeRankDemo2 = manifest ShapeRankDemo2.
         private ShapeRankScopes = manifest ShapeRankScopes.
         private ShapeRankTypechecker = manifest ShapeRankTypechecker.
-        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
@@ -29,6 +29,7 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private CollectionUtils = manifest CollectionUtils.
         private NodeAPI = manifest NodeAPI.
         private Tensorflow = manifest Tensorflow.
+        private HyperStreams = manifest HyperStreams.        
 |
 ) (
 populateNamespace: namespace = (
@@ -69,29 +70,6 @@ public main: platform args: args = (
     ide launch: (ide browsing HomeSubject new)
 )
 ) : (
-public shapeRankParserFrom: platform <Platform> manifest: manifest = (
-	|
-	parsers
-	grammar
-	parsing
-	parser
-	Evaluator
-	Scopes
-	Typechecker
-	interpreter
-	utils
-	|
-	utils:: manifest CollectionUtils usingPlatform: platform.
-	Scopes::
-	 (manifest ShapeRankScopes usingPlatform: platform asts: manifest ShapeRankASTs tensorflow: manifest Tensorflow nodeAPI: manifest NodeAPI) Scopes.
-        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils.
-        Evaluator:: interpreter Evaluator.
-        parsers:: manifest CombinatorialParsing usingPlatform: platform.
-        grammar:: manifest ShapeRankGrammar usingPlatform: platform parsers: parsers.
-        parsing:: manifest ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
-	parser:: parsing Parser new.
-    ^parser
-)
 public shapeRankParserWithTypechecker: platform <Platform> manifest: manifest = (
 	|
 	parsers
@@ -103,14 +81,41 @@ public shapeRankParserWithTypechecker: platform <Platform> manifest: manifest = 
 	Typechecker
 	interpreter
 	utils
+    hyperstreams
 	|
 	utils:: manifest CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.    
 	Scopes::
 	 (manifest ShapeRankScopes usingPlatform: platform asts: manifest ShapeRankASTs tensorflow: manifest Tensorflow nodeAPI: manifest NodeAPI) Scopes.
         Typechecker::
 	  (manifest ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
 	     Typechecker.
-        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils.
+        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils streams: hyperstreams.
+        Evaluator:: interpreter Evaluator.
+        parsers:: manifest CombinatorialParsing usingPlatform: platform.
+        grammar:: manifest ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: manifest ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+    ^parser
+)
+public shapeRankParserFrom: platform <Platform> manifest: manifest = (
+	|
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+	Scopes
+	Typechecker
+	interpreter
+	utils
+    hyperstreams
+	|
+	utils:: manifest CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.    
+	Scopes::
+	 (manifest ShapeRankScopes usingPlatform: platform asts: manifest ShapeRankASTs tensorflow: manifest Tensorflow nodeAPI: manifest NodeAPI) Scopes.
+        interpreter:: manifest ShapeRankInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils streams: hyperstreams.
         Evaluator:: interpreter Evaluator.
         parsers:: manifest CombinatorialParsing usingPlatform: platform.
         grammar:: manifest ShapeRankGrammar usingPlatform: platform parsers: parsers.

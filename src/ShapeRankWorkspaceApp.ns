@@ -4,11 +4,12 @@ class ShapeRankWorkspaceApp packageUsing: manifest = (
   |
   private CombinatorialParsing = manifest CombinatorialParsing.
   private CollectionUtils = manifest CollectionUtils.
+  private HyperStreams = manifest HyperStreams.  
   private NodeAPI = manifest NodeAPI.
   private Tensorflow = manifest Tensorflow.
   private ShapeRankASTs = manifest ShapeRankASTs.
   private ShapeRankScopes = manifest ShapeRankScopes.
-  private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+  private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
   private ShapeRankTypechecker = manifest ShapeRankTypechecker.
   private ShapeRankGrammar = manifest ShapeRankGrammar.
   private ShapeRankParser = manifest ShapeRankParser.
@@ -20,9 +21,10 @@ class ShapeRankWorkspaceApp packageUsing: manifest = (
 public main: platform args: args = (
   |
   utils = CollectionUtils usingPlatform: platform.
+  hyperstreams = HyperStreams usingPlatform: platform.  
   scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
   typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
-  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils) Evaluator.
+  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils streams: hyperstreams) Evaluator.
   parsers = CombinatorialParsing usingPlatform: platform.
   grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
   parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.

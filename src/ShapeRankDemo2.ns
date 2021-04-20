@@ -1,5 +1,5 @@
 Newspeak3
-'ShapeRank'
+'Root'
 class ShapeRankDemo2 packageUsing: manifest = (
 (*
 Quick and dirty demo of ShapeRank in the browser.
@@ -13,7 +13,7 @@ Copyright 2014-2017 Google Inc.
         private ShapeRankASTs = manifest ShapeRankASTs.
         private ShapeRankScopes = manifest ShapeRankScopes.
         private ShapeRankTypechecker = manifest ShapeRankTypechecker.
-        private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+        private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
@@ -25,23 +25,8 @@ Copyright 2014-2017 Google Inc.
         private CollectionUtils = manifest CollectionUtils.
         private Tensorflow = manifest Tensorflow.
         private NodeAPI = manifest NodeAPI.
+        private HyperStreams = manifest HyperStreams.        
 |) (
-populateNamespace: namespace = (
-	namespace at: #ShapeRankDemo2 put: self class.
-	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
-	namespace at: #ShapeRankScopes put: ShapeRankScopes.
-	namespace at: #ShapeRankTypechecker put: ShapeRankTypechecker.
-	namespace at: #ShapeRankInterpreter put: ShapeRankInterpreter.
-	namespace at: #ShapeRankGrammar put: ShapeRankGrammar.
-	namespace at: #ShapeRankParser put: ShapeRankParser.
-	namespace at: #ShapeRankEmbedder put: Embedder.
-	namespace at: #ShapeRankInterpreterTests put: ShapeRankInterpreterTests.
-	namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration.
-	namespace at: #ShapeRankTypecheckerTests put: ShapeRankTypecheckerTests.
-	namespace at: #ShapeRankTypecheckerTestsConfiguration put: ShapeRankTypecheckerTestsConfiguration.
-	namespace at: #ShapeRankTestData put: ShapeRankTestData.
-        namespace at: #CollectionUtils put: CollectionUtils.
-)
 public main: platform args: args = (
 	|
 	namespace
@@ -53,6 +38,7 @@ public main: platform args: args = (
 	parser
 	Evaluator
     utils
+    hyperstreams
 	Scopes
 	Typechecker
 	interpreter
@@ -60,6 +46,7 @@ public main: platform args: args = (
 	|
 	
     utils:: CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.
 	Scopes::
 	 (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
         Typechecker::
@@ -67,7 +54,8 @@ public main: platform args: args = (
 	     Typechecker.
         interpreter:: ShapeRankInterpreter usingPlatform: platform
 	                                    asts: Typechecker
-                                        collectionUtils: utils.
+                                        collectionUtils: utils
+                                        streams: hyperstreams.
         Evaluator:: interpreter Evaluator.
         parsers:: CombinatorialParsing usingPlatform: platform.
         grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
@@ -79,6 +67,24 @@ public main: platform args: args = (
 	populateNamespace: namespace.
 	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
 	hopscotchPlatform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
+)
+populateNamespace: namespace = (
+	namespace at: #ShapeRankDemo2 put: self class.
+	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
+	namespace at: #ShapeRankScopes put: ShapeRankScopes.
+	namespace at: #ShapeRankTypechecker put: ShapeRankTypechecker.
+	namespace at: #ShapeRankStreamInterpreter put: ShapeRankInterpreter.
+	namespace at: #ShapeRankGrammar put: ShapeRankGrammar.
+	namespace at: #ShapeRankParser put: ShapeRankParser.
+	namespace at: #ShapeRankEmbedder put: Embedder.
+	namespace at: #ShapeRankInterpreterTests put: ShapeRankInterpreterTests.
+	namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration.
+	namespace at: #ShapeRankTypecheckerTests put: ShapeRankTypecheckerTests.
+	namespace at: #ShapeRankTypecheckerTestsConfiguration put: ShapeRankTypecheckerTestsConfiguration.
+	namespace at: #ShapeRankTestData put: ShapeRankTestData.
+    namespace at: #CollectionUtils put: CollectionUtils.
+    namespace at: #HyperStreams put: HyperStreams.
+    
 )
 ) : (
 )

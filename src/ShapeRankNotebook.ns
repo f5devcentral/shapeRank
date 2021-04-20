@@ -4,11 +4,12 @@ class ShapeRankNotebook packageUsing: manifest = (
   |
   private CombinatorialParsing = manifest CombinatorialParsing.
   private CollectionUtils = manifest CollectionUtils.
+  private HyperStreams = manifest HyperStreams.        
   private NodeAPI = manifest NodeAPI.
   private Tensorflow = manifest Tensorflow.
   private ShapeRankASTs = manifest ShapeRankASTs.
   private ShapeRankScopes = manifest ShapeRankScopes.
-  private ShapeRankInterpreter = manifest ShapeRankInterpreter.
+  private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
   private ShapeRankTypechecker = manifest ShapeRankTypechecker.
   private ShapeRankGrammar = manifest ShapeRankGrammar.
   private ShapeRankParser = manifest ShapeRankParser.
@@ -17,21 +18,6 @@ class ShapeRankNotebook packageUsing: manifest = (
   private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.  
   |
 ) (
-public main: platform args: args = (
-  |
-  utils = CollectionUtils usingPlatform: platform.
-  scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
-  typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
-  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils) Evaluator.
-  parsers = CombinatorialParsing usingPlatform: platform.
-  grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
-  parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
-  hopscotchPlatform = hopscotchRuntime using: platform.  
-  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform engine: evaluator  parser: parsing code: linearClassificationDemo.
-  |
-  
-  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
-)
 linearClassificationDemo^ <String> = (
 ^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
      = softmax(matmul(params.W, x) + params.b)
@@ -52,6 +38,23 @@ linearClassificationDemo^ <String> = (
    let trainedParams = fold(train, initParams, trainingSet)
    func infer(x: [2]Float): Int = argmax(model(trainedParams, x));
    infer([[0.25, 0.65], [0.2, 0.9], [0.1, 0.1], [0.7, 0]])'
+)
+public main: platform args: args = (
+  |
+  utils = CollectionUtils usingPlatform: platform.
+  hyperstreams = HyperStreams usingPlatform: platform.
+  scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+  typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
+  evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils 
+                                        streams: hyperstreams) Evaluator.
+  parsers = CombinatorialParsing usingPlatform: platform.
+  grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
+  parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
+  hopscotchPlatform = hopscotchRuntime using: platform.  
+  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform engine: evaluator  parser: parsing code: linearClassificationDemo.
+  |
+  
+  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
 )
 ) : (
 )
