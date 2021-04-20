@@ -147,6 +147,9 @@ public hash ^ <Integer> = (
 public = other <Object> ^ <Boolean>  = (
   ^constant = other constant
 )
+public printString ^ <String> = (
+  ^'[', constant printString, ' ...]'
+)
 ) : (
 )
 public class BoundedHyperStream fromList: l <List[HyperStream[T]]> dimensions: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
@@ -259,6 +262,13 @@ public contains: element <Object> ^ <Boolean> = (
    window detect: [:hs <HyperStream[T]> | hs contains: element] ifNone: [^false].
    ^true
 )
+public printString ^ <String> = (
+  | contentString <String> |
+      contentString:: ''.
+	   window do: [:e | contentString:: contentString, e printString] 
+	        separatedBy: [contentString:: contentString, ', '].
+	   ^'[', contentString, ']'.
+)
 ) : (
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: i rank (
@@ -322,6 +332,13 @@ public contains: element <Object> ^ <Boolean> = (
         ifTrue: [(it next contains: element) ifTrue: [^true]]
         ifFalse: [isComplete ifTrue: [^false]]
    ]
+)
+public printString ^ <String> = (
+  | contentString <String> |
+      contentString:: ''.
+      window do: [:e | contentString:: contentString, e printString] 
+	        separatedBy: [contentString:: contentString, ', '].
+	   ^'[', contentString, ', ...]'.
 )
 ) : (
 )
@@ -504,6 +521,9 @@ public hash ^ <Integer> = (
 public isKindOfUnboundedDimension ^ <Boolean> = (
   ^true
 )
+public printString ^ <String> = (
+  ^'?'
+)
 ) : (
 )
 class ScalarHyperStream scalarValue: s <T def> =  HyperStream rank: 0 (
@@ -585,6 +605,9 @@ public contains: element <Object> ^ <Boolean> = (
    element isKindOfScalarHyperStream ifTrue: [^constant = element asScalar].
    ^constant = element
 )
+public printString ^ <String> = (
+  ^constant printString
+)
 ) : (
 )
 class EmptyHyperStream = HyperStream rank: 0(
@@ -628,6 +651,9 @@ public isKindOfTensor ^ <Boolean> = (
 )
 public contains: element <Object> ^ <Boolean> = (
    ^false
+)
+public printString ^ <String> = (
+  ^''
 )
 ) : (
 )
