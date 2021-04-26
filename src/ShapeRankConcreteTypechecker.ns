@@ -5,7 +5,9 @@ platform asts: asts collectionUtils: utils streams: hs = (
 (*
 An abstract interpreter for computing the types of programs.
 
-We can compute the rank, dimensions and basic element type of any ShapeRank program by a simple process of abstract interpretation.  The disadvantage of this approach is that it does not support separate compilation. However, the advantage is that the process is much simpler than the dependent-type based technique. It is clearly decidable, since ShapeRank is not Turing complete. It should be linear in program size, and can be used to ensure type safety at compile time, without requiring return type annotations or any use of type, shape and dimension variables.
+We can compute the rank, dimensions and basic element type of any ShapeRank program by a simple process of abstract interpretation.  The disadvantage of this approach is that it does not support separate compilation. However, the advantage is that the process is much simpler than the dependent-type based technique. It is clearly decidable, since ShapeRank is not Turing complete. Time complexity is linear in the size of the call graph (not program size) and independent of the size of program data. This typechecker can be used to ensure type safety at compile time, without requiring return type annotations or any use of type, shape and dimension variables.
+
+The most important limitation is that external function calls must be handled specially.
 *)
    | 
     private ASTClass <ShapeRankAST class> = asts.
