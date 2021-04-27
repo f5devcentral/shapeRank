@@ -292,34 +292,6 @@ primitiveMakeTensor ^ <FunctionAST> = (
   |
   ^FunctionAST named: #makeTensor parameters: ps returnType: returnType body: body position: {0. 0}
 )
-primitiveAppend ^ <FunctionAST> = (
-(*  append(a: [$d1]::@S $T, b: [$d2]::@S $T):[$d1 + $d2]::@S $T *)
-  | 
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  rdim = DimensionSumAST of: d1 and: d2 position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.
-  s1 = ShapeAppendAST shape: sv1 to: S  position: {0. 0}.
-  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
-  s2 = ShapeAppendAST shape: sv2 to: S  position: {0. 0}.
-  rv = ShapeVectorAST dimensions: {rdim} position: {0. 0}.
-  rshape = ShapeAppendAST shape: rv to: S position: {0. 0}.
-  t1 = TensorTypeAST shape: s1 type: T position: {0. 0}.
-  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
-  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:a :b | 
-    a baseType = b baseType ifFalse: [Error signal: 'incompatible element types in call to append()'].
-	ConcreteType dimensions: {(a dimensions at: 1) + (b dimensions at: 1)}, (a dimensions copyFrom: 2 to: a dimensions size) 
-	            baseType:  a baseType
-	]. 
-  returnType = TensorTypeAST shape: rshape type: T position: {0. 0}.
-  |
-  ^FunctionAST named: #append parameters: ps returnType: returnType body: body position: {0. 0}  
-)
 primitiveContains ^ <FunctionAST> = (
   (* contains(v: @S$T, x: $T): Bool *)
 |
@@ -352,58 +324,6 @@ primitiveEquals ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #== parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
 )
-primitiveGeq ^ <FunctionAST> = (
-(* >= (p1: $T, p2: $S): Boolean*)
-  | 
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
-  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:a :b | ConcreteType dimensions: {} baseType:
-    { ((cmp: a asScalar with: b asScalar) = #lt) not }].
-  |
-  ^FunctionAST  named: #>= parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitiveGt ^ <FunctionAST> = (
-  | 
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
-  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    ConcreteType dimensions: {} baseType: 'Boolean'
-    ].
-  |
-  ^FunctionAST  named: #> parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitiveLeq ^ <FunctionAST> = (
-  | 
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
-  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    ConcreteType dimensions: {} baseType: 'Boolean'
-    ].
-  |
-  ^FunctionAST  named: #<= parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitiveLt ^ <FunctionAST> = (
-  |
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
-  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    ConcreteType dimensions: {} baseType: 'Boolean'
-    ].
-  |
-  ^FunctionAST  named: #< parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
 primitiveNot ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeBoolParameterNamed: #x}.
@@ -424,16 +344,6 @@ primitiveNegate ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #negate parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
 )
-primitiveOr ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    x baseType = 'Boolean' ifFalse: [Error signal: 'invalid first parameter for or()'].
-    y baseType = 'Boolean' ifFalse: [Error signal: 'invalid second parameter for or()'].
-    ConcreteType dimensions: {} b]. 
-  |
-  ^FunctionAST  named: #or parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
 primitiveAnd ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
@@ -444,55 +354,6 @@ primitiveAnd ^ <FunctionAST> = (
     ]. 
   |
   ^FunctionAST  named: #and parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitiveDivide ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    (* what about subtypes of Number? *)
-    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to / '].
-    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to /'].
-    ConcreteType dimensions: {} baseType: 'Number'
-    ]. 
-  |
-  ^FunctionAST  named: #/ parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
-)
-primitiveTimes ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to * '].
-    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to *'].
-    ConcreteType dimensions: {} baseType: 'Number'
-    ].  
-  |
-  ^FunctionAST  named: #* parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
-)
-primitivePlus ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block:  [:x <ConcreteType> :y <ConcreteType> | 
-    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to +'].
-    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to +'].
-    ConcreteType dimensions: {} baseType: 'Number'
-    ].
-  |
-  ^FunctionAST  named: #+ parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
-)
-primitiveMinus ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block:  [:x <ConcreteType> :y <ConcreteType> | 
-    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to -'].
-    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to -'].
-    ConcreteType dimensions: {} baseType: 'Number'
-    ].
-  |
-  ^FunctionAST  named: #- parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
 )
 primitiveModulus ^ <FunctionAST> = (
   | 
@@ -536,26 +397,6 @@ primitivePower ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #power parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
 )
-primitiveRange ^ <FunctionAST> = (
-(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
-  | 
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
-  n1 = DimensionNumberAST number: 1 position: {0. 0}.
-  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
-  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
-  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
-  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
-  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {start. end}.
-  body = PrimitiveBodyAST block: [:i :j | | minRange = i asScalar. maxRange = j asScalar. |
-	ConcreteType dimensions: {maxRange - minRange + 1} baseType: 
-	  ((minRange to: maxRange) collect: [:k | Tensor dimensions: {} contents: {k}])
-	]. 
-  |
-  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
-)
 primitiveRotate ^ <FunctionAST> = (
 (*  rotate(t: @S $T, n: Int): @S $T *)
   | 
@@ -573,19 +414,6 @@ primitiveRotate ^ <FunctionAST> = (
   returnType = TensorTypeAST shape: S type: T position: {0. 0}.
   |
   ^FunctionAST named: #rotate parameters: ps returnType: returnType body: body position: {0. 0}  
-)
-primitiveShapeOf ^ <FunctionAST> = (
-(* shapeOf(t: @S $T): @S *)
-  | 
-  s = ShapeVariableReferenceAST  named: #S position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  t = TensorTypeAST shape: s type: T position: {0. 0}.
-  ps <List[ParameterAST]> = {ParameterAST named: #t type: t position: {0. 0}}.
-  body = PrimitiveBodyAST block: [:tensor | 
-	ConcreteType dimensions: {tensor rank} baseType: tensor dimensions
-	]. 
-  |
-  ^FunctionAST  named: #shapeOf parameters: ps returnType: s body: body position: {0. 0}
 )
 primitiveToList ^ <FunctionAST> = (
 (* toList(ts: []$T): [dynamic]$T *)
@@ -821,6 +649,208 @@ primitiveFold ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveAppend ^ <FunctionAST> = (
+(*  append(a: [$d1]::@S $T, b: [$d2]::@S $T):[$d1 + $d2]::@S $T *)
+  | 
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  rdim = DimensionSumAST of: d1 and: d2 position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.
+  s1 = ShapeAppendAST shape: sv1 to: S  position: {0. 0}.
+  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
+  s2 = ShapeAppendAST shape: sv2 to: S  position: {0. 0}.
+  rv = ShapeVectorAST dimensions: {rdim} position: {0. 0}.
+  rshape = ShapeAppendAST shape: rv to: S position: {0. 0}.
+  t1 = TensorTypeAST shape: s1 type: T position: {0. 0}.
+  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
+  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a :b | | aDimTail |
+    (* verify base type $T is the same *)
+    a baseType = b baseType ifFalse: [Error signal: 'incompatible element types in call to append()'].
+    (* verify $S is the same *)
+   2 to: a dimensions size do: [:i <Integer> | (a dimensions at: i) = (b dimensions at: i)].
+	ConcreteType dimensions: {(a dimensions at: 1) + (b dimensions at: 1)}, (a dimensions copyFrom: 2 to: a dimensions size) 
+	            baseType:  a baseType
+	]. 
+  returnType = TensorTypeAST shape: rshape type: T position: {0. 0}.
+  |
+  ^FunctionAST named: #append parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+primitiveTimes ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    |  baseType = x baseType = y baseType ifTrue: [x baseType] ifFalse: ['Float']. |
+    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to * '].
+    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to *'].
+    ConcreteType dimensions: {} baseType: baseType
+    ].  
+  |
+  ^FunctionAST  named: #* parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
+)
+primitivePlus ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block:  [:x <ConcreteType> :y <ConcreteType> | 
+    |  baseType = x baseType = y baseType ifTrue: [x baseType] ifFalse: ['Float']. |  
+    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to +'].
+    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to +'].
+    ConcreteType dimensions: {} baseType: baseType
+    ].
+  |
+  ^FunctionAST  named: #+ parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
+)
+primitiveMinus ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block:  [:x <ConcreteType> :y <ConcreteType> | 
+    |  baseType = x baseType = y baseType ifTrue: [x baseType] ifFalse: ['Float']. | 
+    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to -'].
+    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to -'].
+    ConcreteType dimensions: {} baseType: baseType
+    ].
+  |
+  ^FunctionAST  named: #- parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
+)
+primitiveOr ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    x baseType = 'Boolean' ifFalse: [Error signal: 'invalid first parameter for or()'].
+    y baseType = 'Boolean' ifFalse: [Error signal: 'invalid second parameter for or()'].
+    ConcreteType dimensions: {} baseType: 'Boolean']. 
+  |
+  ^FunctionAST  named: #or parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveRange ^ <FunctionAST> = (
+(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
+  | 
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
+  n1 = DimensionNumberAST number: 1 position: {0. 0}.
+  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
+  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
+  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
+  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
+  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {start. end}.
+  body = PrimitiveBodyAST block: [:i :j | | minRange = i asScalar. maxRange = j asScalar. |
+	ConcreteType dimensions: {maxRange - minRange + 1} baseType: 'Integer'
+	]. 
+  |
+  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
+)
+primitiveShapeOf ^ <FunctionAST> = (
+(* shapeOf(t: @S $T): @S *)
+  | 
+  s = ShapeVariableReferenceAST  named: #S position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  t = TensorTypeAST shape: s type: T position: {0. 0}.
+  ps <List[ParameterAST]> = {ParameterAST named: #t type: t position: {0. 0}}.
+  body = PrimitiveBodyAST block: [:tensor | 
+	ConcreteType dimensions: {tensor rank} baseType: 'Integer'
+	]. 
+  |
+  ^FunctionAST  named: #shapeOf parameters: ps returnType: s body: body position: {0. 0}
+)
+primitiveGeq ^ <FunctionAST> = (
+(* >= (p1: $T, p2: $S): Boolean*)
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
+  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a :b | 
+     (a isNumeric and: [b isNumeric not]) 
+       ifTrue: [Error signal: 'incompatibly typed arguments for >'].
+       ifFalse: [
+         (a isNumeric not and: [a baseType = b baseType and: [a baseType isKindOfMap not]]) 
+            ifFalse: [Error signal: 'incompatibly typed arguments for >']
+         ].  
+  ConcreteType dimensions: {} baseType:
+    'Boolean'
+    ].
+  |
+  ^FunctionAST  named: #>= parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveGt ^ <FunctionAST> = (
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
+  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a <ConcreteType> :b <ConcreteType> | 
+   (a isNumeric and: [b isNumeric not]) 
+     ifTrue: [Error signal: 'incompatibly typed arguments for >'].
+     ifFalse: [
+       (a isNumeric not and: [a baseType = b baseType and: [a baseType isKindOfMap not]]) 
+          ifFalse: [Error signal: 'incompatibly typed arguments for >']
+       ].
+    ConcreteType dimensions: {} baseType: 'Boolean'
+    ].
+  |
+  ^FunctionAST  named: #> parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveLeq ^ <FunctionAST> = (
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
+  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a <ConcreteType> :b <ConcreteType> | 
+   (a isNumeric and: [b isNumeric not]) 
+     ifTrue: [Error signal: 'incompatibly typed arguments for >'].
+     ifFalse: [
+       (a isNumeric not and: [a baseType = b baseType and: [a baseType isKindOfMap not]]) 
+          ifFalse: [Error signal: 'incompatibly typed arguments for >']
+       ].  
+    ConcreteType dimensions: {} baseType: 'Boolean'
+    ].
+  |
+  ^FunctionAST  named: #<= parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveLt ^ <FunctionAST> = (
+  |
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  p1 <ParameterAST> = ParameterAST named: #p1 type: T position: {0. 0}.
+  p2 <ParameterAST> = ParameterAST named: #p2 type: S position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a <ConcreteType> :b <ConcreteType> | 
+   (a isNumeric and: [b isNumeric not]) 
+     ifTrue: [Error signal: 'incompatibly typed arguments for >'].
+     ifFalse: [
+       (a isNumeric not and: [a baseType = b baseType and: [a baseType isKindOfMap not]]) 
+          ifFalse: [Error signal: 'incompatibly typed arguments for >']
+       ].  
+    ConcreteType dimensions: {} baseType: 'Boolean'
+    ].
+  |
+  ^FunctionAST  named: #< parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveDivide ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to / '].
+    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to /'].
+    ConcreteType dimensions: {} baseType: 'Number'
+    ]. 
+  |
+  ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType asTensorType body: body position: {0. 0}
 )
 ) : (
 )
