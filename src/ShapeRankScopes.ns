@@ -849,14 +849,6 @@ unitTo: t <TypeAST> ^ <FunctionTypeAST> = (
 unitType ^ <TypeIdAST> = (
   ^TypeIdAST named: #Unit position: {0. 0}
 )
-primitiveDivide ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block: [:a :b | Tensor dimensions: {} contents: {a asScalar / b asScalar}]. 
-  |
-  ^FunctionAST  named: #/ parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
-)
 primitiveModulus ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeIntParameterNamed: #a. makeIntParameterNamed: #b}.
@@ -1414,6 +1406,14 @@ primitiveFold ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveDivide ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block: [:a :b | Tensor dimensions: {} contents: {a asScalar / b asScalar}]. 
+  |
+  ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType body: body position: {0. 0}
 )
 ) : (
 )
