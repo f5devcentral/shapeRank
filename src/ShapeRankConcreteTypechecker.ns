@@ -1,7 +1,7 @@
 Newspeak3
 'Root'
 class ShapeRankConcreteTypechecker usingPlatform:
-platform asts: asts collectionUtils: utils streams: hs = (
+platform asts: asts collectionUtils: utils = (
 (*
 An abstract interpreter for computing the types of programs.
 
@@ -17,14 +17,15 @@ The most important limitation is that external function calls must be handled sp
     |
 ) (
 public class TypeInterpreter usingPlatform: p
-<Platform> collectionUtils: c = ASTClass usingPlatform: p (
+<Platform> collectionUtils: c = ASTClass usingPlatform: p collectionUtils: c (
+  | typeCallStack <List[Activation]> = List new. |
 ) (
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
 ) (
-public eval ^ <ConcreteType>  = (
+public computeType ^ <ConcreteType>  = (
   expressions do: [:e |
       | 
-      etype <ConcreteType> = e eval. 
+      etype <ConcreteType> = e computeType. 
       dims <List[Integer | UnboundedDimension]> = List withAll: {expressions size}, etype dimensions.
       |
       ^ConcreteType dimensions: dims baseType: etype baseType
@@ -35,31 +36,31 @@ public eval ^ <ConcreteType>  = (
 )
 public class StructLiteralAST data: data <Map[Symbol, ExprAST]> position: p <{Integer. Integer}> = super StructLiteralAST data: data position: p (
 ) (
-public eval ^ <ConcreteType> = (
-  ^ConcreteType dimensions: List new baseType: (data collect: [:e | eval ])
+public computeType ^ <ConcreteType> = (
+  ^ConcreteType dimensions: List new baseType: (data collect: [:e | computeType ])
 )
 ) : (
 )
 public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <{Integer. Integer}> = 
   super ShapeCastAST expression: e to: s position: p (
 ) (
-public eval ^ <ConcreteType> = (
-  ^expression eval
+public computeType ^ <ConcreteType> = (
+  ^expression computeType
 )
 ) : (
 )
 public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
 ) (
-public eval ^ <ConcreteType> = (
-   callStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [evalFromScope: id]].
-  ^evalFromScope: id.
-)
-evalFromScope:  n <Symbol> ^ <ExprAST> = (
+computeTypeFromScope:  n <Symbol> ^ <ExprAST> = (
   | decl = (scope lookup: id) at: #ast. |
-  decl isKindOfLetAST ifTrue: [^decl expression eval].
-  decl isKindOfExprAST ifTrue: [^decl eval].
+  decl isKindOfLetAST ifTrue: [^decl expression computeType].
+  decl isKindOfExprAST ifTrue: [^decl computeType].
   decl isKindOfFunctionAST ifTrue: [Error signal: 'Higher order functions not supported'].
  ^decl
+)
+public computeType ^ <ConcreteType> = (
+   typeCallStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [computeTypeFromScope: id]].
+  ^computeTypeFromScope: id.
 )
 ) : (
 )
@@ -70,17 +71,33 @@ public class BlockAST body: e <ExprAST> position: p <{Integer. Integer}> = super
 )
 public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
 ) (
-public eval ^ <ConcreteType> = (
+public computeType ^ <ConcreteType> = (
   ^ConcreteType dimensions: List new baseType: 'Boolean'
 )
 ) : (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
 ) (
+public computeType ^ <Tensor> = (
+  ^computeCall: callee arguments: computeArgumentTypes
+)
+computeArgumentTypes = (
+   | result = List new: arguments size. |
+   1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (callee parameters at: i))].
+   ^result
+)
+computeArgumentType: arg <ConcreteType> for: param <ParameterAST> ^ <ConcreteType | AST> = (
+  ^(param isHOF and: [arg isKindOfBlockAST not]) ifTrue: [
+        | ast ::= (scope lookup: arg id ifAbsent:
+                     [^(currentActivation at: arg id)]) at: #ast. |
+        ast isKindOfParameterAST ifTrue: [^(currentActivation at: ast id)].
+        ConcreteType dimensions: {} baseType: ast
+     ] ifFalse: [arg computeType]
+)
 ) : (
 )
 public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
-public eval ^ <ConcreteType> = ( 
+public computeType ^ <ConcreteType> = ( 
    | baseType <String> = val isKindOfInteger ifTrue: ['Integer'] ifFalse: ['Float']. |
 
   ^ConcreteType dimensions: List new baseType: baseType.
@@ -89,7 +106,7 @@ public eval ^ <ConcreteType> = (
 )
 class PrimitiveBodyAST block: blk <Block> = super PrimitiveBodyAST block: blk (
 ) (
-public eval ^ <ConcreteType> = (
+public computeType ^ <ConcreteType> = (
   ^block valueWithArguments: currentActivation arguments asArray
 )
 ) : (
@@ -97,8 +114,8 @@ public eval ^ <ConcreteType> = (
 public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   super ProgramAST header: hdr declarations: ds expression: e position: p (
 ) (
-public eval ^ <ConcreteType> = (
-  ^expression eval
+public computeType ^ <ConcreteType> = (
+  ^expression computeType
 )
 ) : (
 )
@@ -109,23 +126,23 @@ public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: 
 )
 public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
 ) (
-public eval ^ <ConcreteType> = (
-  | structType = expression eval. |
+public computeType ^ <ConcreteType> = (
+  | structType = expression computeType. |
   structType at: label ifAbsent: [Error signal: structType printString, ' does not support field ', label] 
 )
 ) : (
 )
 public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
 ) (
-public eval ^ <ConcreteType> = (
+public computeType ^ <ConcreteType> = (
   ^ConcreteType dimensions: List new baseType: 'String'
 )
 ) : (
 )
 public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = super WhereAST expr1: e1 ident: id expr2: e2 position: p (
 ) (
-public eval ^ <ConcreteType> = (
-  ^expression1 eval
+public computeType ^ <ConcreteType> = (
+  ^expression1 computeType
 )
 ) : (
 )
@@ -143,6 +160,14 @@ public rank ^ <Integer> = (
 )
 public isNumeric ^ <Boolean> = (
   ^baseType = 'Integer' or: [baseType = 'Float']
+)
+public printString ^ <String> = (
+  | dims ::= ''. |
+  dimensions do: [:d | dims:: dims, d printString] separatedBy: [dims:: dims, ', '].
+  ^'[', dims, ']'
+)
+public hasRank ^ <Boolean> = (
+  ^true
 )
 ) : (
 )
@@ -205,6 +230,19 @@ public at: k <Symbol> ifAbsent: blk <[ConcreteType]> ^ <ConcreteType> = (
 )
 ) : (
 )
+public class AST position: p <{Integer. Integer}> = super AST position: p (
+) (
+public userType  ^ <TensorTypeAST> = (
+  | t <TensorTypeAST> = computeType. |
+  t isKindOfFunctionTypeAST ifTrue: [Error signal: 'Functions are not values unless passed to predefined HOFs' ].
+  ^t
+)
+public eval = (
+ (* do we really need this? *)
+  ^computeType
+)
+) : (
+)
 frameArguments: args <List[ConcreteType]> of: callee <FunctionAST> ^ <List[Frame]> = (
   | argFrames <List[Frame]> = List new: args size. |
   args with: callee parameters do: [:a <ConcreteType> :p <ParameterAST> |
@@ -230,7 +268,7 @@ computeCall: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
   resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
 	 | result  <Frame> | 
 	 pushActivation:  (Activation of: callee from: argVector).
-	 result:: callee body eval.
+	 result:: callee body computeType.
 	 popActivation.
 	 result.
 	].
@@ -467,7 +505,7 @@ primitiveGradientDescent ^ <FunctionAST> = (
       params baseType isKindOfMap ifFalse: [Error signal].
       otherParams baseType = params baseType ifFalse: [Error signal].
       pushActivation:  (Activation of: callee from: {params. otherParams}).
-      loss body eval baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()']
+      loss body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()']
 	  popActivation.      
       ConcreteType dimensions: {} baseType: params baseType
     ].
@@ -541,11 +579,11 @@ innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S ->
   | r q |
     (* get scalar version of base types from a and b, feed them to a call of g, get result type R *)
 	 pushActivation:  (Activation of: callee from: {ConcreteType dimensions: {} baseType: a baseType. ConcreteType dimensions: {} baseType: b baseType}).
-	 r:: g body eval baseType.
+	 r:: g body computeType baseType.
 	 popActivation.   
      (* Feed two copies of R into f to get Q. *)
 	 pushActivation:  (Activation of: callee from: {r. r}).
-	 q:: f body eval baseType.
+	 q:: f body computeType baseType.
 	 popActivation.
      (* Peel last dim off of dims of a and first dim off of dims of b to get X & Y *)
 	ConcreteType dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
@@ -576,7 +614,7 @@ primitiveScan ^ <FunctionAST> = (
     x baseType = acc baseType ifFalse: [Error signal: 'scan'].
   (*check that f is applicable to acc & x *)
   	 pushActivation:  (Activation of: f from: {acc. acc}).
-	 result:: f body eval.
+	 result:: f body computeType.
      result = acc ifFalse: [Error signal: 'scan'].
      (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
 	 popActivation.
@@ -607,7 +645,7 @@ primitiveReduce ^ <FunctionAST> = (
     x baseType = acc baseType ifFalse: [Error signal: 'reduce'].
   (*check that f is applicable to acc & x *)
   	 pushActivation:  (Activation of: f from: {acc. acc}).
-	 result:: f body eval.
+	 result:: f body computeType.
      result = acc ifFalse: [Error signal: 'reduce'].
      (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
 	 popActivation.
@@ -641,7 +679,7 @@ primitiveFold ^ <FunctionAST> = (
   body = PrimitiveBodyAST block: [:f :acc :x |  | result | (* wrong; this is difficult, probably need framing trick again *)
   (*check that f is applicable to acc & x *)
   	 pushActivation:  (Activation of: f from: {acc. acc}).
-	 result:: f body eval.
+	 result:: f body computeType.
      result = acc ifFalse: [Error signal: 'fold'].
      (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
 	 popActivation.
@@ -851,6 +889,15 @@ primitiveDivide ^ <FunctionAST> = (
     ]. 
   |
   ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType asTensorType body: body position: {0. 0}
+)
+currentActivation ^ <Activation> = (
+   ^typeCallStack last
+)
+pushActivation: a <Activation> = (
+  typeCallStack add: a
+)
+popActivation = (
+  typeCallStack removeLast.
 )
 ) : (
 )
