@@ -178,10 +178,6 @@ public isKindOfConcreteType ^ <Boolean> = (
 public asTensorType ^ <TensorTypeAST> = (
   ^TensorTypeAST shape: shape type: concreteBaseTypeToTypeAST position: {0. 0}
 )
-public concreteBaseTypeToTypeAST ^ <TypeAST> = (
-  baseType isKindOfString ifTrue: [^TypeIdAST named: baseType position: {0. 0}].
-  ^TypeStructAST table: (baseType collect: [:e | e asTensorType]) position: {0. 0}.
-)
 public isNumeric ^ <Boolean> = (
   ^baseType = 'Int' or: [baseType = 'Float']
 )
@@ -200,6 +196,13 @@ public = other ^ <Boolean> = (
 )
 public hash ^ <Integer> = (
   ^dimensions hash bitXor: baseType hash
+)
+public concreteBaseTypeToTypeAST ^ <TypeAST> = (
+  baseType isKindOfString ifTrue: [^TypeIdAST named: baseType position: {0. 0}].
+  ^TypeStructAST table: (baseType collect: [:e | e printString out. e asTensorType]) position: {0. 0}.
+)
+public addTypeVariablesTo: scope <Scope> = (
+  (* do nothing. We are concrete - we have no type variables *)
 )
 ) : (
 )
@@ -274,6 +277,31 @@ public userType  ^ <TensorTypeAST> = (
   ^t asTensorType
 )
 ) : (
+)
+public class FunctionAST named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> isSync: isSync <Boolean> position: p <{Integer. Integer}>  = super FunctionAST named: n parameters: ps returnType: t body: b isSync: isSync position: p () (
+computeReturnType ^ <ConcreteType> = (
+  | result  <ConcreteType> |
+   ^currentScope = scope
+     ifTrue: [body computeType]
+     ifFalse: [
+       pushScope: scope.
+       result:: body computeType.
+       popScope.
+       result
+     ]
+)
+public returnType ^ <ConcreteType> = (
+  returnTypeSlot isNil ifTrue: [
+    returnTypeSlot:: computeReturnType.
+    returnTypeSlot addTypeVariablesTo: scope.
+  ].
+  ^returnTypeSlot
+)
+) : (
+public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = (
+  (* Convenience factory to pass default reactivity *)
+  ^named: n parameters: ps returnType: t body: b isSync: false position: p 
+)
 )
 frameArguments: args <List[ConcreteType]> of: callee <FunctionAST> ^ <List[Frame]> = (
   | argFrames <List[Frame]> = List new: args size. |

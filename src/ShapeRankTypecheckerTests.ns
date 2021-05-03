@@ -566,10 +566,6 @@ public testFold_fst = (
   assert: result shape rank equals: 0.
   assert: result baseType id equals: 'Int'.
 )
-assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
-  assert: [equals: ((Parser new program parseString: str1) computeType) type: ((Parser new program parseString: str2) computeType)]
-    description: d.
-)
 public testReduce = (
   | result = typecheckFileNamed: 'reduce'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -600,6 +596,10 @@ public testRerank = (
   assert: result shape rank equals: 1.
   assert: (result shape dimensions at: 1) constant equals: 2.
   assert: result baseType id equals: 'Int'.
+)
+assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
+  assert: [equals: ((Parser new program parseString: str1) userType) type: ((Parser new program parseString: str2) userType)]
+    description: d.
 )
 ) : (
 TEST_CONTEXT = ()

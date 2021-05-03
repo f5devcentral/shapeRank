@@ -458,6 +458,14 @@ public addTypeVariablesTo: scope <Scope> = (
 (* in case shapevar is used as standalone type. TODO: add synthetic dimvars? *)
   addShapeVariablesTo: scope.
 )
+public addShapeVariablesTo: scope <Scope>  = (
+  | s |
+  bindingSlot:: (scope lookup: id ifAbsent: [
+	s:: ShapeVariableAST named: id position: position.
+	scope add: s.
+	scope lookup: id.
+	]) at: #ast
+)
 ) : (
 )
 public class ShapeVectorAST dimensions: ds <List[DimensionAST]> position: p <{Integer. Integer}> = 
@@ -493,6 +501,9 @@ public addTypeVariablesTo: scope <Scope> = (
   table do: [:v | v addTypeVariablesTo: scope ].
   super addTypeVariablesTo: scope.
 )
+public shape ^ <ShapeVectorAST> = (
+  ^emptyShape
+)
 ) : (
 )
 public class TypeIdAST named: n <String> position: p <{Integer. Integer}> =  super TypeIdAST named: n position: p (
@@ -515,6 +526,9 @@ public addTypeVariablesTo: scope <Scope> = (
   bound addTypeVariablesTo: scope.
   super addTypeVariablesTo: scope.
 )
+public shape ^ <ShapeVectorAST> = (
+  ^emptyShape
+)
 ) : (
 )
 public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
@@ -536,6 +550,13 @@ public addTypeVariablesTo: scope <Scope> = (
 public class UnknownDimensionAST position: p <{Integer. Integer}> =  super UnknownDimensionAST position: p (
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
+)
+) : (
+)
+public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicTypeAST position: p (
+) (
+public addDimensionVariablesTo: s <Scope> = (
+  (* Do nothing *)
 )
 ) : (
 )
