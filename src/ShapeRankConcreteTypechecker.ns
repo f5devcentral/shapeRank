@@ -52,7 +52,7 @@ public computeType ^ <ConcreteType> = (
   | 
   etype = expression computeType. 
   dims = shape dimensions collect: [:d | d isKindOfDimensionNumber ifTrue: [d val] ifFalse: [dynamic]].
-  result = ConcreteType dimensions: dims type: etype baseType.  
+  result = ConcreteType dimensions: dims baseType: etype baseType.  
   dyn = etype dimensions detect: [:d | d isKindOfInteger not] ifNone: [].
   |
   dyn isNil ifTrue: [Error signal: 'Pointless cast  of non-dynamic tensor type.'].
@@ -86,12 +86,16 @@ computeTypeFromScope:  n <Symbol> ^ <ConcreteType> = (
 public class BlockAST body: e <ExprAST> position: p <{Integer. Integer}> = super BlockAST body: e position: p (
 ) (
 public computeType ^ <ConcreteType> = (
-(* BOGUS *)
+(* BOGUS?  *)
   | T <ConcreteType> = body computeType.
     unit <TensorTypeAST> = (TypeIdAST named: #Unit position: {0. 0}) asTensorType. |
-  ^(FunctionTypeAST parameterTypes: {unit} returnType: T position: position) asTensorType
+  ^ConcreteType dimensions: {} baseType: (FunctionTypeAST parameterTypes: {unit} returnType: T position: position) 
 )
 ) : (
+public body: e <ExprAST> ^ <Instance> = (
+(* sigh, we should find a solution for class method inheritance *)
+  ^body: e position: e position
+)
 )
 public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
 ) (
@@ -146,6 +150,11 @@ public computeType ^ <ConcreteType> = (
 public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 
   super RerankAST reranking: fn to: rs  position: p (
 ) (
+public computeType ^ <TensorTypeAST> = (
+  (* should be revisedEtaExpansion computeType, once we compute a valid revised expansion *)
+  #BOGUS yourself. (* rework for concrete typechecker *)
+  ^eta1 computeType
+)
 ) : (
 )
 public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
@@ -603,16 +612,6 @@ primitiveEquals ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #== parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
 )
-primitiveNot ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> | 
-    x baseType = 'Boolean' ifFalse: [Error signal: 'non-boolean argument to not()'].
-    ConcreteType dimensions: {} baseType: 'Bool'
-    ]. 
-  |
-  ^FunctionAST  named: #not parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
 primitiveOr ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
@@ -633,25 +632,6 @@ primitivePower ^ <FunctionAST> = (
     ]. 
   |
   ^FunctionAST  named: #power parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
-)
-primitiveRange ^ <FunctionAST> = (
-(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
-  | 
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
-  n1 = DimensionNumberAST number: 1 position: {0. 0}.
-  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
-  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
-  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
-  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
-  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {start. end}.
-  body = PrimitiveBodyAST block: [:i :j | | minRange = i asScalar. maxRange = j asScalar. |
-	ConcreteType dimensions: {maxRange - minRange + 1} baseType: 'Int'
-	]. 
-  |
-  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
 )
 primitiveShapeOf ^ <FunctionAST> = (
 (* shapeOf(t: @S $T): @S *)
@@ -685,49 +665,6 @@ primitiveMask = (
   returnType = TensorTypeAST shape: rs type: T position: {0. 0}.
 |
   ^FunctionAST  named: #mask parameters: ps returnType: returnType body: body position: {0. 0}
-)
-primitiveInnerProduct ^ <FunctionAST> = (
-(* 
-innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
-*)
-  | 
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  R = TypeVariableReferenceAST named: #R position: {0. 0}.
-  Q = TypeVariableReferenceAST named: #Q position: {0. 0}.
-  F <FunctionAST> = alpha: R toBeta: R toGamma: Q.
-  G <FunctionAST> = alpha: T toBeta: S toGamma: R.
-  s1 = ShapeVariableReferenceAST named: #X position: {0. 0}.
-  s2 = ShapeVariableReferenceAST named: #Y position: {0. 0}.
-  n = DimensionVariableReferenceAST named: #n position: {0. 0}.
-  commonDim = ShapeVectorAST dimensions: {n} position: {0. 0}.
-  sv1 = ShapeAppendAST shape: s1 to: commonDim  position: {0. 0}.
-  sv2 = ShapeAppendAST shape: commonDim to: s2  position: {0. 0}.
-  rs = ShapeAppendAST shape: s1 to: s2  position: {0. 0}.
-  t1 = TensorTypeAST shape: sv1 type: T position: {0. 0}.
-  t2 = TensorTypeAST shape: sv2 type: S position: {0. 0}.
-  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p4 = ParameterAST named: #g type: G asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3. p4}.
-  body = PrimitiveBodyAST block: [:a :b :f :g |  
-  | r q |
-    (* get scalar version of base types from a and b, feed them to a call of g, get result type R *)
-	 pushActivation:  (Activation of: callee from: {ConcreteType dimensions: {} baseType: a baseType. ConcreteType dimensions: {} baseType: b baseType}).
-	 r:: g baseType body computeType baseType.
-	 popActivation.   
-     (* Feed two copies of R into f to get Q. *)
-	 pushActivation:  (Activation of: callee from: {r. r}).
-	 q:: f baseType body computeType baseType.
-	 popActivation.
-     (* Peel last dim off of dims of a and first dim off of dims of b to get X & Y *)
-	ConcreteType dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
-	            baseType: q
-	]. 
-   returnType = TensorTypeAST shape: rs type: Q position: {0. 0}.
-  |
-  ^FunctionAST named: #innerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
 )
 primitiveReduce ^ <FunctionAST> = (
 (*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
@@ -988,12 +925,6 @@ frameArgument: arg <ConcreteType> forParameter: p <ParameterAST> ^ <Frame> = (
 	].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
-commonNumericBaseTypeFor: x and: y = (
-  | xt = x baseType. yt = y baseType. |
-  xt = yt ifTrue: [^yt].
-  xt = 'Float' or: [yt = 'Float'] ifTrue: [^'Float'].
-  ^'Int'
-)
 primitivePlus ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
@@ -1070,6 +1001,131 @@ primitiveMinus ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST  named: #- parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
+)
+public FunctionTypeAST ^ <FunctionTypeAST class> = (
+  (* provide access for nested classes *)
+  ^super FunctionTypeAST
+)
+commonNumericBaseTypeFor: x and: y = (
+  | xt = x baseType. yt = y baseType. |
+  xt = yt ifTrue: [^yt].
+  (xt = 'Float' or: [yt = 'Float']) ifTrue: [^'Float'].
+  ^'Int'
+)
+primitiveInnerProduct ^ <FunctionAST> = (
+(* 
+innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
+*)
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  R = TypeVariableReferenceAST named: #R position: {0. 0}.
+  Q = TypeVariableReferenceAST named: #Q position: {0. 0}.
+  F <FunctionAST> = alpha: R toBeta: R toGamma: Q.
+  G <FunctionAST> = alpha: T toBeta: S toGamma: R.
+  s1 = ShapeVariableReferenceAST named: #X position: {0. 0}.
+  s2 = ShapeVariableReferenceAST named: #Y position: {0. 0}.
+  n = DimensionVariableReferenceAST named: #n position: {0. 0}.
+  commonDim = ShapeVectorAST dimensions: {n} position: {0. 0}.
+  sv1 = ShapeAppendAST shape: s1 to: commonDim  position: {0. 0}.
+  sv2 = ShapeAppendAST shape: commonDim to: s2  position: {0. 0}.
+  rs = ShapeAppendAST shape: s1 to: s2  position: {0. 0}.
+  t1 = TensorTypeAST shape: sv1 type: T position: {0. 0}.
+  t2 = TensorTypeAST shape: sv2 type: S position: {0. 0}.
+  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p4 = ParameterAST named: #g type: G asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3. p4}.
+  body = PrimitiveBodyAST block: [:a :b :f :g |  
+  | r q |
+    (* get scalar version of base types from a and b, feed them to a call of g, get result type R *)
+	 pushActivation:  (Activation of: g baseType from: {ConcreteType dimensions: {} baseType: a baseType. ConcreteType dimensions: {} baseType: b baseType}).
+	 r:: g baseType body computeType.
+	 popActivation.   
+     (* Feed two copies of R into f to get Q. *)
+	 pushActivation:  (Activation of: f baseType from: {r. r}).
+	 q:: f baseType body computeType baseType.
+	 popActivation.
+     (* Peel last dim off of dims of a and first dim off of dims of b to get X & Y *)
+	ConcreteType dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
+	            baseType: q
+	]. 
+   returnType = TensorTypeAST shape: rs type: Q position: {0. 0}.
+  |
+  ^FunctionAST named: #innerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+primitiveArgmax ^ <FunctionAST> = (
+(* argmax(v: [$d]$T): Int *)
+  |
+  d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  s = ShapeVectorAST dimensions: {d} position: {0. 0}.
+  t = TensorTypeAST shape: s type: T position: {0. 0}.
+  ps <List[ParameterAST]> = {ParameterAST named: #v type: t position: {0. 0}}.
+  body = PrimitiveBodyAST block: [:v <ConcreteType> |
+    v rank = 1 ifFalse: [Error signal: 'Argmax requires argument of rank > 1'].
+    ConcreteType dimensions: {} baseType: 'Int'
+  ].
+  |
+  ^FunctionAST named: #argmax parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
+)
+primitiveIf  ^ <FunctionAST> = (
+(* if(c: Bool, t: $T, e: $T): $T *)
+  | 
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  p1 <ParameterAST> = makeBoolParameterNamed: #c. 
+  unitToT <FunctionAST> = unitTo: T.
+  p2 <ParameterAST> = ParameterAST named: #t type: unitToT position: {0. 0}.
+  p3 <ParameterAST> = ParameterAST named: #e type: unitToT position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  body = PrimitiveBodyAST block: [:c :t :e | | thenType elseType |
+    c baseType = 'Bool' ifFalse: [Error signal: 'Non-boolean condition in if expression'].      
+     #BOGUS. (* Need common subtype *)
+     t = e ifFalse: [Error signal: 'Branches of if expression have different types'].
+     t baseType returnType
+	]. 
+  |
+
+  ^FunctionAST named: #if parameters: ps returnType: T body: body position: {0. 0} 
+)
+primitiveRange ^ <FunctionAST> = (
+(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
+  | 
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
+  n1 = DimensionNumberAST number: 1 position: {0. 0}.
+  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
+  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
+  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
+  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
+  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {start. end}.
+  body = PrimitiveBodyAST block: [:i :j | 
+    | 
+    minRange = i baseType. 
+    maxRange = j baseType. 
+    size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
+      ifTrue: [maxRange - minRange + 1]
+      ifFalse: [dynamic].
+    |
+    i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
+    j isIntegral ifFalse: [Error signal: 'Non-integral second argument to ..'].
+	ConcreteType dimensions: {size} baseType: 'Int'
+	]. 
+  |
+  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
+)
+primitiveNot ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> | 
+    x baseType = 'Bool' ifFalse: [Error signal: 'non-boolean argument to not()'].
+    ConcreteType dimensions: {} baseType: 'Bool'
+    ]. 
+  |
+  ^FunctionAST  named: #not parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
 )
 ) : (
 )

@@ -1590,11 +1590,6 @@ revisedRerankParams ^ <List[ParamAST]> = (
 constrains: eq <CanonicalDimension> dimension: d <DimensionVariableAST> ^ <Boolean> = (
   ^(eq variables at: d) ~= 0
 )
-public computeType ^ <TensorTypeAST> = (
-  (* should be revisedEtaExpnasion computeType, once we compute a valid revised expansion *)
-  #BOGUS yourself.
-  ^eta1 computeType
-)
 computeDimVars = (
 (*
 We are seeking to establish the dependencies among the eta dim vars. If we take our initial equations and try
@@ -1649,6 +1644,11 @@ public revisedEtaExpansion  ^ <FunctionAST> = (
       body: revisedBody
       isSync: eta1 isSynchronous
       position: {0. 0}.
+)
+public computeType ^ <TensorTypeAST> = (
+  (* should be revisedEtaExpansion computeType, once we compute a valid revised expansion *)
+  #BOGUS yourself.
+  ^eta1 computeType
 )
 ) : (
 )
