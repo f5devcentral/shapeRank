@@ -12,13 +12,14 @@ Copyright 2014-2017 Google Inc.
 	  private HopscotchIDE = manifest HopscotchWebIDE packageUsing: manifest.
         private ShapeRankASTs = manifest ShapeRankASTs.
         private ShapeRankScopes = manifest ShapeRankScopes.
-        private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+        private ShapeRankTypechecker = manifest ShapeRankTypechecker.        
+        private ShapeRankConcreteTypechecker = manifest ShapeRankConcreteTypechecker.
         private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
         private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
-        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration.
+        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankStreamInterpreterTestsConfiguration.
         private ShapeRankTypecheckerTests = manifest ShapeRankTypecheckerTests.
         private ShapeRankTypecheckerTestsConfiguration = manifest ShapeRankTypecheckerTestsConfiguration.
         private ShapeRankTestData = manifest ShapeRankTestData.
@@ -27,47 +28,6 @@ Copyright 2014-2017 Google Inc.
         private NodeAPI = manifest NodeAPI.
         private HyperStreams = manifest HyperStreams.        
 |) (
-public main: platform args: args = (
-	|
-	namespace
-	embedder
-	ide
-	parsers
-	grammar
-	parsing
-	parser
-	Evaluator
-    utils
-    hyperstreams
-	Scopes
-	Typechecker
-	interpreter
-	hopscotchPlatform
-	|
-	
-    utils:: CollectionUtils usingPlatform: platform.
-    hyperstreams:: HyperStreams usingPlatform: platform.
-	Scopes::
-	 (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
-        Typechecker::
-	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
-	     Typechecker.
-        interpreter:: ShapeRankInterpreter usingPlatform: platform
-	                                    asts: Typechecker
-                                        collectionUtils: utils
-                                        streams: hyperstreams.
-        Evaluator:: interpreter Evaluator.
-        parsers:: CombinatorialParsing usingPlatform: platform.
-        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
-        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
-	parser:: parsing Parser new.
-	hopscotchPlatform:: hopscotchRuntime using: platform.
-	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
-      namespace:: ide namespacing Root.
-	populateNamespace: namespace.
-	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
-	hopscotchPlatform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
-)
 populateNamespace: namespace = (
 	namespace at: #ShapeRankDemo2 put: self class.
 	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
@@ -85,6 +45,51 @@ populateNamespace: namespace = (
     namespace at: #CollectionUtils put: CollectionUtils.
     namespace at: #HyperStreams put: HyperStreams.
     
+)
+public main: platform args: args = (
+	|
+	namespace
+	embedder
+	ide
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+    utils
+    hyperstreams
+	Scopes
+	Typechecker
+    InterimTypechecker
+	interpreter
+	hopscotchPlatform
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.
+	Scopes::
+	 (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+     InterimTypechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.     
+      Typechecker::
+	  (ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams)
+	     TypeInterpreter.
+        interpreter:: ShapeRankInterpreter usingPlatform: platform
+	                                    asts: Typechecker
+                                        collectionUtils: utils
+                                        streams: hyperstreams.
+        Evaluator:: interpreter Evaluator.
+        parsers:: CombinatorialParsing usingPlatform: platform.
+        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+	hopscotchPlatform:: hopscotchRuntime using: platform.
+	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
+      namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
+	hopscotchPlatform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
 )
 ) : (
 )

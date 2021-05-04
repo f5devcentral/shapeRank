@@ -11,6 +11,7 @@ class ShapeRankNotebook packageUsing: manifest = (
   private ShapeRankScopes = manifest ShapeRankScopes.
   private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
   private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+  private ShapeRankConcreteTypechecker = manifest ShapeRankConcreteTypechecker.
   private ShapeRankGrammar = manifest ShapeRankGrammar.
   private ShapeRankParser = manifest ShapeRankParser.
   private ShapeRankWorkspace = manifest ShapeRankWorkspace.
@@ -44,7 +45,8 @@ public main: platform args: args = (
   utils = CollectionUtils usingPlatform: platform.
   hyperstreams = HyperStreams usingPlatform: platform.
   scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
-  typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
+  interim_typechecker = (ShapeRankTypechecker  usingPlatform: platform asts: scopes collectionUtils: utils) Typechecker.
+  typechecker = (ShapeRankConcreteTypechecker  usingPlatform: platform asts: interim_typechecker collectionUtils: utils streams: hyperstreams) TypeInterpreter.  
   evaluator = (ShapeRankInterpreter usingPlatform: platform asts: typechecker collectionUtils: utils 
                                         streams: hyperstreams) Evaluator.
   parsers = CombinatorialParsing usingPlatform: platform.

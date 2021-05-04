@@ -28,11 +28,6 @@ isMyKind: other <Subject> ^ <Boolean> = (
 public isKindOfDeclarationPresenter ^ <Boolean> = (
   ^true
 )
-linkForError: exception = (
-	^(link: exception printString
-	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception)) fromSnippet: subject])
-	color: (Color r: 1 g: 0 b: 0)
-)
 definitionForType = (
   ^(row: {label: 'Type'. blank: 4. label: subject type printString}) color: (Color r: 0 g: 1 b: 0).
 )
@@ -64,6 +59,11 @@ typecheck: declaration <String> = (
 )
 public tag ^ <String> = (
   ^subject name
+)
+linkForError: exception = (
+	^(link: exception printString
+	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception))])
+	color: (Color r: 1 g: 0 b: 0)
 )
 ) : (
 )
@@ -375,10 +375,6 @@ evaluate: expression <String> = (
 		on: Error do: [:e | ^linkForError: e].
      ^(TensorSubject onModel:  result) presenter
 )
-linkForResult: objectMirror = (
-	^link: objectMirror reflectee printString
-	action: [enterSubject: (TensorSubject onModel: objectMirror) fromSnippet: subject]
-)
 typecheck: expression <String> = (
 	| result <TypeAST> |
   [result:: type: (withoutNbsp: expression) ] on: Error do: [:e | ^linkForError: e]. 
@@ -399,11 +395,6 @@ definition = (
 		result:: holder: [deferred: [column: {typecheck: subject snippet. evaluate: subject snippet}]].
 	}
 )
-linkForError: exception = (
-	^(link: exception printString
-	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception)) fromSnippet: subject])
-	color: (Color r: 1 g: 0 b: 0)	
-)
 eval: e <String> = (
   | tensor = parser expr parseString: e. |
   tensor scope nestIn: program scope.
@@ -413,6 +404,15 @@ type: e <String> ^ <TensorTypeAST> = (
   | tensor = parser expr parseString: e. |
   tensor scope nestIn: program scope.
    ^tensor userType
+)
+linkForError: exception = (
+	^(link: exception printString
+	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception))])
+	color: (Color r: 1 g: 0 b: 0)	
+)
+linkForResult: objectMirror = (
+	^link: objectMirror reflectee printString
+	action: [enterSubject: (TensorSubject onModel: objectMirror)]
 )
 ) : (
 )
