@@ -373,22 +373,6 @@ zipFrame: l <List[Frame]> ^ <Frame>  = (
  l do: [:e | e dimensions with: dims do: [:d1 :d2 | d1 = d2 ifFalse: [Error signal: 'Argument frames of varying rank']]].
   ^Frame dimensions: dims cells: zippedCells.
 )
-primitiveApply ^ <FunctionAST> = (
-(* apply(f: @R$X -> @S$Y, x: @R$X): @S$Y *)
-  | R = ShapeVariableReferenceAST named: #R position: {0. 0}.
-    S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-    X = TypeVariableReferenceAST named: #X position: {0. 0}.
-    Y = TypeVariableReferenceAST named: #Y position: {0. 0}.
-    RX = TensorTypeAST shape: R type: X position: {0. 0}.
-    SY = TensorTypeAST shape: S type: Y position: {0. 0}.
-    F = alpha: RX toBeta: SY.
-    p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-    p2 = ParameterAST named: #x type: RX asTensorType position: {0. 0}.
-    rt = SY asTensorType.
-    body = CallAST function: #f arguments: {
-      IdentifierAST named: #x position: {0. 0}} position: {0. 0}. |
-  ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
-)
 primitiveMakeTensor ^ <FunctionAST> = (
 (* makeTensor(dims: @S, contents: []$T):@S $T *)
   | 
@@ -1126,6 +1110,30 @@ primitiveNot ^ <FunctionAST> = (
     ]. 
   |
   ^FunctionAST  named: #not parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveApply ^ <FunctionAST> = (
+(* apply(f: @R$X -> @S$Y, x: @R$X): @S$Y *)
+  | 
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  X = TypeVariableReferenceAST named: #X position: {0. 0}.
+  Y = TypeVariableReferenceAST named: #Y position: {0. 0}.
+  RX = TensorTypeAST shape: R type: X position: {0. 0}.
+  SY = TensorTypeAST shape: S type: Y position: {0. 0}.
+  F = alpha: RX toBeta: SY.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #x type: RX asTensorType position: {0. 0}.
+  rt = SY asTensorType.
+  body = PrimitiveBodyAST block: [:f <ConcreteType> :x <ConcreteType> |
+        | result <ConcreteType> |
+       (*check that f is applicable to x *)
+  	   pushActivation:  (Activation of: f baseType from: {x}).
+	   result:: f baseType body computeType.
+	   popActivation.
+       result    
+    ].
+  |
+  ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
 )
 ) : (
 )
