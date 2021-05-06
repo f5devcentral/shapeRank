@@ -27,14 +27,17 @@ public class TypeInterpreter usingPlatform: p
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
 ) (
 public computeType ^ <ConcreteType>  = (
-  expressions do: [:e |
-      | 
-      etype <ConcreteType> = e computeType. 
-      dims <List[Integer | UnboundedDimension]> = List withAll: {expressions size}, etype dimensions.
-      |
-      ^ConcreteType dimensions: dims baseType: etype baseType
-    ].
-    Error signal: 'Empty tensor literal is not legal' 
+  | 
+  elementType = (expressions collect: [:e <ExprAST> | e computeType])
+     reduce: [:t1 <ConcreteType> :t2 <ConcreteType> | 
+       | gcs = t1 greatestCommonBaseTypeWith: t2. |
+       gcs isNil ifTrue: [Error signal: 'Elements of tensor have incompatible base types'].
+       t1 rank = t2 rank ifFalse: [Error signal: 'Elements of tensor have different ranks'].
+       t1 dimensions with: t2 dimensions do: [:d1 :d2 | d1 = d2 ifFalse: [Error signal: 'Elements of tensor have different dimensions']].
+       ConcreteType dimensions: t1 dimensions baseType: gcs
+       ] ifEmpty: [Error signal: 'Empty tensor literal is not legal' ].
+ |
+ ^ConcreteType dimensions: (List withAll: {expressions size}, elementType dimensions) baseType: elementType baseType 
 )
 ) : (
 )
@@ -150,10 +153,8 @@ public computeType ^ <ConcreteType> = (
 public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 
   super RerankAST reranking: fn to: rs  position: p (
 ) (
-public computeType ^ <TensorTypeAST> = (
-  (* should be revisedEtaExpansion computeType, once we compute a valid revised expansion *)
-  #BOGUS yourself. (* rework for concrete typechecker *)
-  ^eta1 computeType
+public computeType ^ <ConcreteType> = (
+  ^ConcreteType dimensions: {} baseType: etaExpansion
 )
 ) : (
 )
@@ -181,11 +182,11 @@ public computeType ^ <ConcreteType> = (
 )
 class ConcreteType dimensions: ds <List[Integer | UnboundedDimension]> baseType: b <String | Integer | Map[String, ConcreteType]> = (
 (*
-A base type is either a string (denoting an atomic type such as 'String' or 'Boolean'), an integer (identifying a specific number, for dimensional analysis) or a map from strings to concrete types  (denoting a record type). Dimensions are runtime dimensions: either integers or the unbounded dimension (aka ?).
+A base type is either a string (denoting an atomic type such as 'String' or 'Boolean'), an integer (identifying a specific number, for dimensional analysis), a map from strings to concrete types  (denoting a record type) or a ShapeRank function repressented as an AST. Dimensions are runtime dimensions: either integers or the unbounded dimension (aka ?).
 *)
 	|
 	public dimensions <List[Integer | UnboundedDimension]> = ds.
-	public baseType <String | Integer | Map[String, ConcreteType]> = b.
+	public baseType <String | Integer | Map[String, ConcreteType] | FunctionAST> = b.
 	|
 ) (
 public rank ^ <Integer> = (
@@ -225,16 +226,66 @@ public shape ^ <ShapeVectorAST> = (
   |
   ^ShapeVectorAST dimensions: dims position: {0. 0}
 )
-public concreteBaseTypeToTypeAST ^ <TypeAST> = (
-  baseType isKindOfString ifTrue: [^TypeIdAST named: baseType position: {0. 0}].
-  baseType isKindOfInteger ifTrue: [^DimensionNumberAST number: baseType position: {0. 0}].
-  ^TypeStructAST table: (baseType collect: [:e | e asTensorType]) position: {0. 0}.
-)
 public isIntegral ^ <Boolean> = (
   ^baseType isKindOfInteger or: [baseType = 'Int']
 )
 public isNumeric ^ <Boolean> = (
   ^isIntegral or: [baseType = 'Float']
+)
+public concreteBaseTypeToTypeAST ^ <TypeAST> = (
+  baseType isKindOfString ifTrue: [^TypeIdAST named: baseType position: {0. 0}].
+  baseType isKindOfInteger ifTrue: [^DimensionNumberAST number: baseType position: {0. 0}].
+  baseType isKindOfMap ifTrue: [^TypeStructAST table: (baseType collect: [:e | e asTensorType]) position: {0. 0}].
+  ^baseType.
+)
+public greatestCommonBaseTypeWith: b <ConcreteType>  = (
+  isNumeric ifTrue: [^greatestCommonNumericTypeWith: b].
+  baseType isKindOfMap ifTrue: [^greatestCommonStructTypeWith: b].
+  (* Return nil if no greatest common base type exists*) 
+  ^baseType = b baseType ifTrue: [baseType]
+)
+greatestCommonNumericTypeWith: b <ConcreteType>  = (
+  (* Should only be called if the receiver's base type is a numeric type *)
+  (* if b is not a numeric, there is no gcs *)
+  b isNumeric ifFalse: [^nil].
+  baseType = 'Int' ifTrue: [
+  (* if b's base type is given as a string, it must be one of {Int, Float, Number} and it dominates the receiver's base type Int.
+     Otherwise b's base type and a specific number,  and Int is the gcs *)
+    ^b baseType isKindOfString ifTrue: [b baseType] ifFalse: ['Int']
+  ].
+  baseType = 'Float' ifTrue: [
+        (* If b's base is Number, it is the gcs; the receive's base type, Float, dominates any other possibility *)
+        ^b baseType = 'Number' ifTrue: ['Number'] ifFalse: ['Float']
+  ].
+  (* Number is the gcs of all numeric types *)
+  baseType = 'Number' ifTrue: [^'Number'].  
+  (* The receiver's base type is a specific integer. If b's base is given as a string, it must be one of {Int, Float, Number} and it dominates the receiver's base type. *)
+  b baseType isKindOfString ifTrue: [^b baseType].
+  (* b's base type is also an integer. If they are the same, that is the gcs, otherwise it is Int.  *)
+  ^baseType = b baseType ifTrue: [baseType] ifFalse: ['Int']
+)
+greatestCommonStructTypeWith: b <ConcreteType> ^ <Map | Nil> = (
+  (* Should only be called if the receiver's base type is a struct type *)
+  (* If b's base is a struct the result will be a map; otherwise it will be nil *)  
+  | result <Map | Nil> = b baseType isKindOfMap ifTrue: [Map new]. |
+
+  result isNil ifFalse: [
+    baseType keysAndValuesDo: [:k :v |
+       (* The gcs will have a field only if both structs have it *)
+       (b baseType includesKey: k) ifTrue: [
+         | commonFieldBaseType = v greatestCommonBaseTypeWith: (b baseType at: k). |
+           (* If the shapes of b and the receiver are the same and common field must itself has a gcs, the field is defined in the gcs *)
+           ((v dimensionsAreEqualTo: (b baseType at: k) dimensions) and: [commonFieldBaseType isNil not]) ifTrue: [
+              result at: k put: (ConcreteType dimensions: v dimensions baseType: commonFieldBaseType)]
+       ].
+    ].
+  ].
+  ^result
+)
+public dimensionsAreEqualTo: ds = (
+  dimensions size = ds size ifFalse: [^false].
+  dimensions with: ds do: [:d1 :d2 | d1 ~= d2 ifTrue: [^false]].
+  ^true
 )
 ) : (
 )
@@ -481,37 +532,6 @@ primitiveGradientDescent ^ <FunctionAST> = (
   |
   ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
 )
-primitiveAppend ^ <FunctionAST> = (
-(*  append(a: [$d1]::@S $T, b: [$d2]::@S $T):[$d1 + $d2]::@S $T *)
-  | 
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  rdim = DimensionSumAST of: d1 and: d2 position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.
-  s1 = ShapeAppendAST shape: sv1 to: S  position: {0. 0}.
-  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
-  s2 = ShapeAppendAST shape: sv2 to: S  position: {0. 0}.
-  rv = ShapeVectorAST dimensions: {rdim} position: {0. 0}.
-  rshape = ShapeAppendAST shape: rv to: S position: {0. 0}.
-  t1 = TensorTypeAST shape: s1 type: T position: {0. 0}.
-  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
-  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:a :b | | aDimTail |
-    (* verify base type $T is the same *)
-    a baseType = b baseType ifFalse: [Error signal: 'incompatible element types in call to append()'].
-    (* verify $S is the same *)
-   2 to: a dimensions size do: [:i <Integer> | (a dimensions at: i) = (b dimensions at: i)].
-	ConcreteType dimensions: {(a dimensions at: 1) + (b dimensions at: 1)}, (a dimensions copyFrom: 2 to: a dimensions size) 
-	            baseType:  a baseType
-	]. 
-  returnType = TensorTypeAST shape: rshape type: T position: {0. 0}.
-  |
-  ^FunctionAST named: #append parameters: ps returnType: returnType body: body position: {0. 0}  
-)
 primitiveDivide ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
@@ -553,33 +573,6 @@ public TensorTypeAST ^ <TensorTypeAST class> = (
   (* provide access for nested classes *)
   ^super TensorTypeAST
 )
-primitiveAnd ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    x baseType = 'Boolean' ifFalse: [Error signal: 'invalid firest parameter for and()'].
-    y baseType = 'Boolean' ifFalse: [Error signal: 'invalid second parameter for and()'].
-    ConcreteType dimensions: {} baseType: 'Bool'
-    ]. 
-  |
-  ^FunctionAST  named: #and parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitiveContains ^ <FunctionAST> = (
-  (* contains(v: @S$T, x: $T): Bool *)
-|
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST  named: #S position: {0. 0}.
-  t1 = TensorTypeAST shape: S type: T position: {0. 0}.
-  p1 = ParameterAST named: #v type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #x type: T asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:tensor :element | 
-      tensor baseType = element baseType ifFalse: [Error signal: 'hyperstream base type incompatible element type in call to contains()'].
-      ConcreteType dimensions: {} baseType: 'Bool'
-	].
-|
-  ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
 primitiveEquals ^ <FunctionAST> = (
   | 
   T = TypeVariableReferenceAST named: #T position: {0. 0}.
@@ -605,17 +598,6 @@ primitiveOr ^ <FunctionAST> = (
     ConcreteType dimensions: {} baseType: 'Bool']. 
   |
   ^FunctionAST  named: #or parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
-)
-primitivePower ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeIntParameterNamed: #a. makeIntParameterNamed: #b}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    x baseType = 'Int' ifFalse: [Error signal: 'non-integer first parameter passed to power()'].
-    y baseType = 'Int' ifFalse: [Error signal: 'non-integer second parameter passed to power()'].
-    ConcreteType dimensions: {} baseType: 'Integer'
-    ]. 
-  |
-  ^FunctionAST  named: #power parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
 )
 primitiveShapeOf ^ <FunctionAST> = (
 (* shapeOf(t: @S $T): @S *)
@@ -1134,6 +1116,76 @@ primitiveApply ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
+)
+primitiveAnd ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeBoolParameterNamed: #x. makeBoolParameterNamed: #y}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    x baseType = 'Bool' ifFalse: [Error signal: 'invalid firest parameter for and()'].
+    y baseType = 'Bool' ifFalse: [Error signal: 'invalid second parameter for and()'].
+    ConcreteType dimensions: {} baseType: 'Bool'
+    ]. 
+  |
+  ^FunctionAST  named: #and parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveContains ^ <FunctionAST> = (
+  (* contains(v: @S$T, x: $T): Bool *)
+|
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST  named: #S position: {0. 0}.
+  t1 = TensorTypeAST shape: S type: T position: {0. 0}.
+  p1 = ParameterAST named: #v type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #x type: T asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:tensor :element | 
+  (* should change signature so we do not care about base types *)
+      tensor baseType = element baseType ifFalse: [Error signal: 'hyperstream base type incompatible element type in call to contains()'].
+      ConcreteType dimensions: {} baseType: 'Bool'
+	].
+|
+  ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitivePower ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeIntParameterNamed: #a. makeIntParameterNamed: #b}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    x isIntegral ifFalse: [Error signal: 'non-integer first parameter passed to power()'].
+    y isIntegral ifFalse: [Error signal: 'non-integer second parameter passed to power()'].
+    ConcreteType dimensions: {} baseType: 'Integer'
+    ]. 
+  |
+  ^FunctionAST  named: #power parameters: ps returnType: integerType asTensorType body: body position: {0. 0}
+)
+primitiveAppend ^ <FunctionAST> = (
+(*  append(a: [$d1]::@S $T, b: [$d2]::@S $T):[$d1 + $d2]::@S $T *)
+  | 
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  rdim = DimensionSumAST of: d1 and: d2 position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.
+  s1 = ShapeAppendAST shape: sv1 to: S  position: {0. 0}.
+  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
+  s2 = ShapeAppendAST shape: sv2 to: S  position: {0. 0}.
+  rv = ShapeVectorAST dimensions: {rdim} position: {0. 0}.
+  rshape = ShapeAppendAST shape: rv to: S position: {0. 0}.
+  t1 = TensorTypeAST shape: s1 type: T position: {0. 0}.
+  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
+  p1 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #b type: t2 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:a :b | | gcs = a greatestCommonBaseTypeWith: b.  |
+    (* verify base type $T is the well defined *)
+    gcs isNil ifTrue: [Error signal: 'incompatible element types in call to append()'].
+    (* verify $S is the same *)
+   2 to: a dimensions size do: [:i <Integer> | (a dimensions at: i) = (b dimensions at: i)].
+	ConcreteType dimensions: {(a dimensions at: 1) + (b dimensions at: 1)}, (a dimensions copyFrom: 2 to: a dimensions size) 
+	            baseType:  gcs
+	]. 
+  returnType = TensorTypeAST shape: rshape type: T position: {0. 0}.
+  |
+  ^FunctionAST named: #append parameters: ps returnType: returnType body: body position: {0. 0}  
 )
 ) : (
 )
