@@ -1,0 +1,35 @@
+Newspeak3
+'Root'
+class ShapeRankConcreteTypecheckerTestsConfiguration packageTestsUsing: manifest = (
+|
+	private ShapeRankConcreteTypecheckerTests = manifest ShapeRankConcreteTypecheckerTests.
+	private ShapeRankASTs = manifest ShapeRankASTs.
+	private ShapeRankScopes = manifest ShapeRankScopes.
+	private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+	private ShapeRankConcreteTypechecker = manifest ShapeRankConcreteTypechecker.	
+	private CombinatorialParsing  = manifest CombinatorialParsing.
+	private ShapeRankGrammar = manifest ShapeRankGrammar.
+	private ShapeRankParser = manifest ShapeRankParser.
+	private ShapeRankTestData = manifest ShapeRankTestData.
+    private CollectionUtils = manifest CollectionUtils.
+    private HyperStreams = manifest HyperStreams.
+    private Tensorflow = manifest Tensorflow.
+    private NodeAPI = manifest NodeAPI.
+|
+) (
+public testModulesUsingPlatform: platform minitest: minitest = (
+  |
+  utils = CollectionUtils usingPlatform: platform.
+  Scopes = (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+  InterimTypechecker = (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils) Typechecker.
+  hyperstreams = HyperStreams usingPlatform: platform.
+  Typechecker = (ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams) TypeInterpreter.
+  parsers = CombinatorialParsing usingPlatform: platform.
+  grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
+  parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: Typechecker collectionUtils: utils.
+  supplier = ShapeRankTestData usingPlatform: platform.
+  |
+  ^{ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing minitest: minitest supplier: supplier}
+)
+) : (
+)
