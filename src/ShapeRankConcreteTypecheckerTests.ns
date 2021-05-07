@@ -1,0 +1,631 @@
+Newspeak3
+'Root'
+class ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+|
+	private Stopwatch = platform kernel Stopwatch.
+	private Parser = parsing Parser.
+	private TestContext = minitest TestContext.
+	private Map = platform collections Map.
+
+      supplier = s.
+|
+) (
+public class TypecheckerTests = TestContext (
+) (
+class SubstitutionMock from: s to: t <TypeAST> = (
+  | public typeVarMap = Map new.
+    public shapeVarMap = Map new.
+    public dimVarMap = Map new. |
+  t getTypeVariables do: [:tv |
+    (typeVarMap includesKey: tv id) ifTrue:
+      [Error signal: 'please ensure output types in your tests are uniquely named'].
+    typeVarMap at: tv id put: tv.
+  ].
+  t getShapeVariables do: [:sv |
+    sv isKindOfShapeVariableAST ifTrue: [
+      (shapeVarMap includesKey: sv id) ifTrue:
+        [Error signal: 'please ensure output shapes in your tests are uniquely named'].
+      shapeVarMap at: sv id put: sv.
+    ].
+    sv isKindOfDimensionVariableAST ifTrue: [
+      (dimVarMap includesKey: sv id) ifTrue:
+        [Error signal: 'please ensure output dimensions in your tests are uniquely named'].
+      dimVarMap at: sv id put: sv.
+    ].
+  ].
+  s getTypeVariables do: [:tv |
+    typeVarMap at: tv put: (typeVarMap at: tv id).
+  ].
+  s getShapeVariables do: [:sv |
+    sv isKindOfShapeVariableAST ifTrue: [
+      shapeVarMap at: sv put: (shapeVarMap at: sv id).
+    ].
+    sv isKindOfDimensionVariableAST ifTrue: [
+      dimVarMap at: sv put: (dimVarMap at: sv id).
+    ].
+  ]
+) (
+) : (
+)
+expectTypeError: blk <[]> = (
+  should: blk signal: Error description: 'Type error expected'.
+)
+messageSelector = (
+)
+public testAppend = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result = typecheckFileNamed: 'append'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 6.
+  assert: result baseType id equals: 'Int'.
+)
+public testAppend2 = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result = typecheckFileNamed: 'append2'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testAppend6 = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result = typecheckFileNamed: 'append6'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testAsArray  = (
+(* asArray(x: Int):[1]Int *)
+  | result = typecheckFileNamed: 'asArray'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: result baseType id equals: 'Int'.
+)
+public testContains_false  = (
+(* asArray(x: Int):Int *)
+  | result = typecheckFileNamed: 'contains_false'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Bool'.
+)
+public testContains_true  = (
+(* asArray(x: Int):Int *)
+  | result = typecheckFileNamed: 'contains_true'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Bool'.
+)
+public testDotProduct  = (
+(* dotProduct(a: [$d]Int, b: [$d]Int): Int *)
+  | result = typecheckFileNamed: 'dotProduct'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testEmptyArgs = (
+ expectTypeError: [typecheckFileNamed: 'empty_args'] 
+)
+public testExcessArgs = (
+ expectTypeError: [typecheckFileNamed: 'excess_args'] 
+)
+public testFun = (
+ expectTypeError: [typecheckFileNamed: 'fun'] 
+)
+public testIdentity_3 = (
+  | result = typecheckFileNamed: 'identity_3'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType isKindOfDimensionNumberAST.
+  assert: result baseType dimension = 3.
+)
+public testIdentity_rec = (
+  | result = typecheckFileNamed: 'identity_rec'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testIff11 = (
+  | result = typecheckFileNamed: 'if11'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testIff21 = (
+  | result = typecheckFileNamed: 'if21'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testIota = (
+  | result = typecheckFileNamed: 'iota'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 6.
+  assert: result baseType id equals: 'Int'.
+)
+public testLength = (
+  | result = typecheckFileNamed: 'length'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testLet = (
+  | result = typecheckFileNamed: 'let'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testLiterallInt = (
+  | result = typecheckFileNamed: 'literal_int'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: [result baseType isKindOfDimensionNumberAST].
+  assert: result baseType dimension equals: 23.
+)
+public testMatVecmul = (
+  | result = typecheckFileNamed: 'matVecMul'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testMatVecmul_innerProduct = (
+  | result = typecheckFileNamed: 'matVecMul_inner_product'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testMatmul = (
+  | result = typecheckFileNamed: 'matmul'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testMatrix = (
+  | result = typecheckFileNamed: 'matrix'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testOuterProduct2 = (
+  | result = typecheckFileNamed: 'outerProduct2'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 5.
+  assert: (result shape dimensions at: 2) constant equals: 5.
+  assert: result baseType id equals: 'Int'.
+)
+public testPair = (
+  | result = typecheckFileNamed: 'pair'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 4.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testPlusExpr = (
+  | result = typecheckFileNamed: 'plusExpr'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testPointwiseVector = (
+  | result = typecheckFileNamed: 'pointwiseVector'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testPointwiseVectorScalar = (
+  | result = typecheckFileNamed: 'pointwiseVectorScalar'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testPrimes = (
+  | result = typecheckFileNamed: 'primes'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: [(result shape dimensions at: 1) isKindOfDynamicTypeAST].
+  assert: result baseType id equals: 'Int'.
+)
+public testRange = (
+  | result = typecheckFileNamed: 'range'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 5.
+  assert: result baseType id equals: 'Int'.
+)
+public testRerank2 = (
+  | result = typecheckFileNamed: 'rerank2'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 1.
+  assert: (result shape dimensions at: 2) constant equals: 6.
+  assert: result baseType id equals: 'Int'.
+)
+public testRerank3 = (
+  | result = typecheckFileNamed: 'rerank3'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testScalarVectorMatrix  = (
+  | result = typecheckFileNamed: 'scalarVectorMatrix'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testScan = (
+  | result = typecheckFileNamed: 'scan'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testShapecast = (
+  | result = typecheckFileNamed: 'shapeCast'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testTwice  = (
+  | result = typecheckFileNamed: 'twice'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testVecMatmul  = (
+  | result = typecheckFileNamed: 'vecMatmul'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testVector = (
+  | result = typecheckFileNamed: 'vector'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+typecheckFileNamed: fn <String>  = (
+  ^typecheckCompilationUnit: (supplier supplyTestNamed: fn)
+)
+equals: s <TypeAST> type: t <TypeAST> ^<Boolean> = (
+  (* type equality modulo distinct typevars in different typechecking passes *)
+  (* we don't use = here as it is sensitive to the actual form of the type (TensorType empty shape etc.) *)
+  | subst = SubstitutionMock from: s to: t.
+    ss = s substitute: subst. |
+  ^(ss subtypeOf: t) & (t subtypeOf: ss)
+)
+assertNotTyped: str1 <String> as: str2 <String> desc: d <String> = (
+  assert: [(equals: (typecheckCompilationUnit: str1) type: (typecheckCompilationUnit: str2)) not]
+    description: d.
+)
+public testStruct = (
+  assertTyped: '{a: true, b: true}' as: '{b: false, a: false}'
+         desc: 'struct types should ignore order'.
+  (* gcs/lcs is currently buggy *)
+  assert: [((typecheckCompilationUnit: '{a: 5, b: 3}') lcs:
+    (typecheckCompilationUnit: '{b: 9, a: 2}')) baseType isKindOfTypeStructAST]
+    description: 'struct types should subtype on value types'.
+  assertNotTyped: '{a: true, b: true}' as: '{a: true}'
+            desc: 'struct types should be on raw equality, not (width) subtyping'.
+  assertNotTyped: '{a: true}' as: '{a: true, b: true}'
+            desc: 'struct types should be on raw equality, not (width) subtyping'.
+  assertTyped: '{a: 3, b: false}.b' as: 'true'
+         desc: 'struct dot should index its type'.
+)
+public testStructFn = (
+  assertTyped: 'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
+           as: 'func f(x: Int): Int = x; f(5)'
+         desc: 'functions should show depth subtyping of structs'.
+  assertTyped: 'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
+                f({x: [1,2,3,4], y: [5,6,7,8]})'
+           as: '[0,0,0,0,0,0,0,0]'
+         desc: 'functions should propagate struct-inner types'.
+  assertTyped: 'func f(arg: [$d]{x: Int}): [$d]Int = arg.x;
+                f([{x: 1}, {x: 2}, {x: 3}])'
+           as: '[0,0,0]'
+         desc: 'functions should propagate struct-inner shapes'.
+)
+public testStringLit = (
+  assertTyped: '"hello"' as: '"world"' desc: 'strings should be typed'.
+  assertNotTyped: '"hello"' as: '4' desc: 'string type should be distinct from int'.
+  assertNotTyped: '"world"' as: 'true' desc: 'string type should be distinct from bool'.
+)
+public testRelOps = (
+  assertTyped: '[1] < [3]' as: '[true]' desc: 'lt should have int -> int -> bool'.
+  assertTyped: '[1] > [3]' as: '[true]' desc: 'gt should have int -> int -> bool'.
+  assertTyped: '[1] <= [3]' as: '[true]' desc: 'leq should have int -> int -> bool'.
+  assertTyped: '[1] >= [3]' as: '[true]' desc: 'geq should have int -> int -> bool'.
+
+  assertTyped: 'true < false' as: 'true' desc: 'lt should have bool -> bool -> bool'.
+  assertTyped: 'true > false' as: 'true' desc: 'gt should have bool -> bool -> bool'.
+  assertTyped: 'true <= false' as: 'true' desc: 'leq should have bool -> bool -> bool'.
+  assertTyped: 'true >= false' as: 'true' desc: 'geq should have bool -> bool -> bool'.
+
+  assertTyped: '[["hi"]] < [["bye"]]' as: '[[true]]'
+    desc: 'lt should have str -> str -> bool'.
+  assertTyped: '[["hi"]] > [["bye"]]' as: '[[true]]'
+    desc: 'gt should have str -> str -> bool'.
+  assertTyped: '[["hi"]] <= [["bye"]]' as: '[[true]]'
+    desc: 'leq should have str -> str -> bool'.
+  assertTyped: '[["hi"]] >= [["bye"]]' as: '[[true]]'
+    desc: 'geq should have str -> str -> bool'.
+)
+public testFloats = (
+  assertTyped: '0.213' as: '23.21' desc: 'floats should be typed'.
+  assertNotTyped: '0.102' as: '102' desc: 'float types should be distinct from ints'.
+  assertTyped: 'func f(arg: Num): Int = 3; f(0.3)'
+           as: 'func f(arg: Num): Int = 2; f(10)'
+         desc: 'functions should accept ints or floats when they accept Nums'.
+)
+public testFloatAdd = (
+  | result = typecheckCompilationUnit: '0.32 + 0.10'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Float'.
+)
+public testNoReturn = (
+(*  dummy(x: Int) = x; dummy(3) *)
+  | result = typecheckFileNamed: 'noReturn'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testMakeTensor = (
+  | result = typecheckFileNamed: 'makeTensor'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) baseType constant equals: 2.
+  assert: (result shape dimensions at: 2) baseType constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testBoundedTypes = (
+  assertTyped: 'func f(x: { a: $T <: Num }): $T = x.a; f({ a: 3 })' as: '3'
+    desc: 'bounded types should preserve individual typing'.
+  assertTyped: 'func f(x: { a: $T <: Num }): $T = x.a; f({ a: 3.2 })' as: '3.2'
+    desc: 'bounded types should preserve individual typing, 2'.
+  expectTypeError: 'func f(x: $T <: Num): $T = x; f(true)'.
+  assertTyped: 'func f(x: $T <: Num): $T = x; f([1.8,2.1,3.3])' as: '[2.0,3.1,0.9]'
+    desc: 'bounded types should track inferred types across tensors'.
+  expectTypeError: 'func f(x: $T <: Num): $T = x; f([1.2, 2])'.
+)
+public testGradientDescent = (
+  | result = typecheckFileNamed: 'gradientDescent'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape at: 1) dimension equals: 4.
+  assert: result baseType id equals: 'Int'.
+)
+public testBoundedStructTypes = (
+  assertTyped: 'func f(x: {}) = x; f({foo: 3})' as: '{}' desc: 'width inference w/o bound'.
+  assertTyped: 'func f(x: $T <: {}) = x; f({foo: 3})' as: '{foo: 3}'
+         desc: 'width inference with bound'.
+  assertTyped: 'func f(x: $T <: {n: Num}) = x; f({n: 3.2})' as: '{n: 1.2}'
+         desc: 'depth inference with bound'.
+)
+public testTypeBounds = (
+  assertTyped: 'func f(s: [$d]Float , x: [$e]Int): [$d]Float = s
+                let x = fold(f, [0.1, 0.3], [[1]]); x'
+           as: '[0.1, 0.3]'
+         desc: 'should be able to propagate constraints through folds and funcs'.
+  assertTyped: 'func f(s: { foo: [$z]Float }, x: [$y]Int): { foo: [$z]Float } = s
+                let x = fold(f, { foo: [0.1, 0.3] }, [[1]]); x'
+           as: '{ foo: [0.1, 0.3] }'
+         desc: 'should be able to propagate constraints through structs too'.
+)
+public testScopedTypeVariables = (
+  (* fold(f: $T -> $S -> $T, acc: $T, x:[]::@R $S): @R $T*)
+  assertTyped: 'func f(a: $S, b: $T): $S = a;
+                fold(f, true, [1])'
+           as: 'true'
+         desc: 'should not get confused with differently scoped tyvars'.
+  assertTyped: 'func f(a: $T, b: $S): $T = a;
+                fold(f, true, [1])'
+           as: 'true'
+         desc: 'should not get confused with differently scoped tyvars'.
+)
+public testShapeDimVarInference = (
+  assertTyped: 'func id1(x: [$d]$T): [$d]$T = x; apply(id1, [2])' as: '[2]'
+         desc: 'shape variables should be unified with dimension variable vectors'.
+)
+public testNumericSubtypes = (
+  assertTyped: '3+4.2' as: '0.2' desc: 'ints should be promoted to floats (1)'.
+  assertTyped: '3.2+4' as: '0.2' desc: 'ints should be promoted to floats (2)'.
+)
+public testTimesVec = (
+  assertTyped: 'timesVec' as: 'func f(x: [$d]$T <: Num, y: [$d]$T): [$d]$T = x'
+         desc: 'timesVec should be typeable'.
+)
+public disabled_testRerank = (
+  | result = typecheckFileNamed: 'rerank'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+typecheckCompilationUnit: string <String> ^ <TensorTypeAST> = (
+  ^(Parser new program parseString: string) userType
+)
+public testOuterProduct1 = (
+  | result = typecheckFileNamed: 'outerProduct1'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 3.
+  assert: (result shape dimensions at: 1) constant equals: 1.
+  assert: (result shape dimensions at: 2) constant equals: 1.
+  assert: (result shape dimensions at: 3) constant equals: 6.
+  assert: result baseType id equals: 'Int'.
+)
+public testFold_fst = (
+(*  fst(a: $T, b: $S):$T *)
+  | result = typecheckFileNamed: 'fold_fst'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testReduce = (
+  | result = typecheckFileNamed: 'reduce'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testPolyReduce = (
+  | result = typecheckFileNamed: 'polyReduce'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testPolyReduce2 = (
+  | result = typecheckFileNamed: 'polyReduce2'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
+)
+public testRerank = (
+  | result = typecheckFileNamed: 'rerank'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
+  assert: [equals: ((Parser new program parseString: str1) userType) type: ((Parser new program parseString: str2) userType)]
+    description: d.
+)
+public testWhere = (
+  assertTyped: 'a where a = [5]' as: '[5]' desc: 'expected typing through where'.
+  assertTyped: '[a, a] where a = [b, b] where b = [1, 2]'
+           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres'.
+(*  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
+           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres with shadowing'.*)
+)
+public test_malordered = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'malordered'] 
+)
+public testShapecast1 = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'shapeCast1'] 
+)
+public testPolyEval4 = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'polyEval4'] 
+)
+public testShapecast3 = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'shapeCast3'] 
+)
+public testShapecast4 = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'shapeCast4'] 
+)
+public testPolyEval3 = (
+  | result |
+  expectTypeError: [result:: typecheckFileNamed: 'polyEval3']
+)
+public testPolyEval2 = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'polyEval2'] 
+)
+public testPolyEval1 = (
+  | result |
+  expectTypeError: [result:: typecheckFileNamed: 'polyEval1']
+)
+public testOuterProduct3 = (
+  | result |
+  expectTypeError: [result:: typecheckFileNamed: 'outerProduct3'] 
+)
+public testIota2 = (
+  | result |
+       expectTypeError: [result:: typecheckFileNamed: 'iota2'] 
+)
+public testAppend3 = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'append3'] 
+)
+public testAppend4 = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'append4'] 
+)
+public testAppend5 = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'append5'] 
+)
+public testMissingArg = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'missing_arg'] 
+)
+public testMixedTypeTensor = (
+  | result |
+ expectTypeError: [result:: typecheckFileNamed: 'mixedTypeTensor'] 
+)
+public testOuterProduct = (
+  | result |
+  expectTypeError: [result:: typecheckFileNamed: 'outerProduct'] 
+)
+public testSpuriousConstraints = (
+  | result |
+  assertTyped: 'func f(x: $T, y: $S <: $T): $S = y
+                func g(a: $A, b: $B <: $A): $B = f(a, b); g'
+           as: 'func g(a: $A, b: $B <: $A): $B = b; g'
+         desc: 'when local constraints are stronger than callee constraints, typechecking should succeed'.
+  expectTypeError: [result:: typecheckCompilationUnit: 'func f(x: $T, y: $S <: $T): $S = y
+                                               func g(a: $A, b: $B): $B = f(a, b); g'].
+)
+public testReplicate = (
+  | result = typecheckFileNamed: 'replicate'. |
+  assert: result rank equals: 1.
+  assert: (result shape dimensions at: 1) equals: dynamic.
+  assert: result baseType id equals: 'Int'.
+)
+public testIota3 = (
+  | result = typecheckFileNamed: 'iota3'. |
+
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType id equals: 'Int'.
+)
+public testMask = (
+  | result = typecheckFileNamed: 'mask'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: [(result shape dimensions at: 1) isKindOfUnknownDimensionAST].
+  assert: result baseType id equals: 'Int'.
+)
+) : (
+TEST_CONTEXT = ()
+)
+) : (
+)
