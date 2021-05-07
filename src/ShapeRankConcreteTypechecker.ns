@@ -504,34 +504,6 @@ primitiveTranspose ^ <FunctionAST> = (
   |
   ^FunctionAST named: #transpose parameters: {p} returnType: returnType body: body position: {0. 0}
 )
-primitiveGradientDescent ^ <FunctionAST> = (
-(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
-  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
-    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
-    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
-    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
-    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
-    S = TypeVariableReferenceAST named: #S position: {0. 0}.
-    dS = TensorTypeAST shape: s type: S position: {0. 0}.
-    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
-    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
-    p2 = ParameterAST named: #loss type: F position: {0. 0}.
-    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
-    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
-    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
-    rt = T.
-    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
-      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
-      params baseType isKindOfMap ifFalse: [Error signal].
-      otherParams baseType = params baseType ifFalse: [Error signal].
-      pushActivation:  (Activation of: callee from: {params. otherParams}).
-      loss body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()']
-	  popActivation.      
-      ConcreteType dimensions: {} baseType: params baseType
-    ].
-  |
-  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
-)
 currentActivation ^ <Activation> = (
    ^typeCallStack last
 )
@@ -620,40 +592,6 @@ primitiveMask = (
 |
   ^FunctionAST  named: #mask parameters: ps returnType: returnType body: body position: {0. 0}
 )
-primitiveFold ^ <FunctionAST> = (
-(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
-  |
-  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
-  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  PT = TensorTypeAST shape: P type: T position: {0. 0}.
-  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
-  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
-  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
-  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
-  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
-  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
-  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
-  p3 = ParameterAST named: #x type: tx position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
-  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
-  body = PrimitiveBodyAST block: [:f :acc :x |  | result | (* wrong; this is difficult, probably need framing trick again *)
-  (*check that f is applicable to acc & x *)
-  	 pushActivation:  (Activation of: f baseType from: {acc. acc}).
-	 result:: f baseType body computeType.
-     result = acc ifFalse: [Error signal: 'Function and accumulator parameters disagree in fold'].
-     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
-	 popActivation.
-      ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank), acc dimensions baseType: acc baseType
-    ].
-  |
-  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
-)
 primitiveGt ^ <FunctionAST> = (
   | 
   T = TypeVariableReferenceAST named: #T position: {0. 0}.
@@ -739,53 +677,6 @@ dynamic = (
   (* For now, subtleties between dynamic and ? are ignored *)
   #BOGUS.
   ^unboundedDimension
-)
-primitiveOuterProduct ^ <FunctionAST> = (
-(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
-  | 
-  T1 = TypeVariableReferenceAST named: #T1 position: {0. 0}.
-  T2 = TypeVariableReferenceAST named: #T2 position: {0. 0}.
-  T3 = TypeVariableReferenceAST named: #T3 position: {0. 0}.
-  s1 = ShapeVariableReferenceAST named: #S1 position: {0. 0}.
-  s2 = ShapeVariableReferenceAST named: #S2 position: {0. 0}.
-  s3 = ShapeVariableReferenceAST named: #S3 position: {0. 0}.
-  tpf1 = TensorTypeAST shape: s1 type: T1 position: {0. 0}.  
-  tpf2 = TensorTypeAST shape: s2 type: T2 position: {0. 0}.
-  tpf3 = TensorTypeAST shape: s3 type: T3 position: {0. 0}.
-  F <FunctionAST> = alpha: tpf1 toBeta: tpf2 toGamma: tpf3.
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.  
-  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
-  s4 = ShapeVariableReferenceAST named: #S4 position: {0. 0}.
-  s5 = ShapeVariableReferenceAST named: #S5 position: {0. 0}.
-  sa1 = ShapeAppendAST shape: sv1 to: s4 position: {0. 0}.
-  as = ShapeAppendAST shape: sa1 to: s1 position: {0. 0}.
-  sa2 = ShapeAppendAST shape: sv2 to: s5 position: {0. 0}.
-  bs = ShapeAppendAST shape: sa2 to: s2 position: {0. 0}.  
-  rs = ShapeAppendAST shape: sa1 to: (ShapeAppendAST shape: sa2 to: s3 position: {0. 0})  position: {0. 0}.
-  t1 = TensorTypeAST shape: as type: T1 position: {0. 0}.
-  t2 = TensorTypeAST shape: bs type: T2 position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #a type: t1 position: {0. 0}.
-  p3 = ParameterAST named: #b type: t2 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  body = PrimitiveBodyAST block: [:f <ConcreteType> :a <ConcreteType> :b <ConcreteType> |  
-    | 
-    fun <FunctionAST> = f baseType.
-    call  (*  hard part - how to make the call to f? Frame each arg separately. Then use their cells as args to f. *)
-    frames <List[Frame]> = frameArguments: {a. b} of: fun.
-    argVector <List[ConcreteType]> = frames collect: [:frame <Frame> | frame cells].
-    |
-    fun isKindOfFunctionAST ifFalse: [Error signal: 'First parameter to  outerProduct must be function '].
-    pushActivation: (Activation of: fun from: argVector).
-    call:: fun body computeType.
-    popActivation.
-	ConcreteType dimensions: frames first dimensions, frames last dimensions, call dimensions baseType: call baseType
-	]. 
-   returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
-  |
-  ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
 )
 frameArgument: arg <ConcreteType> forParameter: p <ParameterAST> ^ <Frame> = (
   p hasRank ifFalse: [
@@ -1091,75 +982,6 @@ primitiveRotate ^ <FunctionAST> = (
   |
   ^FunctionAST named: #rotate parameters: ps returnType: returnType body: body position: {0. 0}  
 )
-primitiveScan ^ <FunctionAST> = (
-(*  scan(f: @S $T-> @S $T-> @S $T, acc: @S $T, x:[d]::@R::@S $T):[d]::@R::@S $T *)
-  | 
-  d = DimensionVariableReferenceAST named: #d position: {0. 0}.
-  F <FunctionAST> = reducibleFunction_s.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
-  t2 = TensorTypeAST shape: S type: T position: {0. 0}. 
-  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.  
-  sv3 = ShapeVectorAST dimensions: {d} position: {0. 0}.
-  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.  
-  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  body = PrimitiveBodyAST block: [:f :acc :x |
-    | 
-    result 
-    gcs = acc greatestCommonBaseTypeWith: x.
-    |
-    gcs isNil ifTrue: [Error signal: 'scan'].
-  (*check that f is applicable to acc & x *)
-  	 pushActivation:  (Activation of: f baseType from: {acc. acc}).
-	 result:: f baseType body computeType.
-     result = acc ifFalse: [Error signal: 'Function and accumulator parameters disagree in scan'].
-     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
-	 popActivation.
-     ConcreteType dimensions: x dimensions, acc dimensions baseType: acc baseType    
-	]. 
-  |
-  ^FunctionAST  named: #scan parameters: ps returnType: t3 body: body position: {0. 0}  
-)
-primitiveReduce ^ <FunctionAST> = (
-(*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
-  | 
-  d3 = DimensionVariableReferenceAST named: #d3 position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
-  t2 = TensorTypeAST shape: S type: T position: {0. 0}.
-  F <FunctionAST> = reducibleFunction_s.
-  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.
-  sv3 = ShapeVectorAST dimensions: {d3} position: {0. 0}.  
-  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.
-  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
-  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  rt = TensorTypeAST shape: s2 type: T position: {0. 0}.
-  body = PrimitiveBodyAST block: [:f :acc :x |  
-    | 
-    result 
-    gcs = acc greatestCommonBaseTypeWith: x.
-    |
-    gcs isNil ifTrue: [Error signal: 'Function and accumulator parameters disagree in reduce'].
-  (*check that f is applicable to acc & x *)
-  	 pushActivation:  (Activation of: f baseType from: {acc. acc}).
-	 result:: f baseType body computeType.
-     result = acc ifFalse: [Error signal: 'reduce'].
-     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
-	 popActivation.
-    ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank), acc dimensions baseType: gcs
-	]. 
-  |
-  ^FunctionAST  named: #reduce parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
-)
 primitiveIf  ^ <FunctionAST> = (
 (* if(c: Bool, t: $T, e: $T): $T *)
   | 
@@ -1203,6 +1025,200 @@ primitiveContains ^ <FunctionAST> = (
 	].
 |
   ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
+)
+primitiveReduce ^ <FunctionAST> = (
+(*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
+  | 
+  d3 = DimensionVariableReferenceAST named: #d3 position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
+  t2 = TensorTypeAST shape: S type: T position: {0. 0}.
+  F <FunctionAST> = reducibleFunction_s.
+  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.
+  sv3 = ShapeVectorAST dimensions: {d3} position: {0. 0}.  
+  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.
+  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  rt = TensorTypeAST shape: s2 type: T position: {0. 0}.
+  body = PrimitiveBodyAST block: [:f :acc :x |  
+    | 
+    result 
+    gcs = acc greatestCommonBaseTypeWith: x.
+    arg = ConcreteType dimensions: acc dimensions baseType: gcs.
+    |
+    (* no need to check that x is of rank > 0. Call semantics ensure that *)
+    gcs isNil ifTrue: [Error signal: 'Tensor and accumulator parameters disagree in reduce'].
+  (*check that f is applicable to its arguments *)
+  	 pushActivation:  (Activation of: f baseType from: {arg. arg}).
+	 result:: f baseType body computeType.
+     result = arg ifFalse: [Error signal: 'reduce'].
+     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
+	 popActivation.
+    ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank), acc dimensions baseType: gcs
+	]. 
+  |
+  ^FunctionAST  named: #reduce parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveScan ^ <FunctionAST> = (
+(*  scan(f: @S $T-> @S $T-> @S $T, acc: @S $T, x:[d]::@R::@S $T):[d]::@R::@S $T *)
+  | 
+  d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  F <FunctionAST> = reducibleFunction_s.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}. 
+  t2 = TensorTypeAST shape: S type: T position: {0. 0}. 
+  s2 = ShapeAppendAST shape: R to: S  position: {0. 0}.  
+  sv3 = ShapeVectorAST dimensions: {d} position: {0. 0}.
+  s3 = ShapeAppendAST shape: sv3 to: s2  position: {0. 0}.  
+  t3 = TensorTypeAST shape: s3 type: T position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: t2 position: {0. 0}.
+  p3 = ParameterAST named: #x type: t3 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  body = PrimitiveBodyAST block: [:f :acc :x |
+    | 
+    result 
+    gcs = acc greatestCommonBaseTypeWith: x.
+    arg = ConcreteType dimensions: acc dimensions baseType: gcs.    
+    |
+   (* no need to check that x is of rank > 0. Call semantics ensure that *)
+    gcs isNil ifTrue: [Error signal: 'Tensor and accumulator parameters disagree in scan'].
+  (*check that f is applicable to its arguments *)
+  	 pushActivation:  (Activation of: f baseType from: {arg. arg}).
+	 result:: f baseType body computeType.
+     result = arg ifFalse: [Error signal: 'Function and accumulator parameters disagree in scan'].
+     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
+	 popActivation.
+     ConcreteType dimensions: x dimensions, acc dimensions baseType: gcs    
+	]. 
+  |
+  ^FunctionAST  named: #scan parameters: ps returnType: t3 body: body position: {0. 0}  
+)
+primitiveFold ^ <FunctionAST> = (
+(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
+  |
+  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
+  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  PT = TensorTypeAST shape: P type: T position: {0. 0}.
+  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
+  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
+  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
+  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
+  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
+  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
+  p3 = ParameterAST named: #x type: tx position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
+  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
+  body = PrimitiveBodyAST block: [:f :acc :x |  
+    | 
+    result 
+    fun = f baseType.
+    fx = (frameArgument: x forParameter: (fun parameters last)) cells.
+    gcs = fx greatestCommonBaseTypeWith: x. 
+    arg = ConcreteType dimensions: acc dimensions baseType: gcs. 
+    | 
+  (*check that f is applicable to acc & (properly framed) x *)
+  	 pushActivation:  (Activation of: fun from: {arg. fx}).
+	 result:: fun body computeType.
+     result = arg ifFalse: [Error signal: 'Function and accumulator parameters disagree in fold'].
+     (* Also need to verify that x dimensions has a tail that matches acc dimensions *)
+	 popActivation.
+      ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank), acc dimensions baseType: result baseType
+    ].
+  |
+  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveGradientDescent ^ <FunctionAST> = (
+(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
+  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
+    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
+    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
+    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
+    S = TypeVariableReferenceAST named: #S position: {0. 0}.
+    dS = TensorTypeAST shape: s type: S position: {0. 0}.
+    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
+    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
+    p2 = ParameterAST named: #loss type: F position: {0. 0}.
+    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
+    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
+    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
+    rt = T.
+    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
+      | gcs = params greatestCommonBaseTypeWith: otherParams. |
+      
+      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
+      params baseType isKindOfMap ifFalse: [Error signal].
+      gcs isNil ifTrue: [Error signal: 'Second and third parameters to gradientDescent are of mismatched types'].
+      pushActivation:  (Activation of: loss baseType from: {params. otherParams}).
+      loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()']
+	  popActivation.      
+      ConcreteType dimensions: {} baseType: gcs
+    ].
+  |
+  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
+)
+primitiveOuterProduct ^ <FunctionAST> = (
+(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
+  | 
+  T1 = TypeVariableReferenceAST named: #T1 position: {0. 0}.
+  T2 = TypeVariableReferenceAST named: #T2 position: {0. 0}.
+  T3 = TypeVariableReferenceAST named: #T3 position: {0. 0}.
+  s1 = ShapeVariableReferenceAST named: #S1 position: {0. 0}.
+  s2 = ShapeVariableReferenceAST named: #S2 position: {0. 0}.
+  s3 = ShapeVariableReferenceAST named: #S3 position: {0. 0}.
+  tpf1 = TensorTypeAST shape: s1 type: T1 position: {0. 0}.  
+  tpf2 = TensorTypeAST shape: s2 type: T2 position: {0. 0}.
+  tpf3 = TensorTypeAST shape: s3 type: T3 position: {0. 0}.
+  F <FunctionAST> = alpha: tpf1 toBeta: tpf2 toGamma: tpf3.
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  sv1 = ShapeVectorAST dimensions: {d1} position: {0. 0}.  
+  sv2 = ShapeVectorAST dimensions: {d2} position: {0. 0}.
+  s4 = ShapeVariableReferenceAST named: #S4 position: {0. 0}.
+  s5 = ShapeVariableReferenceAST named: #S5 position: {0. 0}.
+  sa1 = ShapeAppendAST shape: sv1 to: s4 position: {0. 0}.
+  as = ShapeAppendAST shape: sa1 to: s1 position: {0. 0}.
+  sa2 = ShapeAppendAST shape: sv2 to: s5 position: {0. 0}.
+  bs = ShapeAppendAST shape: sa2 to: s2 position: {0. 0}.  
+  rs = ShapeAppendAST shape: sa1 to: (ShapeAppendAST shape: sa2 to: s3 position: {0. 0})  position: {0. 0}.
+  t1 = TensorTypeAST shape: as type: T1 position: {0. 0}.
+  t2 = TensorTypeAST shape: bs type: T2 position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #a type: t1 position: {0. 0}.
+  p3 = ParameterAST named: #b type: t2 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  body = PrimitiveBodyAST block: [:f <ConcreteType> :a <ConcreteType> :b <ConcreteType> |  
+    | 
+    fun <FunctionAST> = f baseType.
+    call  (*  hard part - how to make the call to f? Frame each arg separately. Then use their cells as args to f. *)
+    (* Remember to peal off first dim from incoming tensors, as it is the tensor elements that are fed to f. *)
+    frames <List[Frame]> = frameArguments: {ConcreteType dimensions: (a dimensions copyFrom: 2 to: a rank) baseType: a baseType. ConcreteType dimensions: (b dimensions copyFrom: 2 to: b rank) baseType: b baseType} of: fun.
+    argVector <List[ConcreteType]> = frames collect: [:frame <Frame> | frame cells].
+    |
+    a rank < 1 ifTrue: [Error signal: 'Second argument to outerProduct must be of rank > 0'].
+    b rank < 1 ifTrue: [Error signal: 'Third argument to outerProduct must be of rank > 0'].    
+    fun isKindOfFunctionAST ifFalse: [Error signal: 'First parameter to outerProduct must be a function '].
+    pushActivation: (Activation of: fun from: argVector).
+    call:: fun body computeType.
+    popActivation.
+	ConcreteType dimensions: {a dimensions first}, frames first dimensions, {b dimensions first}, frames last dimensions, call dimensions baseType: call baseType
+	]. 
+   returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
+  |
+  ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
 )
 ) : (
 )

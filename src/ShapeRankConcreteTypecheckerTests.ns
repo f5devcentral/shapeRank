@@ -77,13 +77,6 @@ public testAppend6 = (
   assert: (result shape dimensions at: 2) constant equals: 3.
   assert: result baseType id equals: 'Int'.
 )
-public testAsArray  = (
-(* asArray(x: Int):[1]Int *)
-  | result = typecheckFileNamed: 'asArray'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 1.
-  assert: result baseType id equals: 'Int'.
-)
 public testContains_false  = (
 (* asArray(x: Int):Int *)
   | result = typecheckFileNamed: 'contains_false'. |
@@ -121,12 +114,6 @@ public testIdentity_3 = (
   assert: result shape rank equals: 0.
   assert: result baseType isKindOfDimensionNumberAST.
   assert: result baseType dimension = 3.
-)
-public testIdentity_rec = (
-  | result = typecheckFileNamed: 'identity_rec'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 0.
-  assert: result baseType id equals: 'Int'.
 )
 public testIff11 = (
   | result = typecheckFileNamed: 'if11'. |
@@ -338,19 +325,6 @@ public testStruct = (
   assertTyped: '{a: 3, b: false}.b' as: 'true'
          desc: 'struct dot should index its type'.
 )
-public testStructFn = (
-  assertTyped: 'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
-           as: 'func f(x: Int): Int = x; f(5)'
-         desc: 'functions should show depth subtyping of structs'.
-  assertTyped: 'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
-                f({x: [1,2,3,4], y: [5,6,7,8]})'
-           as: '[0,0,0,0,0,0,0,0]'
-         desc: 'functions should propagate struct-inner types'.
-  assertTyped: 'func f(arg: [$d]{x: Int}): [$d]Int = arg.x;
-                f([{x: 1}, {x: 2}, {x: 3}])'
-           as: '[0,0,0]'
-         desc: 'functions should propagate struct-inner shapes'.
-)
 public testStringLit = (
   assertTyped: '"hello"' as: '"world"' desc: 'strings should be typed'.
   assertNotTyped: '"hello"' as: '4' desc: 'string type should be distinct from int'.
@@ -376,25 +350,11 @@ public testRelOps = (
   assertTyped: '[["hi"]] >= [["bye"]]' as: '[[true]]'
     desc: 'geq should have str -> str -> bool'.
 )
-public testFloats = (
-  assertTyped: '0.213' as: '23.21' desc: 'floats should be typed'.
-  assertNotTyped: '0.102' as: '102' desc: 'float types should be distinct from ints'.
-  assertTyped: 'func f(arg: Num): Int = 3; f(0.3)'
-           as: 'func f(arg: Num): Int = 2; f(10)'
-         desc: 'functions should accept ints or floats when they accept Nums'.
-)
 public testFloatAdd = (
   | result = typecheckCompilationUnit: '0.32 + 0.10'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
   assert: result shape rank equals: 0.
   assert: result baseType id equals: 'Float'.
-)
-public testNoReturn = (
-(*  dummy(x: Int) = x; dummy(3) *)
-  | result = typecheckFileNamed: 'noReturn'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 0.
-  assert: result baseType id equals: 'Int'.
 )
 public testMakeTensor = (
   | result = typecheckFileNamed: 'makeTensor'. |
@@ -420,13 +380,6 @@ public testGradientDescent = (
   assert: result shape rank equals: 1.
   assert: (result shape at: 1) dimension equals: 4.
   assert: result baseType id equals: 'Int'.
-)
-public testBoundedStructTypes = (
-  assertTyped: 'func f(x: {}) = x; f({foo: 3})' as: '{}' desc: 'width inference w/o bound'.
-  assertTyped: 'func f(x: $T <: {}) = x; f({foo: 3})' as: '{foo: 3}'
-         desc: 'width inference with bound'.
-  assertTyped: 'func f(x: $T <: {n: Num}) = x; f({n: 3.2})' as: '{n: 1.2}'
-         desc: 'depth inference with bound'.
 )
 public testTypeBounds = (
   assertTyped: 'func f(s: [$d]Float , x: [$e]Int): [$d]Float = s
@@ -519,15 +472,6 @@ assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
   assert: [equals: ((Parser new program parseString: str1) userType) type: ((Parser new program parseString: str2) userType)]
     description: d.
 )
-public testWhere = (
-  assertTyped: 'a where a = [5]' as: '[5]' desc: 'expected typing through where'.
-  assertTyped: '[a, a] where a = [b, b] where b = [1, 2]'
-           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
-         desc: 'expected typing through multiple wheres'.
-(*  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
-           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
-         desc: 'expected typing through multiple wheres with shadowing'.*)
-)
 public test_malordered = (
   | result |
  expectTypeError: [result:: typecheckFileNamed: 'malordered'] 
@@ -547,10 +491,6 @@ public testShapecast3 = (
 public testShapecast4 = (
   | result |
  expectTypeError: [result:: typecheckFileNamed: 'shapeCast4'] 
-)
-public testPolyEval3 = (
-  | result |
-  expectTypeError: [result:: typecheckFileNamed: 'polyEval3']
 )
 public testPolyEval2 = (
   | result |
@@ -604,12 +544,6 @@ public testSpuriousConstraints = (
   expectTypeError: [result:: typecheckCompilationUnit: 'func f(x: $T, y: $S <: $T): $S = y
                                                func g(a: $A, b: $B): $B = f(a, b); g'].
 )
-public testReplicate = (
-  | result = typecheckFileNamed: 'replicate'. |
-  assert: result rank equals: 1.
-  assert: (result shape dimensions at: 1) equals: dynamic.
-  assert: result baseType id equals: 'Int'.
-)
 public testIota3 = (
   | result = typecheckFileNamed: 'iota3'. |
 
@@ -623,6 +557,73 @@ public testMask = (
   assert: result shape rank equals: 1.
   assert: [(result shape dimensions at: 1) isKindOfUnknownDimensionAST].
   assert: result baseType id equals: 'Int'.
+)
+public testReplicate = (
+  | result = typecheckFileNamed: 'replicate'. |
+  assert: result rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType id equals: 'Int'.
+)
+public testIdentity_rec = (
+  | result = typecheckFileNamed: 'identity_rec'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType dimension equals: 3.
+)
+public testNoReturn = (
+(*  dummy(x: Int) = x; dummy(3) *)
+  | result = typecheckFileNamed: 'noReturn'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType dimension equals: 3.
+)
+public testAsArray  = (
+(* asArray(x: Int):[1]Int *)
+  | result = typecheckFileNamed: 'asArray'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: result baseType dimension equals: 42.
+)
+public testPolyEval3 = (
+  | result = typecheckFileNamed: 'polyEval3'. |
+  assert: result rank = 0.
+  assert: result baseType id = 'Int'.
+)
+public testFloats = (
+  assertTyped: '0.213' as: '23.21' desc: 'floats should be typed'.
+  assertNotTyped: '0.102' as: '102' desc: 'float types should be distinct from ints'.
+  assertTyped: 'func f(arg: Num): Int = 3; f(0.3)'
+           as: 'func f(arg: Num): Int = 3; f(10)'
+         desc: 'functions should accept ints or floats when they accept Nums'.
+)
+public testStructFn = (
+  assertTyped: 'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
+           as: 'func f(x: Int): Int = x; f(4)'
+         desc: 'functions should show depth subtyping of structs'.
+  assertTyped: 'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
+                f({x: [1,2,3,4], y: [5,6,7,8]})'
+           as: '[0,0,0,0,0,0,0,1]'
+         desc: 'functions should propagate struct-inner types'.
+  assertTyped: 'func f(arg: [$d]{x: Int}): [$d]Int = arg.x;
+                f([{x: 1}, {x: 2}, {x: 3}])'
+           as: '[0,0,1]'
+         desc: 'functions should propagate struct-inner shapes'.
+)
+public testWhere = (
+  assertTyped: 'a where a = [5]' as: '[5]' desc: 'expected typing through where'.
+  assertTyped: '[a, a] where a = [b, b] where b = [1, 2]'
+           as: '[[[0, 0], [0, 1]], [[1, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres'.
+(*  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
+           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres with shadowing'.*)
+)
+public testBoundedStructTypes = (
+  assertTyped: 'func f(x: {}) = x; f({foo: 3})' as: '{foo: 3}' desc: 'width inference w/o bound'.
+  assertTyped: 'func f(x: $T <: {}) = x; f({foo: 3})' as: '{foo: 3}'
+         desc: 'width inference with bound'.
+  assertTyped: 'func f(x: $T <: {n: Num}) = x; f({n: 3.2})' as: '{n: 1.2}'
+         desc: 'depth inference with bound'.
 )
 ) : (
 TEST_CONTEXT = ()
