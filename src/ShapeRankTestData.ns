@@ -752,5 +752,12 @@ test_pair_stream_sync1 ^ <String> = (
 pair([1, 2, 3, 4], s)
 '
 )
+test_fold_snd = (
+(* fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
+^'
+func snd(a: $A, b: $B): $B = b; 
+fold(snd, 2, [1, 2, 3])
+'
+)
 ) : (
 )

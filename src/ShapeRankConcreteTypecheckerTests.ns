@@ -426,22 +426,8 @@ public testOuterProduct1 = (
   assert: (result shape dimensions at: 3) constant equals: 6.
   assert: result baseType id equals: 'Int'.
 )
-public testFold_fst = (
-(*  fst(a: $T, b: $S):$T *)
-  | result = typecheckFileNamed: 'fold_fst'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 0.
-  assert: result baseType id equals: 'Int'.
-)
 public testReduce = (
   | result = typecheckFileNamed: 'reduce'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 1.
-  assert: (result shape dimensions at: 1) constant equals: 3.
-  assert: result baseType id equals: 'Int'.
-)
-public testPolyReduce = (
-  | result = typecheckFileNamed: 'polyReduce'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
   assert: result shape rank equals: 1.
   assert: (result shape dimensions at: 1) constant equals: 3.
@@ -624,6 +610,27 @@ public testPrimes = (
   assert: result shape rank equals: 1.
   assert: [(result shape dimensions at: 1) isKindOfUnknownDimensionAST].
   assert: result baseType id equals: 'Int'.
+)
+public testFold_snd = (
+(*  snd(a: $T, b: $S):$S *)
+  | result = typecheckFileNamed: 'fold_snd'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Int'.
+)
+public testFold_fst = (
+(*  fst(a: $T, b: $S):$T *)
+  | result = typecheckFileNamed: 'fold_fst'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType dimension equals: 2.
+)
+public testPolyReduce = (
+  | result = typecheckFileNamed: 'polyReduce'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 3.
+  assert: result baseType dimension equals: 0.
 )
 ) : (
 TEST_CONTEXT = ()
