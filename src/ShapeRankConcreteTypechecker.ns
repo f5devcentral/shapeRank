@@ -22,6 +22,7 @@ public class TypeInterpreter usingPlatform: p
   | 
   typeCallStack <List[Activation]> = List new. 
   unboundedDimension = UnboundedDimension new.
+  scopeStack <List[ScopeAST]> = List new.
   |
 ) (
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
@@ -176,7 +177,13 @@ public computeType ^ <ConcreteType> = (
 public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = super WhereAST expr1: e1 ident: id expr2: e2 position: p (
 ) (
 public computeType ^ <ConcreteType> = (
-  ^expr1 computeType
+ | 
+ result  localScope = Scope new. |
+  localScope at: ident putNode: expr2 computeType.
+  pushScope: localScope.
+  result:: expr1 computeType.
+  popScope.
+  ^result
 )
 ) : (
 )
@@ -1219,6 +1226,20 @@ primitiveOuterProduct ^ <FunctionAST> = (
    returnType = TensorTypeAST shape: rs type: T3 position: {0. 0}.
   |
   ^FunctionAST  named: #outerProduct parameters: ps returnType: returnType body: body position: {0. 0}  
+)
+currentScope ^  <Scope> = (
+  scopeStack isEmpty ifTrue: [^programScope].
+  ^scopeStack last
+)
+popScope  = (
+  scopeStack removeLast
+)
+pushScope: s <Scope> = (
+  scopeStack add: s
+)
+public Scope ^ <Scope class> = (
+  (* provide access for nested classes *)
+  ^super Scope
 )
 ) : (
 )

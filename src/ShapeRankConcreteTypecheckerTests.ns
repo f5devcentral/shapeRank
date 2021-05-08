@@ -224,13 +224,6 @@ public testPointwiseVectorScalar = (
   assert: (result shape dimensions at: 1) constant equals: 3.
   assert: result baseType id equals: 'Int'.
 )
-public testPrimes = (
-  | result = typecheckFileNamed: 'primes'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 1.
-  assert: [(result shape dimensions at: 1) isKindOfDynamicTypeAST].
-  assert: result baseType id equals: 'Int'.
-)
 public testRange = (
   | result = typecheckFileNamed: 'range'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -624,6 +617,13 @@ public testBoundedStructTypes = (
          desc: 'width inference with bound'.
   assertTyped: 'func f(x: $T <: {n: Num}) = x; f({n: 3.2})' as: '{n: 1.2}'
          desc: 'depth inference with bound'.
+)
+public testPrimes = (
+  | result = typecheckFileNamed: 'primes'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: [(result shape dimensions at: 1) isKindOfUnknownDimensionAST].
+  assert: result baseType id equals: 'Int'.
 )
 ) : (
 TEST_CONTEXT = ()
