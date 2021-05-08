@@ -27,7 +27,7 @@ public class TypeInterpreter usingPlatform: p
 ) (
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
 ) (
-public computeType ^ <ConcreteType>  = (
+public computeTensorType ^ <ConcreteType>  = (
   | 
   elementType = (expressions collect: [:e <ExprAST> | e computeType])
      reduce: [:t1 <ConcreteType> :t2 <ConcreteType> | 
@@ -39,6 +39,16 @@ public computeType ^ <ConcreteType>  = (
        ] ifEmpty: [Error signal: 'Empty tensor literal is not legal' ].
  |
  ^ConcreteType dimensions: (List withAll: {expressions size}, elementType dimensions) baseType: elementType baseType 
+)
+public computeType ^ <ConcreteType>  = (
+  ^isShape ifFalse: [computeTensorType] ifTrue: [computeShapeType]
+)
+public computeShapeType ^ <ConcreteType> = (
+  | elementTypes <List[ConcreteType]> = expressions collect: [:e  <ExprAST> | e computeType]. |
+  elementTypes allSatisfy: [:e <ConcreteType> | e baseType isKindOfInteger].
+  (* How do we track that this intended to be a shape? *)
+  #BOGUS. 
+  ^ConcreteType dimensions: (elementTypes collect: [:e | e baseType]) baseType: 'Int'
 )
 ) : (
 )
@@ -430,25 +440,6 @@ zipFrame: l <List[Frame]> ^ <Frame>  = (
 
  l do: [:e | e dimensions with: dims do: [:d1 :d2 | d1 = d2 ifFalse: [Error signal: 'Argument frames of varying rank']]].
   ^Frame dimensions: dims cells: zippedCells.
-)
-primitiveMakeTensor ^ <FunctionAST> = (
-(* makeTensor(dims: @S, contents: []$T):@S $T *)
-  | 
-  s = ShapeVariableReferenceAST  named: #S position: {0. 0}.
-  t1 = TensorTypeAST shape: s type: integerType position: {0. 0}.
-  d = DimensionVariableReferenceAST named: #'$d' position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  s2 = ShapeVectorAST dimensions: {d} position: {0. 0}.
-  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
-  p1 = ParameterAST named: #dims type: t1 position: {0. 0}.
-  p2 = ParameterAST named: #contents type: t2 position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2}.
-  body = PrimitiveBodyAST block: [:dims :contents | 
-      subdivide: (tensorToContent: contents) by: (tensorToDimensions: dims) offset: 0
-	]. 
-  returnType = TensorTypeAST shape: s type: integerType position: {0. 0}.
-  |
-  ^FunctionAST named: #makeTensor parameters: ps returnType: returnType body: body position: {0. 0}
 )
 primitiveNegate ^ <FunctionAST> = (
   | 
@@ -1240,6 +1231,26 @@ pushScope: s <Scope> = (
 public Scope ^ <Scope class> = (
   (* provide access for nested classes *)
   ^super Scope
+)
+primitiveMakeTensor ^ <FunctionAST> = (
+(* makeTensor(dims: @S, contents: []$T):@S $T *)
+  | 
+  s = ShapeVariableReferenceAST  named: #S position: {0. 0}.
+  t1 = TensorTypeAST shape: s type: integerType position: {0. 0}.
+  d = DimensionVariableReferenceAST named: #'$d' position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  s2 = ShapeVectorAST dimensions: {d} position: {0. 0}.
+  t2 = TensorTypeAST shape: s2 type: T position: {0. 0}.
+  p1 = ParameterAST named: #dims type: t1 position: {0. 0}.
+  p2 = ParameterAST named: #contents type: t2 position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2}.
+  body = PrimitiveBodyAST block: [:dims :contents | 
+      dims baseType = 'Int' ifFalse: [Error signal: 'Dimensions must be integers'].
+      ConcreteType dimensions: dims dimensions baseType: contents baseType
+	]. 
+  returnType = TensorTypeAST shape: s type: integerType position: {0. 0}.
+  |
+  ^FunctionAST named: #makeTensor parameters: ps returnType: returnType body: body position: {0. 0}
 )
 ) : (
 )
