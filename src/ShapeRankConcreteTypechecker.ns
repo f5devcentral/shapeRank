@@ -172,8 +172,11 @@ public computeType ^ <ConcreteType> = (
 public class StructDotAST expr: expr <ExprAST> label: label <Symbol> position: p <{Integer. Integer}> = super StructDotAST expr: expr label: label position: p (
 ) (
 public computeType ^ <ConcreteType> = (
-  | structType = expr computeType. |
-  ^structType baseType at: label ifAbsent: [Error signal: structType printString, ' does not support field ', label] 
+  | 
+  structType = expr computeType. 
+  fieldType = structType baseType at: label ifAbsent: [Error signal: structType printString, ' does not support field ', label].
+  |
+  ^ConcreteType dimensions: structType dimensions, fieldType dimensions baseType: fieldType baseType.
 )
 ) : (
 )
@@ -936,18 +939,6 @@ primitiveAppend ^ <FunctionAST> = (
   |
   ^FunctionAST named: #append parameters: ps returnType: returnType body: body position: {0. 0}  
 )
-primitiveDivide ^ <FunctionAST> = (
-  | 
-  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
-                             makeParamNamed: #b typeVar: #T}.
-  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
-    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to / '].
-    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to /'].
-    ConcreteType dimensions: {} baseType: 'Num'
-    ]. 
-  |
-  ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType asTensorType body: body position: {0. 0}
-)
 primitiveIota ^ <FunctionAST> = (
 (* iota(n: $d): [$d]Int *)
   | 
@@ -1138,53 +1129,6 @@ primitiveMakeTensor ^ <FunctionAST> = (
   |
   ^FunctionAST named: #makeTensor parameters: ps returnType: returnType body: body position: {0. 0}
 )
-primitiveFold ^ <FunctionAST> = (
-(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
-  |
-  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
-  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
-  T = TypeVariableReferenceAST named: #T position: {0. 0}.
-  S = TypeVariableReferenceAST named: #S position: {0. 0}.
-  PT = TensorTypeAST shape: P type: T position: {0. 0}.
-  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
-  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
-  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
-  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
-  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
-  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
-  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
-  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
-  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
-  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
-  p3 = ParameterAST named: #x type: tx position: {0. 0}.
-  ps <List[ParameterAST]> = {p1. p2. p3}.
-  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
-  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
-  body = PrimitiveBodyAST block: [:f :acc :x |  
-    | 
-    result 
-    fun = f baseType.
-    fx = (frameArgument: x forParameter: (fun parameters last)) cells.
-    prevAcc ::= acc.
-    callF = [:a :e | | retVal |
-      (*check that f is applicable to acc & (properly framed) x *)
-      pushActivation:  (Activation of: fun from: {prevAcc. fx}).
-      retVal:: fun body computeType.
-	  popActivation. 
-      retVal
-    ].
-    | 
-     (* need to do fix point computation to figure out true result type *)
-     [result:: callF value: prevAcc value: fx. prevAcc = result] whileFalse: [
-       | nbase = prevAcc greatestCommonBaseTypeWith: result. |
-       nbase isNil ifTrue: [Error signal: 'Function parameter to fold has return type inconsistent with its first argument'].
-       prevAcc:: ConcreteType dimensions: acc dimensions baseType: nbase
-     ].
-      ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank), acc dimensions baseType: result baseType
-    ].
-  |
-  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
-)
 primitiveReduce ^ <FunctionAST> = (
 (*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
   | 
@@ -1275,6 +1219,65 @@ primitiveScan ^ <FunctionAST> = (
 	]. 
   |
   ^FunctionAST  named: #scan parameters: ps returnType: t3 body: body position: {0. 0}  
+)
+primitiveDivide ^ <FunctionAST> = (
+  | 
+  ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
+                             makeParamNamed: #b typeVar: #T}.
+  body = PrimitiveBodyAST block: [:x <ConcreteType> :y <ConcreteType> | 
+    x isNumeric ifFalse: [Error signal: 'invalid first parameter passed to / '].
+    y isNumeric ifFalse: [Error signal: 'invalid second parameter passed to /'].
+    ConcreteType dimensions: {} baseType: 'Float'
+    ]. 
+  |
+  ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType asTensorType body: body position: {0. 0}
+)
+primitiveFold ^ <FunctionAST> = (
+(*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
+  |
+  P = ShapeVariableReferenceAST named: #P position: {0. 0}.
+  Q = ShapeVariableReferenceAST named: #Q position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  S = TypeVariableReferenceAST named: #S position: {0. 0}.
+  PT = TensorTypeAST shape: P type: T position: {0. 0}.
+  QS = TensorTypeAST shape: Q type: S position: {0. 0}.
+  F <FunctionAST> = alpha: PT toBeta: QS toGamma: PT.
+  R = ShapeVariableReferenceAST named: #R position: {0. 0}.
+  dx = DimensionVariableReferenceAST named: #d position: {0. 0}.
+  sdx = ShapeVectorAST dimensions: {dx} position: {0. 0}.
+  RQ = ShapeAppendAST shape: R to: Q position: {0. 0}.
+  dxRQ = ShapeAppendAST shape: sdx to: RQ position: {0. 0}.
+  tx = TensorTypeAST shape: dxRQ type: S position: {0. 0}.
+  p1 = ParameterAST named: #f type: F asTensorType position: {0. 0}.
+  p2 = ParameterAST named: #acc type: PT asTensorType position: {0. 0}.
+  p3 = ParameterAST named: #x type: tx position: {0. 0}.
+  ps <List[ParameterAST]> = {p1. p2. p3}.
+  RP = ShapeAppendAST shape: R to: P position: {0. 0}.
+  rt = TensorTypeAST shape: RP type: T position: {0. 0}.
+  body = PrimitiveBodyAST block: [:f :acc :x |  
+    | 
+    result 
+    fun = f baseType.
+    fx = (frameArgument: x forParameter: (fun parameters last)) cells.
+    prevAcc ::= acc.
+    callF = [:a :e | | retVal |
+      (*check that f is applicable to acc & (properly framed) x *)
+      pushActivation:  (Activation of: fun from: {prevAcc. fx}).
+      retVal:: fun body computeType.
+	  popActivation. 
+      retVal
+    ].
+    | 
+     (* need to do fix point computation to figure out true result type *)
+     [result:: callF value: prevAcc value: fx. prevAcc = result] whileFalse: [
+       | nbase = prevAcc greatestCommonBaseTypeWith: result. |
+       nbase isNil ifTrue: [Error signal: 'Function parameter to fold has return type inconsistent with its first argument'].
+       prevAcc:: ConcreteType dimensions: acc dimensions baseType: nbase
+     ].
+      ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank - fx dimensions size), acc dimensions baseType: result baseType
+    ].
+  |
+  ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
 )
 ) : (
 )

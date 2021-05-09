@@ -759,5 +759,84 @@ func snd(a: $A, b: $B): $B = b;
 fold(snd, 2, [1, 2, 3])
 '
 )
-) : (
+test_argmax = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+     avg(crossEntropyLoss(data.yp, model(params, data.x)))
+   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
+             { W: [$cn][$fn]Float, b: [$cn]Float } =
+     gradientDescent(0.05, loss, params, data)
+   let trainedParams = fold(train, initParams, trainingSet)
+;
+   argmax(model(trainedParams, [0.25, 0.65]))'
+)
+test_trainedParams = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+     avg(crossEntropyLoss(data.yp, model(params, data.x)))
+   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
+             { W: [$cn][$fn]Float, b: [$cn]Float } =
+     gradientDescent(0.05, loss, params, data)
+   let trainedParams = fold(train, initParams, trainingSet)
+   ;
+   trainedParams'
+)
+test_model = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   ;
+   model(initParams, trainingSet)'
+)
+test_softmax = (
+^'
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   ;
+   softmax(matmul(initParams.W, [0.2, 0.8]) + initParams.b)'
+)
+test_fold_fst2 = (
+(* fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
+^'func firstVec(s: [$d]Float , x: [$e]Int): [$d]Float = s
+                let x = fold(firstVec, [0.1, 0.3], [[1]]); x'
+)
+test_structFn1 = (
+  ^'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
+)
+
+test_structFn2 = (
+  ^'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
+                f({x: [1,2,3,4], y: [5,6,7,8]})'
+)
+test_structFn3 = (
+  ^'func f(arg: [$d]{x: Int}): [$d]Int = arg.x;
+                f([{x: 1}, {x: 2}, {x: 3}])'
+)
+)
+: (
 )
