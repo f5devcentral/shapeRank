@@ -227,13 +227,6 @@ public isKindOfConcreteType ^ <Boolean> = (
 public asTensorType ^ <TensorTypeAST> = (
   ^TensorTypeAST shape: shape type: concreteBaseTypeToTypeAST position: {0. 0}
 )
-public = other ^ <Boolean> = (
-  other isKindOfConcreteType ifFalse: [^false]. 
-  rank = other rank ifFalse: [^false].
-  baseType = other baseType ifFalse: [^false]. (* make sure this works for structs *)  
-  dimensions with: other dimensions do: [:d1 :d2 |  d1 = d2 ifFalse: [^false]].
-  ^true
-)
 public hash ^ <Integer> = (
   ^dimensions hash bitXor: baseType hash
 )
@@ -306,6 +299,16 @@ greatestCommonNumericTypeWith: b <ConcreteType>  = (
   b baseType isKindOfString ifTrue: [^b baseType].
   (* b's base type is also an integer. If they are the same, that is the gcs, otherwise it is Int.  *)
   ^baseType = b baseType ifTrue: [baseType] ifFalse: ['Int']
+)
+public = other ^ <Boolean> = (
+  other isKindOfConcreteType ifFalse: [^false]. 
+  rank = other rank ifFalse: [^false].
+  baseType isKindOfMap ifTrue: [
+     other baseType isKindOfMap ifFalse: [^false].
+     (Utils maps: baseType eq: other baseType) ifFalse: [^false].
+  ] ifFalse: [baseType = other baseType ifFalse: [^false]].  
+  dimensions with: other dimensions do: [:d1 :d2 |  d1 = d2 ifFalse: [^false]].
+  ^true
 )
 ) : (
 )
@@ -1266,15 +1269,20 @@ primitiveGradientDescent ^ <FunctionAST> = (
     ps <List[ParameterAST]> = {p1. p2. p3. p4}.
     rt = T.
     body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
-      | gcs = params greatestCommonBaseTypeWith: otherParams. |
+      | floatParams |
       
       lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
-      params baseType isKindOfMap ifFalse: [Error signal].
-      gcs isNil ifTrue: [Error signal: 'Second and third parameters to gradientDescent are of mismatched types'].
-      pushActivation:  (Activation of: loss baseType from: {params. otherParams}).
+      params baseType isKindOfMap ifFalse: [Error signal: 'Third parameter to gradientDescent must be a record.'].
+      floatParams:: ConcreteType dimensions: params dimensions baseType: 
+        (params baseType collect: [:v <ConcreteType> | 
+          v isNumeric ifTrue: [ConcreteType dimensions: v dimensions baseType: 'Float'] 
+            ifFalse: [Error signal: 'Third parameter to gradientDescent must be record with all fields being Floats.'] 
+          ]
+        ). 
+      pushActivation:  (Activation of: loss baseType from: {floatParams. otherParams}).
       loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()'].
 	  popActivation.      
-      ConcreteType dimensions: {} baseType: gcs
+      ConcreteType dimensions: {} baseType: floatParams baseType
     ].
   |
   ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
