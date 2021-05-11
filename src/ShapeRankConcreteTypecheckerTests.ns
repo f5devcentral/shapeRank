@@ -403,10 +403,6 @@ public testNumericSubtypes = (
   assertTyped: '3+4.2' as: '0.2' desc: 'ints should be promoted to floats (1)'.
   assertTyped: '3.2+4' as: '0.2' desc: 'ints should be promoted to floats (2)'.
 )
-public testTimesVec = (
-  assertTyped: 'timesVec' as: 'func f(x: [$d]$T <: Num, y: [$d]$T): [$d]$T = x'
-         desc: 'timesVec should be typeable'.
-)
 public disabled_testRerank = (
   | result = typecheckFileNamed: 'rerank'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -509,15 +505,6 @@ public testMixedTypeTensor = (
 public testOuterProduct = (
   | result |
   expectTypeError: [result:: typecheckFileNamed: 'outerProduct'] 
-)
-public testSpuriousConstraints = (
-  | result |
-  assertTyped: 'func f(x: $T, y: $S <: $T): $S = y
-                func g(a: $A, b: $B <: $A): $B = f(a, b); g'
-           as: 'func g(a: $A, b: $B <: $A): $B = b; g'
-         desc: 'when local constraints are stronger than callee constraints, typechecking should succeed'.
-  expectTypeError: [result:: typecheckCompilationUnit: 'func f(x: $T, y: $S <: $T): $S = y
-                                               func g(a: $A, b: $B): $B = f(a, b); g'].
 )
 public testIota3 = (
   | result = typecheckFileNamed: 'iota3'. |
@@ -654,11 +641,6 @@ assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
   assert: [equals: t1 type: t2]
     description: d.
 )
-public testStructFn1 = (
-  | result = typecheckFileNamed: 'structFn1'. |
-  assert: result shape rank equals: 0.
-  assert: result baseType dimension equals: 4.  
-)
 public testStructFn2 = (
   | result = typecheckFileNamed: 'structFn2'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -672,6 +654,26 @@ public testStructFn3 = (
   assert: result shape rank equals: 1.
   assert: (result shape at: 1) dimension equals: 3.
   assert: result baseType id equals: 'Int'.  
+)
+public testStructFn1 = (
+  | result = typecheckFileNamed: 'structFn1'. |
+  assert: result shape rank equals: 0.
+  assert: result baseType dimension equals: 4.  
+)
+public testTimesVec = (
+  | result = typecheckFileNamed: 'timesVec'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape at: 1) dimension equals: 4.
+  assert: result baseType id equals: 'Int'.   
+)
+public testTimesVec2D = (
+  | result = typecheckFileNamed: 'timesVec2D'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape at: 1) dimension equals: 2.
+  assert: (result shape at: 2) dimension equals: 3.  
+  assert: result baseType id equals: 'Int'.   
 )
 ) : (
 TEST_CONTEXT = ()

@@ -1015,36 +1015,6 @@ primitiveContains ^ <FunctionAST> = (
 |
   ^FunctionAST  named: #contains parameters: ps returnType: booleanType asTensorType body: body position: {0. 0}
 )
-primitiveGradientDescent ^ <FunctionAST> = (
-(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
-  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
-    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
-    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
-    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
-    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
-    S = TypeVariableReferenceAST named: #S position: {0. 0}.
-    dS = TensorTypeAST shape: s type: S position: {0. 0}.
-    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
-    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
-    p2 = ParameterAST named: #loss type: F position: {0. 0}.
-    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
-    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
-    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
-    rt = T.
-    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
-      | gcs = params greatestCommonBaseTypeWith: otherParams. |
-      
-      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
-      params baseType isKindOfMap ifFalse: [Error signal].
-      gcs isNil ifTrue: [Error signal: 'Second and third parameters to gradientDescent are of mismatched types'].
-      pushActivation:  (Activation of: loss baseType from: {params. otherParams}).
-      loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()']
-	  popActivation.      
-      ConcreteType dimensions: {} baseType: gcs
-    ].
-  |
-  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
-)
 primitiveOuterProduct ^ <FunctionAST> = (
 (*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
   | 
@@ -1278,6 +1248,36 @@ primitiveFold ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST named: #fold parameters: ps returnType: rt asTensorType body: body position: {0. 0}  
+)
+primitiveGradientDescent ^ <FunctionAST> = (
+(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
+  | T = TypeVariableReferenceAST named: #T position: {0. 0}.
+    emptyStructType = TypeStructAST table: (Map new) position: {0. 0}.
+    boundedT = BoundedTypeAST base: T bound: emptyStructType position: {0. 0}.
+    d = DimensionVariableReferenceAST named: #d position: {0. 0}.
+    s = ShapeVectorAST dimensions: {d} position: {0. 0}.
+    S = TypeVariableReferenceAST named: #S position: {0. 0}.
+    dS = TensorTypeAST shape: s type: S position: {0. 0}.
+    F <FunctionAST> = alpha: T toBeta: dS toGamma: floatType.
+    p1 = ParameterAST named: #lr type: floatType position: {0. 0}.
+    p2 = ParameterAST named: #loss type: F position: {0. 0}.
+    p3 = ParameterAST named: #initialParams type: boundedT position: {0. 0}.
+    p4 = ParameterAST named: #otherParams type: dS position: {0. 0}.
+    ps <List[ParameterAST]> = {p1. p2. p3. p4}.
+    rt = T.
+    body = PrimitiveBodyAST block: [:lr :loss :params :otherParams |
+      | gcs = params greatestCommonBaseTypeWith: otherParams. |
+      
+      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
+      params baseType isKindOfMap ifFalse: [Error signal].
+      gcs isNil ifTrue: [Error signal: 'Second and third parameters to gradientDescent are of mismatched types'].
+      pushActivation:  (Activation of: loss baseType from: {params. otherParams}).
+      loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()'].
+	  popActivation.      
+      ConcreteType dimensions: {} baseType: gcs
+    ].
+  |
+  ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
 )
 ) : (
 )
