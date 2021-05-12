@@ -443,10 +443,6 @@ public testRerank = (
   assert: (result shape dimensions at: 1) constant equals: 2.
   assert: result baseType id equals: 'Int'.
 )
-public test_malordered = (
-  | result |
- expectTypeError: [result:: typecheckFileNamed: 'malordered'] 
-)
 public testShapecast1 = (
   | result |
  expectTypeError: [result:: typecheckFileNamed: 'shapeCast1'] 
@@ -693,6 +689,12 @@ public testIota2 = (
   assert: (result shape at: 1) dimension equals: 2.
   assert: (result shape at: 2) isKindOfUnknownDimensionAST.
   assert: result baseType id equals: 'Int'.
+)
+public testMalordered = (
+  | result = typecheckFileNamed: 'malordered'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'Bool'.
 )
 ) : (
 TEST_CONTEXT = ()
