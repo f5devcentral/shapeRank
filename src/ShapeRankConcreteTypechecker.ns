@@ -23,6 +23,7 @@ public class TypeInterpreter usingPlatform: p
   typeCallStack <List[Activation]> = List new. 
   unboundedDimension = UnboundedDimension new.
   scopeStack <List[ScopeAST]> = List new.
+  typePrimitives <List[FunctionAST]> = List new.
   |
 ) (
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
@@ -65,7 +66,7 @@ public class ShapeCastAST expression: e <ExprAST> to: s <ShapeAST> position: p <
 public computeType ^ <ConcreteType> = (
   | 
   etype = expression computeType. 
-  dims = shape dimensions collect: [:d | d isKindOfDimensionNumber ifTrue: [d val] ifFalse: [dynamic]].
+  dims = shape dimensions collect: [:d | d isKindOfDimensionNumberAST ifTrue: [d dimension] ifFalse: [dynamic]].
   result = ConcreteType dimensions: dims baseType: etype baseType.  
   dyn = etype dimensions detect: [:d | d isKindOfInteger not] ifNone: [].
   |
@@ -74,7 +75,7 @@ public computeType ^ <ConcreteType> = (
 	Error signal: 'Type error: ', etype printString, ' can never be a subtype of ', result printString.
 	].
   etype shape dimensions with: shape dimensions do: [:d1 :d2 |
-	(d1 isKindOfDynamicTypeAST not and: [d1 ~= d2]) ifTrue: [
+	(d1 = dynamic and: [d1 ~= d2]) ifTrue: [
 		Error signal: 'Type error: ', etype printString, ' can never be a subtype of ', result printString.
 		]
 	].
@@ -1286,6 +1287,40 @@ primitiveGradientDescent ^ <FunctionAST> = (
     ].
   |
   ^FunctionAST named: #gradientDescent parameters: ps returnType: rt body: body position: {0. 0}
+)
+addTypePrimitives = (
+ addHOFs.
+ primitives
+   add: primitiveAppend;
+   add: primitiveArgmax;
+   add: primitiveContains;
+   add: primitiveDivide;
+   add: primitiveEquals;
+   add: primitiveIf;
+   add: primitiveIota;
+   add: primitiveLength;
+   add: primitiveMakeTensor;
+   add: primitiveMask;
+   add: primitiveModulus;
+   add: primitiveMinus;
+   add: primitiveAnd;
+   add: primitiveOr;
+   add: primitiveLt;
+   add: primitiveGt;
+   add: primitiveLeq;
+   add: primitiveGeq;
+   add: primitiveExp;
+   add: primitiveLog;
+   add: primitiveNot;
+   add: primitiveNegate;
+   add: primitivePlus;
+   add: primitivePower;
+   add: primitiveRange;
+   add: primitiveRotate;
+   add: primitiveShapeOf;
+   add: primitiveTimes;
+   add: primitiveToList;
+   add: primitiveTranspose
 )
 ) : (
 )
