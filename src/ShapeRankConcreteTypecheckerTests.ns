@@ -550,15 +550,6 @@ public testFloats = (
            as: 'func f(arg: Num): Int = 3; f(10)'
          desc: 'functions should accept ints or floats when they accept Nums'.
 )
-public testWhere = (
-  assertTyped: 'a where a = [5]' as: '[5]' desc: 'expected typing through where'.
-  assertTyped: '[a, a] where a = [b, b] where b = [1, 2]'
-           as: '[[[0, 0], [0, 1]], [[1, 0], [0, 0]]]'
-         desc: 'expected typing through multiple wheres'.
-(*  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
-           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
-         desc: 'expected typing through multiple wheres with shadowing'.*)
-)
 public testBoundedStructTypes = (
   assertTyped: 'func f(x: {}) = x; f({foo: 3})' as: '{foo: 3}' desc: 'width inference w/o bound'.
   assertTyped: 'func f(x: $T <: {}) = x; f({foo: 3})' as: '{foo: 3}'
@@ -695,6 +686,17 @@ public testMalordered = (
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
   assert: result shape rank equals: 0.
   assert: result baseType id equals: 'Bool'.
+)
+public testWhere = (
+  assertTyped: 'a where a = [5]' as: '[5]' desc: 'expected typing through where'.
+  assertTyped: '[a, a] where a = [b, b] where b = [1, 2]'
+           as: '[[[0, 0], [0, 1]], [[1, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres'.
+)
+public testWhere3 = (
+  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
+           as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
+         desc: 'expected typing through multiple wheres with shadowing'.
 )
 ) : (
 TEST_CONTEXT = ()

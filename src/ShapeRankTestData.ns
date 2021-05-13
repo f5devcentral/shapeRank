@@ -801,19 +801,6 @@ test_trainedParams = (
    ;
    trainedParams'
 )
-test_model = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
-     = softmax(matmul(params.W, x) + params.b)
-   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
-   let trainingSet = [
-     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
-     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
-     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
-     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
-   ]
-   ;
-   model(initParams, trainingSet)'
-)
 test_softmax = (
 ^'
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
@@ -828,7 +815,6 @@ test_fold_fst2 = (
 test_structFn1 = (
   ^'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
 )
-
 test_structFn2 = (
   ^'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
                 f({x: [1,2,3,4], y: [5,6,7,8]})'
@@ -840,6 +826,38 @@ test_structFn3 = (
 test_timesVec2D = (
   ^'let tv = rerank * to 1, 1; tv([[1, 2, 3], [4, 5, 6]], [[10, 20, 30], [40, 50, 60]])'
 )
+test_train = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+     avg(crossEntropyLoss(data.yp, model(params, data.x)))
+   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
+              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
+             { W: [$cn][$fn]Float, b: [$cn]Float } =
+     gradientDescent(0.05, loss, params, data)
+   ;
+   train(initParams, trainingSet)'
 )
-: (
+test_model = (
+^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+     = softmax(matmul(params.W, x) + params.b)
+   let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
+   let trainingSet = [
+     [ {x: [0.2, 0.8], yp: [0, 1, 0]}, {x: [0.9, 0], yp: [1, 0, 0]} ],
+     [ {x: [0.9, 0.9], yp: [0, 0, 1]}, {x: [0.8, 0.6], yp: [1, 0, 0]} ],
+     [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
+     [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
+   ]
+   ;
+   model(initParams, trainingSet.x)'
+)
+) : (
 )
