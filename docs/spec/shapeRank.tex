@@ -8,7 +8,7 @@
 \input{shapeRank.sty}
 \begin{document}
 \title{ShapeRank Language Specification\\
-{\large Version 0.1}
+{\large Version 0.2}
 }
 \maketitle
 
@@ -16,7 +16,7 @@
 
 \section{Introduction}
 
-ShapeRank is a purely functional, decidable, rank-polymorphic statically typed language. It is designed for data analysis, reactive programming and machine learning. 
+ShapeRank is a purely functional, decidable, rank-polymorphic statically shape-safe language. It is designed for data analysis, reactive programming and machine learning. 
 
 All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar, [\ref{scalars}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
 
@@ -411,7 +411,7 @@ Evaluation of $p$ proceeds as follows:
 
 The expression $e$ is evaluated to $v$. The value of $p$ is $v$.
 
-The type of $p$ is $T$.
+The type of $p$ is the type of $e$.
 
 \subsection{Calls}
 \label{calls}
@@ -501,15 +501,18 @@ It is the use of the different zip functions that determine when a reactive func
 
 Let $r$ be the value of $map(F, zip(af_1, \ldots, af_k))$. $c$ evaluates to $r$.
 
-
-
 It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time error if $shape(f_i)$ is not a prefix of $shape(max\_frame), i \in 1..k$. 
+
+Let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$. The the type of $c$ is
+$shape(max\_frame), shape(R) baseType(R)$.
+
+% define baseType, scope override etc. Is shape(max_frame well defined now?
 
 
 \subsection{Boolean Literals}
 \label{booleanLiterals}
 
-The identifiers \TRUE{} and \FALSE{} are predefined,  denoting the boolean scalars true and false respectively, and have type \BOOL{} [\ref{bool}].
+The identifiers \TRUE{} and \FALSE{} are predefined,  denoting the boolean scalars true and false respectively, and have type $[]\BOOL{}$ in any scope $S$. [\ref{bool}].
 
 {\bf BoolLiteral} $\rightarrow$ \TRUE{} $|$ \FALSE{}
 
@@ -523,19 +526,20 @@ Number literals are either integers literals or floating-point literals.
 \subsubsection{Integer Literals}
 \label{integerLiterals}
 
-An {\em integer literal} represents an integer scalar.  Integer literals have type \INT{}.
+An {\em integer literal} represents an integer scalar.  Integer literals have type $[]\INT{}$ in any scope $S$.
+
 Integer literals can be expressed in decimal and hexadecimal systems. The prefix `0x` or `0X` indicates a hexadecimal number literal. 
 
 \subsubsection{Floating Point Literals}
 \label{floatingPointLiterals}
 
-A {\em floating-point literal} represents a floating point number scalar conforming to the IEEE floating point standard. Floating-point literals have type \FLOAT{}.
+A {\em floating-point literal} represents a floating point number scalar conforming to the IEEE floating point standard. Floating-point literals have type $[]\FLOAT{}$ in any scope $S$.
 
 Floating-point decimals may also be expressed in scientific notation using `E` or `e`.
 
-The predefined identifier {\tt system::nan}  denotes an IEEE floating point NaN value and has type \FLOAT{} 
+The predefined identifier {\tt system::nan}  denotes an IEEE floating point NaN value and has type $[]\FLOAT{}$ in any scope $S$. 
 [\ref{number}].
-The predefined identifier {\tt system::infinity} denotes IEEE floating point positive infinity and has type \FLOAT{}.
+The predefined identifier {\tt system::infinity} denotes IEEE floating point positive infinity and has type $[]\FLOAT{}$ in any scope $S$.
 
 {\em
 ShapeRank does not distinguish among NaN values.
@@ -556,7 +560,7 @@ Single-line string literals are enclosed in double quotes (\textsf{"}), for exam
 \item Verbatim string literals are enclosed in back-ticks (`). Only back-tick characters must be escaped using another back-tick character.
 \end{itemize}
 
-The type of a string literal is \STRING.
+The type of a string literal in any scope $S$ is $[]\STRING$.
 
 \subsection{Hyperstream Literals}
 \label{hyperstreamLiterals}
@@ -566,6 +570,12 @@ The type of a string literal is \STRING.
 Hyperstream literals denote hyperstreams [\ref{concepts}] of fixed length. 
 
 {\em Note that one cannot specify an empty hyperstream literal. An empty hyperstream may be created as a result of some computation, but experience with languages in the APL family indicates that a literal form is not necessary.}
+
+Let $hs = [e_1, \ldots, e_n]$  be a hyperstream literal. 
+
+The type of $hs$ in scope $S$  is $[n] shape(t_1)gcs(t_i)$ where $t_i$ is the type of $e_i$ in $S, i = 1..n$.
+
+% define gcs. Decide on consistent notation for shape concatenation.
 
 
 \subsection{Struct Literals}
@@ -577,6 +587,8 @@ A {\em struct literal} defines a record scalar with named fields.
 \Property{}
 
 Let $s \triangleq \LCURLY{}p_1\COLON{} e_1\COMMA{} \ldots \COMMA{} p_n\COLON{} e_n\RCURLY$.
+
+The type of $s$ in scope $S$ is $[]\LCURLY{}p_1\COLON{} t_1\COMMA{} \ldots \COMMA{} p_n\COLON{} t_n\RCURLY$, where $t_i$ is the type of $e_i$ in scope $S, i = 1..n$.
 
 
 \subsection{Dot Expressions}
@@ -781,16 +793,33 @@ It is a compile-time error if the $s_e$ is statically incompatible with $s$.
 \section{Types}
 \label{types}
 
-ShapeRank is a statically typed language. Types describe the values that are used in the program. Every expression in a valid ShapeRank program must have a fixed type that can be determined at compile-time.
+ShapeRank's type system guarantees that a ShapeRank program will not cause a type error (including shape errors) at runtime. 
+Typing is determined with respect to a scope (or context) that varies per call site. 
+
+{\it
+This arrangement is unusual. It means that an expression is typechecked with respect to the types of the actual arguments of the surrounding function rather  than their
+formal types. This approach is possible because ShapeRank is not Turing complete and so we can perform type checking via an abstract interpretation that expands calls without risk of
+divergence. The abstract interpretation is independent of the size of the data the program operates on (except for literal arrays).
+
+The approach has significant advantages and disadvantages, but we feel the advantages greatly outweigh the disadvantages.
+
+First, programmers need not specify shape and/or dimension variables in signatures. Second, typing is actually more accurate.
+} 
+
+%The built in type system does not guarantee that a function is shape safe for all possible
+
+%ShapeRank is a statically typed language. Types describe the values that are used in the program. Every expression in a valid ShapeRank program must have a fixed type that can be determined at compile-time.
 
 {\em 
-ShapeRank has a structural type system. Compatibility and equivalence of types is determined by the type's actual structure or definition, and not by  its name.
+%ShapeRank has a structural type system. Compatibility and equivalence of types is determined by the type's actual structure or definition, and not by  its name.
 }
 
  \subsection{Type Inference}
   \label{typeInference}
-  
- ShapeRank does not always require that the types of entities be explicitly declared.  In many cases, the type can be determined by a process of {\em type inference}. The actual rules of type inference for each construct are given in the section describing that construct. However, these rules depend on a common set of concepts, defined in this section.
+
+Only the ranks of formal parameters of functions must be declared. All other information is inferred.
+
+The actual rules of type inference for each construct are given in the section describing that construct. However, these rules depend on a common set of concepts, defined in this section.
  
   
   \subsubsection{Type Substitution}
