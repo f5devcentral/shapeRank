@@ -84,17 +84,22 @@ public computeType ^ <ConcreteType> = (
 ) : (
 )
 public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+  | cachedType <ConcreteType> |
 ) (
-public computeType ^ <ConcreteType> = (
-   typeCallStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [computeTypeFromScope: id]].
-  ^computeTypeFromScope: id.
-)
 computeTypeFromScope:  n <Symbol> ^ <ConcreteType> = (
   | decl = (scope lookup: id) at: #ast. |
   decl isKindOfLetAST ifTrue: [^decl expression computeType].
   decl isKindOfExprAST ifTrue: [^decl computeType].
   decl isKindOfFunctionAST ifTrue: [Error signal: 'Higher order functions not supported'].
  ^decl
+)
+computeTypeFromScratch ^ <ConcreteType> = (
+   typeCallStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [computeTypeFromScope: id]].
+  ^computeTypeFromScope: id.
+)
+public computeType ^ <ConcreteType> = (
+  cachedType isNil ifTrue: [cachedType:: computeTypeFromScratch].
+  ^cachedType
 )
 ) : (
 )
@@ -190,11 +195,10 @@ public computeType ^ <ConcreteType> = (
 )
 public class WhereAST expr1: e1 <ExprAST> ident: id <Symbol> expr2: e2 <ExprAST> position: p <{Integer. Integer}> = super WhereAST expr1: e1 ident: id expr2: e2 position: p (
 ) (
-public computeType ^ <ConcreteType> = (
- | 
- result  localScope = Scope new. |
-  localScope at: ident putNode: expr2 computeType.
-  pushScope: localScope.
+public computeType ^ <ConcreteType> = ( 
+  | result |
+  expr2 computeType.
+  pushScope: scope.
   result:: expr1 computeType.
   popScope.
   ^result
