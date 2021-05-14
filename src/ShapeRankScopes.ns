@@ -551,6 +551,9 @@ public class UnknownDimensionAST position: p <{Integer. Integer}> =  super Unkno
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
 )
+public printString ^ <String> = (
+  ^'?'
+)
 ) : (
 )
 public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicTypeAST position: p (
