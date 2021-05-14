@@ -859,5 +859,35 @@ test_model = (
    ;
    model(initParams, trainingSet.x)'
 )
+test_range2 ^ <String> = (
+^'func dummy(x: Int): Int = x;
+
+6..2
+'
+)
+test_range3 ^ <String> = (
+^'func dummy(x: Int): Int = x;
+
+-6..2
+'
+)
+test_range4 ^ <String> = (
+^'func dummy(x: Int): Int = x;
+
+-6..-2
+'
+)
+test_range5 ^ <String> = (
+^'func dummy(x: Int): Int = x;
+
+2..-6
+'
+)
+test_range6 ^ <String> = (
+^'func dummy(x: Int): Int = x;
+
+-2..-6
+'
+)
 ) : (
 )

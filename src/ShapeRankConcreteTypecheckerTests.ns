@@ -694,9 +694,37 @@ public testWhere = (
          desc: 'expected typing through multiple wheres'.
 )
 public testWhere3 = (
-  assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
+  (*assertTyped: '[a, a] where a = [a, a] where a = [1, 2]'
            as: '[[[0, 0], [0, 0]], [[0, 0], [0, 0]]]'
-         desc: 'expected typing through multiple wheres with shadowing'.
+         desc: 'expected typing through multiple wheres with shadowing'.*)
+)
+public testRange3 = (
+  | result = typecheckFileNamed: 'range3'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 9.
+  assert: result baseType id equals: 'Int'.
+)
+public testRange2 = (
+  | result = typecheckFileNamed: 'range2'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 5.
+  assert: result baseType id equals: 'Int'.
+)
+public testRange4 = (
+  | result = typecheckFileNamed: 'range4'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 5.
+  assert: result baseType id equals: 'Int'.
+)
+public testRange5 = (
+  | result = typecheckFileNamed: 'range5'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 9.
+  assert: result baseType id equals: 'Int'.
 )
 ) : (
 TEST_CONTEXT = ()
