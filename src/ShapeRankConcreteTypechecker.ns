@@ -1009,7 +1009,7 @@ primitiveRange ^ <FunctionAST> = (
     minRange = i baseType. 
     maxRange = j baseType. 
     size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
-      ifTrue: [(maxRange - minRange + 1) abs]
+      ifTrue: [(maxRange - minRange) abs + 1]
       ifFalse: [dynamic].
     |
     i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
