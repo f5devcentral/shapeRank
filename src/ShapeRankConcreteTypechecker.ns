@@ -773,24 +773,6 @@ primitivePower ^ <FunctionAST> = (
     ]. 
   ^result
 )
-primitiveRange ^ <FunctionAST> = (
-(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
-  | result <FunctionAST> = super primitiveRange. |
-
-  result body typeBlock: [:i :j | 
-    | 
-    minRange = i baseType. 
-    maxRange = j baseType. 
-    size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
-      ifTrue: [maxRange - minRange + 1]
-      ifFalse: [dynamic].
-    |
-    i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
-    j isIntegral ifFalse: [Error signal: 'Non-integral second argument to ..'].
-	ConcreteType dimensions: {size} baseType: 'Int'
-	]. 
-  ^result
-)
 primitiveShapeOf ^ <FunctionAST> = (
 (* shapeOf(t: @S $T): @S *)
   | result <FunctionAST> = super primitiveShapeOf. |
@@ -1015,6 +997,24 @@ primitiveOuterProduct ^ <FunctionAST> = (
     call:: fun body computeType.
     popActivation.
 	ConcreteType dimensions: {a dimensions first}, frames first dimensions, {b dimensions first}, frames last dimensions, call dimensions baseType: call baseType
+	]. 
+  ^result
+)
+primitiveRange ^ <FunctionAST> = (
+(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
+  | result <FunctionAST> = super primitiveRange. |
+
+  result body typeBlock: [:i :j | 
+    | 
+    minRange = i baseType. 
+    maxRange = j baseType. 
+    size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
+      ifTrue: [(maxRange - minRange + 1) abs]
+      ifFalse: [dynamic].
+    |
+    i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
+    j isIntegral ifFalse: [Error signal: 'Non-integral second argument to ..'].
+	ConcreteType dimensions: {size} baseType: 'Int'
 	]. 
   ^result
 )

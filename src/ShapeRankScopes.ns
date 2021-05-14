@@ -890,26 +890,6 @@ primitiveMinus ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #- parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
 )
-primitiveRange ^ <FunctionAST> = (
-(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
-  | 
-  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
-  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
-  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
-  n1 = DimensionNumberAST number: 1 position: {0. 0}.
-  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
-  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
-  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
-  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
-  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
-  ps <List[ParameterAST]> = {start. end}.
-  body = PrimitiveBodyAST block: [:i :j | | minRange = i asScalar. maxRange = j asScalar. |
-	Tensor dimensions: {maxRange - minRange + 1} contents: 
-	  ((minRange to: maxRange) collect: [:k | Tensor dimensions: {} contents: {k}])
-	]. 
-  |
-  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
-)
 primitivePlus ^ <FunctionAST> = (
   | 
   ps <List[ParameterAST]> = {makeNumBoundedParamNamed: #a typeVar: #T.
@@ -1438,6 +1418,26 @@ primitiveDivide ^ <FunctionAST> = (
   body = PrimitiveBodyAST block: [:a :b | Tensor dimensions: {} contents: {a asScalar / b asScalar}]. 
   |
   ^FunctionAST  named: #/ parameters: ps returnType: floatType asTensorType body: body position: {0. 0}
+)
+primitiveRange ^ <FunctionAST> = (
+(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
+  | 
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}.
+  dsum1 = DimensionSumAST of: d1 and: d2 position: {0. 0}.
+  n1 = DimensionNumberAST number: 1 position: {0. 0}.
+  dsum2 = DimensionSumAST of: d2 and: n1 position: {0. 0}.
+  s = ShapeVectorAST dimensions: {dsum2} position: {0. 0}.
+  t = TensorTypeAST shape: s type: integerType position: {0. 0}.
+  start = ParameterAST named: #start type: d1 asTensorType position: {0. 0}.
+  end = ParameterAST named: #end type: dsum1 asTensorType position: {0. 0}.
+  ps <List[ParameterAST]> = {start. end}.
+  body = PrimitiveBodyAST block: [:i :j | | minRange = i asScalar. maxRange = j asScalar. step = minRange <= maxRange ifTrue: [1] ifFalse: [-1]. |
+	Tensor dimensions: {(maxRange - minRange + 1) abs} contents: 
+	  ((minRange - step to: maxRange - step ) collect: [:k | Tensor dimensions: {} contents: {k + step}])
+	]. 
+  |
+  ^FunctionAST  named: '..' parameters: ps returnType: t body: body position: {0. 0}
 )
 ) : (
 )
