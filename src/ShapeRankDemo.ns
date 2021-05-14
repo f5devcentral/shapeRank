@@ -13,6 +13,7 @@ Copyright 2014-2017 Google Inc.
         private ShapeRankASTs = manifest ShapeRankASTs.
         private ShapeRankScopes = manifest ShapeRankScopes.
         private ShapeRankTypechecker = manifest ShapeRankTypechecker.
+        private ShapeRankConcreteTypechecker = manifest ShapeRankConcreteTypechecker.        
         private ShapeRankInterpreter = manifest ShapeRankStreamInterpreter.
         private CombinatorialParsing = manifest CombinatorialParsing.
         private ShapeRankGrammar = manifest ShapeRankGrammar.
@@ -27,48 +28,6 @@ Copyright 2014-2017 Google Inc.
         private Tensorflow = manifest Tensorflow.
         private NodeAPI = manifest NodeAPI.
 |) (
-public main: platform args: args = (
-	|
-	namespace
-	embedder
-	ide
-	parsers
-	grammar
-	parsing
-	parser
-	Evaluator
-    utils
-    hyperstreams
-	Scopes
-	Typechecker
-	interpreter
-	hopscotchPlatform
-	|
-	
-    utils:: CollectionUtils usingPlatform: platform.
-    hyperstreams:: HyperStreams usingPlatform: platform.
-	Scopes::
-	(ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
-    Typechecker::
-	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
-	     Typechecker.
-     interpreter:: ShapeRankInterpreter usingPlatform: platform
-	                                    asts: Typechecker
-                                        collectionUtils: utils
-                                        streams: hyperstreams.
-     Evaluator:: interpreter Evaluator.
-        parsers:: CombinatorialParsing usingPlatform: platform.
-        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
-        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
-	parser:: parsing Parser new.
-	hopscotchPlatform:: hopscotchRuntime using: platform.
-	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
-
-	namespace:: ide namespacing Root.
-	populateNamespace: namespace.
-	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
-	embedder start.
-)
 populateNamespace: namespace = (
 	namespace at: #ShapeRankDemo put: self class.
 	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
@@ -85,6 +44,52 @@ populateNamespace: namespace = (
 	namespace at: #ShapeRankTestData put: ShapeRankTestData.
     namespace at: #CollectionUtils put: CollectionUtils.
     namespace at: #HyperStreams put: HyperStreams.    
+)
+public main: platform args: args = (
+	|
+	namespace
+	embedder
+	ide
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+    utils
+    hyperstreams
+	Scopes
+    InterimTypechecker
+	Typechecker
+	interpreter
+	hopscotchPlatform
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.
+	Scopes::
+	(ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+     InterimTypechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.     
+      Typechecker::
+	  (ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams)
+	     TypeInterpreter.
+        interpreter:: ShapeRankInterpreter usingPlatform: platform
+	                                    asts: Typechecker
+                                        collectionUtils: utils
+                                        streams: hyperstreams.
+     Evaluator:: interpreter Evaluator.
+        parsers:: CombinatorialParsing usingPlatform: platform.
+        grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+	parser:: parsing Parser new.
+	hopscotchPlatform:: hopscotchRuntime using: platform.
+	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
+
+	namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
+	embedder start.
 )
 ) : (
 )
