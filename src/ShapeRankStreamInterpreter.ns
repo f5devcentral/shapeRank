@@ -266,6 +266,27 @@ We treat the invocation of a program like a function invocation.
   computeTypeWithArguments: args.
   ^computeCall: self arguments: args
 )
+computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
+  |  
+  (* frame *)
+  argFrames <List[Frame]> = frameArguments: args of: callee.
+  (* replicate & zip *)
+  zippedFrame <Frame[List[HyperStream]]> = argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
+  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
+    callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
+    ] ifEmpty: [emptyFrame].
+  (* map *)    
+  resultFrame <Frame> = zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
+   pushActivation:  (Activation of: callee from: argVector visit: callee visits first).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ] withRangeOfDimensions:  callee visits first type dimensions.
+  | 
+  
+  ^resultFrame asStream.  
+)
 ) : (
 )
 public class RerankAST  reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}>  = 

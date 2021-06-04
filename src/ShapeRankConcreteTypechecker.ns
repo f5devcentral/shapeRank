@@ -132,13 +132,6 @@ computeArgumentTypes = (
    1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (callee parameters at: i))].
    ^result
 )
-public computeType ^ <Tensor> = (
-  | currentVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
-  visits add: currentVisit.
-  result:: computeCallType: callee arguments: computeArgumentTypes.
-  currentVisit type: result.
-  ^result
-)
 callerVisit ^ <CallVisit | Nil> = (
 (* Return the CallVisit representing my caller, or nil if this call is at top level. *)
   | top <TypeActivation | Nil> = typeCallStack isEmpty ifFalse: [typeCallStack last]. | 
@@ -176,6 +169,13 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	].
   ^resultFrame asConcreteType.  
 )
+public computeType ^ <Tensor> = (
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
+  visits add: thisVisit.
+  result:: computeCallType: callee arguments: computeArgumentTypes.
+  thisVisit type: result.
+  ^result
+)
 ) : (
 )
 public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
@@ -196,7 +196,7 @@ public computeType ^ <ConcreteType> = (
 )
 public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   super ProgramAST header: hdr declarations: ds expression: e position: p (
-  | visits <List[CallVisit]> = List new. |
+  | public visits <List[CallVisit]> = List new. |
 ) (
 public computeType ^ <ConcreteType> = (
   ^expression computeType
@@ -258,8 +258,11 @@ public computeTypeWithArguments: args <List[HyperStream]> ^ <ConcreteType> = (
 (* 
 We treat the typechecking of a parameterized program like typechecking a function invocation.
 *)
-  visits add: (CallVisit forCall: self callerVisit: nil). 
-  ^computeCallType: self arguments: (concreteTypesOfArguments: args)
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: nil. result <ConcreteType> |
+  visits add: thisVisit. 
+  result:: computeCallType: self arguments: (concreteTypesOfArguments: args).
+  thisVisit type: result.  
+  ^result  
 )
 ) : (
 )
