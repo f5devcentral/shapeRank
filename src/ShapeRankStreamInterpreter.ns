@@ -24,10 +24,11 @@ Runtime values are represented by instances of HyperStream subclasses.  These ar
   public Tensor = TensorFactory new.
   |
 ) (
-class Activation of: f <FunctionAST> from: argVector <List[Stream]> = (
+class Activation of: f <FunctionAST | ProgramAST> from: argVector <List[Stream]> visit: v <CallVisit> = (
 |
   function <FunctionAST | ProgramAST> = f.
   public arguments <List[Stream]> = argVector.
+  public callVisit <CallVisit> = v.  
 |
 ) (
 public at: k <Symbol> ^ <Stream> = (
@@ -120,6 +121,31 @@ evaluateArgument: arg <ExprAST> for: param <ParameterAST> ^ <HyperStream | AST> 
 public eval ^ <Tensor> = (
   ^computeCall: callee arguments: evaluateArguments
 )
+currentVisit ^ <CallVisit> = (
+  ^visits detect: [:v <CallVisit> | v callerVisit = callerVisit] ifNone: [visits first].
+)
+computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
+  |  
+  thisVisit <CallVisit> = currentVisit.
+  (* frame *)
+  argFrames <List[Frame]> = frameArguments: args of: callee.
+  (* replicate & zip *)
+  zippedFrame <Frame[List[HyperStream]]> = argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
+  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
+    callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
+    ] ifEmpty: [emptyFrame].
+  (* map *)    
+  resultFrame <Frame> = zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
+   pushActivation:  (Activation of: callee from: argVector visit: thisVisit ).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ] withRangeOfDimensions:  thisVisit type dimensions.
+  | 
+  
+  ^resultFrame asStream.  
+)
 ) : (
 )
 class Frame dimensions: ds <List[Integer]> cells: cs <HyperStream[Cell[T def]]> = (
@@ -183,6 +209,11 @@ public isPrefixOf: f <Frame> ^ <Boolean> = (
    ].
    ^true
 )
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+  ^Frame 
+        dimensions: ds 
+        cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)])
+)
 ) : (
 )
 public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
@@ -220,17 +251,19 @@ public eval ^ <Tensor> = (
 public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   super ProgramAST header: hdr declarations: ds expression: e position: p (
 ) (
-public eval ^ <Tensor> = (
-  ^expression eval.
-)
 public body ^ <ExprAST> = (
 (* Emulate FunctionAST protocol *)
   ^expression
+)
+public eval ^ <Tensor> = (
+  computeType.
+  ^expression eval.
 )
 public evaluateWithArguments: args <List[HyperStream]> ^ <HyperStream> = (
 (* 
 We treat the invocation of a program like a function invocation.
 *)
+  computeTypeWithArguments: args.
   ^computeCall: self arguments: args
 )
 ) : (
@@ -484,17 +517,6 @@ cellsFor: fdims <List[Integer | UnboundedDimension]> from: arg <HyperStream[T de
     (* recursively traverse first dimension of the argument, computing cells for each element *)
     ^arg asStream collect: [:e  <HyperStream[T]>  |  cellsFor: (fdims copyFrom: 2 to: fdims size) from: e]
 )
-zipFrames: l <List[Frame]> ^ <Frame[List]> = (
-  | 
-  (* All the incoming frames have the same shape, so we pick the first; if the list is empty, dims is empty too *)
-  dims = l isEmpty ifFalse: [l first dimensions] ifTrue: [{}].
-  (* Extract the frame's contents, and zip them *)
-  zipped <HyperStream[List]> = HyperStream zipReactive: (l collect: [:f <Frame> | f cells contents]). 
-  (* Convert the zipped contents into cells *)
-  zippedCells <HyperStream[Cell[List]]> = cellsFor: dims from: zipped.
-  |
-  ^Frame dimensions: dims cells: zippedCells.
-)
 fuseScalar: s1 <ScalarHyperStream[Cell[S1 def]]> withScalar: s2 <ScalarHyperStream[Cell[S2 def]]> ^ <ScalarHyperStream[Cell[S1 | S2]]> = (
 (*
 The fusion of two ScalarHyperStreams, s1 and s2, is a scalar hyperstream over a Cell of a flattened sequence of the contents of s1 and s2.
@@ -584,26 +606,6 @@ To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream
       ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
   ^HyperStream fromList: fusedSubstreams dimensions: dims
 )
-computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
-  |  (* frame *)
-  argFrames <List[Frame]> = frameArguments: args of: callee.
-  (* replicate & zip *)
-  zippedFrame <Frame[List[HyperStream]]> = argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
-  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
-    callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
-    ] ifEmpty: [emptyFrame].
-  (* map *)    
-  resultFrame <Frame> = zippedFrame map: [:argVector <List[HyperStream]> | 
-   | result  <HyperStream> | 
-   pushActivation:  (Activation of: callee from: argVector).
-   result:: callee body eval.
-   popActivation.
-   result.
-  ].
-  | 
-  
-  ^resultFrame asStream.  
-)
 public UnknownDimensionAST ^ <UnknownDimensionAST class> = (
   ^super UnknownDimensionAST
 )
@@ -662,6 +664,26 @@ To reactively fuse two unbounded hyperstreams, we create a new unbounded hyperst
 *)
  | dimTail <List[Integer | UnboundedDimension]> = u dimensions copyFrom: 2 to: u dimensions size. |
   ^HyperStream iteratingOver: (ReactivelyFusedIterator fusing: u iterator and: v iterator) dimensions: {HyperStream unboundedDimension}, dimTail
+)
+computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
+  |  (* frame *)
+  argFrames <List[Frame]> = frameArguments: args of: callee.
+  (* replicate & zip *)
+  zippedFrame <Frame[List[HyperStream]]> = argFrames reduce: [:f1 <Frame[T def]> :f2 <Frame[S def]> |
+  (* If we set reactivity per formal, we should test formals, not callee; if not, we should hoist test out *)
+    callee isSynchronous ifTrue: [f1 synchronouslyFuse: f2] ifFalse: [f1 reactivelyFuse: f2]
+    ] ifEmpty: [emptyFrame].
+  (* map *)    
+  resultFrame <Frame> = zippedFrame map: [:argVector <List[HyperStream]> | 
+   | result  <HyperStream> | 
+   pushActivation:  (Activation of: callee from: argVector visit: nil ).
+   result:: callee body eval.
+   popActivation.
+   result.
+  ].
+  | 
+  
+  ^resultFrame asStream.  
 )
 ) : (
 )

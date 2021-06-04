@@ -20,7 +20,7 @@ The most important limitation is that external function calls must be handled sp
 public class TypeInterpreter usingPlatform: p
 <Platform> collectionUtils: c = ASTClass usingPlatform: p collectionUtils: c (
   | 
-  typeCallStack <List[Activation]> = List new. 
+  typeCallStack <List[TypeActivation]> = List new. 
   unboundedDimension = UnboundedDimension new.
   scopeStack <List[ScopeAST]> = List new.
   typePrimitives <List[FunctionAST]> = List new.
@@ -93,13 +93,13 @@ computeTypeFromScope:  n <Symbol> ^ <ConcreteType> = (
   decl isKindOfFunctionAST ifTrue: [Error signal: 'Higher order functions not supported'].
  ^decl
 )
-computeTypeFromScratch ^ <ConcreteType> = (
-   typeCallStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [computeTypeFromScope: id]].
-  ^computeTypeFromScope: id.
-)
 public computeType ^ <ConcreteType> = (
   cachedType isNil ifTrue: [cachedType:: computeTypeFromScratch].
   ^cachedType
+)
+computeTypeFromScratch ^ <ConcreteType> = (
+   typeCallStack isEmpty ifFalse: [^currentTypeActivation at: id ifAbsent: [computeTypeFromScope: id]].
+  ^computeTypeFromScope: id.
 )
 ) : (
 )
@@ -125,22 +125,56 @@ public computeType ^ <ConcreteType> = (
 ) : (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
+  | visits <List[CallVisit]> = List new. |
 ) (
 computeArgumentTypes = (
    | result = List new: arguments size. |
    1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (callee parameters at: i))].
    ^result
 )
+public computeType ^ <Tensor> = (
+  | currentVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
+  visits add: currentVisit.
+  result:: computeCallType: callee arguments: computeArgumentTypes.
+  currentVisit type: result.
+  ^result
+)
+callerVisit ^ <CallVisit | Nil> = (
+(* Return the CallVisit representing my caller, or nil if this call is at top level. *)
+  | top <TypeActivation | Nil> = typeCallStack isEmpty ifFalse: [typeCallStack last]. | 
+  ^top isNil ifFalse:  [top callVisit]
+)
 computeArgumentType: arg <ConcreteType> for: param <ParameterAST> ^ <ConcreteType | AST> = (
   ^(param isHOF and: [arg isKindOfBlockAST not]) ifTrue: [
         | ast ::= (scope lookup: arg id ifAbsent:
-                     [^(currentActivation at: arg id)]) at: #ast. |
-        ast isKindOfParameterAST ifTrue: [^(currentActivation at: ast id)].
+                     [^(currentTypeActivation at: arg id)]) at: #ast. |
+        ast isKindOfParameterAST ifTrue: [^(currentTypeActivation at: ast id)].
         ConcreteType dimensions: {} baseType: ast
      ] ifFalse: [arg computeType]
 )
-public computeType ^ <Tensor> = (
-  ^computeCallType: callee arguments: computeArgumentTypes
+computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
+  | 
+  argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
+  maxFrame <TypeFrame>
+  replicatedFrames <List[TypeFrame]>
+  zippedFrame <TypeFrame>
+  resultFrame <TypeFrame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
+	f1 max: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
+  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
+(* map*)
+  resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
+	 | result  <TypeFrame> | 
+	 pushTypeActivation:  (TypeActivation of: callee from: argVector visit: visits last).
+	 result:: callee body computeType.
+	 popTypeActivation.
+	 result.
+	].
+  ^resultFrame asConcreteType.  
 )
 ) : (
 )
@@ -156,15 +190,76 @@ class PrimitiveBodyAST block: blk <Block> = super PrimitiveBodyAST block: blk (
   | public typeBlock <Block> |
 ) (
 public computeType ^ <ConcreteType> = (
-  ^typeBlock valueWithArguments: currentActivation arguments asArray
+  ^typeBlock valueWithArguments: currentTypeActivation arguments asArray
 )
 ) : (
 )
 public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   super ProgramAST header: hdr declarations: ds expression: e position: p (
+  | visits <List[CallVisit]> = List new. |
 ) (
 public computeType ^ <ConcreteType> = (
   ^expression computeType
+)
+concreteDimensionFor: d  <DimensionAST> = (
+  d isKindOfDimensionNumberAST ifTrue: [^d val].
+  Error signal: 'Unsupported dimension specification'
+)
+computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
+  | 
+  argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
+  maxFrame <TypeFrame>
+  replicatedFrames <List[TypeFrame]>
+  zippedFrame <TypeFrame>
+  resultFrame <TypeFrame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
+	f1 max: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
+  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
+(* map*)
+  resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
+	 | result  <TypeFrame> | 
+	 pushTypeActivation:  (TypeActivation of: callee from: argVector visit: visits last).
+	 result:: callee body computeType.
+	 popTypeActivation.
+	 result.
+	].
+  ^resultFrame asConcreteType.  
+)
+concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
+  t isKindOfTypeIdAST ifTrue: [^ t id].
+  t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
+  t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
+  t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
+  (* An unbounded type variable. Return Any *)
+  ^'Any'
+)
+concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
+  | 
+  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = 
+    parameters collect: [:p <ParameterAST> | concreteBaseTypeOf: p type]. 
+  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
+  result <List[ConcreteType]> = List new.
+  |
+  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+  ^result
+)
+concreteTypeFromType: t <TypeAST> = (  
+  t isKindOfTensorTypeAST  ifTrue: [
+    | dims <List[Integer | UnboundedDimension]> = t dimensions collect: [:d <DimensionAST>  | concreteDimensionFor: d]. |
+    ^ConcreteType base: (concreteBaseTypeOf: e) dimensions: dims
+    ].
+  ^ConcreteType dimensions: {} baseType: (concreteBaseTypeOf: e)
+)
+public computeTypeWithArguments: args <List[HyperStream]> ^ <ConcreteType> = (
+(* 
+We treat the typechecking of a parameterized program like typechecking a function invocation.
+*)
+  visits add: (CallVisit forCall: self callerVisit: nil). 
+  ^computeCallType: self arguments: (concreteTypesOfArguments: args)
 )
 ) : (
 )
@@ -358,10 +453,11 @@ public asConcreteType ^ <ConcreteType> = (
 )
 ) : (
 )
-class Activation of: f <FunctionAST> from: argVector <List[ConcreteType]> = (
+class TypeActivation of: f <FunctionAST> from: argVector <List[ConcreteType]> visit: v <CallVisit> = (
 |
 	function <FunctionAST> = f.
 	public arguments <List[ConcreteType]> = argVector.
+    public callVisit <CallVisit> = v.
 |
 ) (
 public at: k <Symbol> ^ <ConcreteType> = (
@@ -374,6 +470,9 @@ public at: k <Symbol> ifAbsent: blk <[ConcreteType]> ^ <ConcreteType> = (
 ^blk value 
 )
 ) : (
+public of: f <FunctionAST> from: argVector <List[ConcreteType]> = (
+  ^of: f from: argVector visit: nil
+)
 )
 public class AST position: p <{Integer. Integer}> = super AST position: p (
 ) (
@@ -413,6 +512,15 @@ public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <Tens
   ^named: n parameters: ps returnType: t body: b isSync: false position: p 
 )
 )
+class CallVisit forCall: c <CallAST> callerVisit: cv <CallVisit | Nil> = (
+	|
+    public type <ConcreteType>
+    node <CallAST> = c.
+	public callerVisit <CallVisit> = cv.
+	|
+) (
+) : (
+)
 zipFrame: l <List[TypeFrame]> ^ <TypeFrame>  = (
  |  
   dims <List[Integer]> = l first dimensions.
@@ -422,14 +530,8 @@ zipFrame: l <List[TypeFrame]> ^ <TypeFrame>  = (
  l do: [:e | e dimensions with: dims do: [:d1 :d2 | d1 = d2 ifFalse: [Error signal: 'Argument frames of varying rank']]].
   ^TypeFrame dimensions: dims cells: zippedCells.
 )
-currentActivation ^ <Activation> = (
+currentActivation ^ <TypeActivation> = (
    ^typeCallStack last
-)
-pushActivation: a <Activation> = (
-  typeCallStack add: a
-)
-popActivation = (
-  typeCallStack removeLast.
 )
 public DimensionNumberAST ^ <DimensionNumberAST class> = (
   (* provide access for nested classes *)
@@ -570,28 +672,6 @@ primitiveGeq ^ <FunctionAST> = (
           ifFalse: [Error signal: 'incompatibly typed arguments for >=']
        ].   
   ConcreteType dimensions: {} baseType: 'Bool'
-    ].
-  ^result
-)
-primitiveGradientDescent ^ <FunctionAST> = (
-(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
-  | result <FunctionAST> = super primitiveGradientDescent. |
-
-  result body typeBlock: [:lr :loss :params :otherParams |
-      | floatParams |
-      
-      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
-      params baseType isKindOfMap ifFalse: [Error signal: 'Third parameter to gradientDescent must be a record.'].
-      floatParams:: ConcreteType dimensions: params dimensions baseType: 
-        (params baseType collect: [:v <ConcreteType> | 
-          v isNumeric ifTrue: [ConcreteType dimensions: v dimensions baseType: 'Float'] 
-            ifFalse: [Error signal: 'Third parameter to gradientDescent must be record with all fields being Floats.'] 
-          ]
-        ). 
-      pushActivation:  (Activation of: loss baseType from: {floatParams. otherParams}).
-      loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()'].
-	  popActivation.      
-      ConcreteType dimensions: {} baseType: floatParams baseType
     ].
   ^result
 )
@@ -793,28 +873,6 @@ primitiveTimes ^ <FunctionAST> = (
     ].  
   ^result
 )
-primitiveInnerProduct ^ <FunctionAST> = (
-(* 
-innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
-*)
-  | result <FunctionAST> = super primitiveInnerProduct. |
-
-  result body typeBlock: [:a :b :f :g |  
-  | r q |
-    (* get scalar version of base types from a and b, feed them to a call of g, get result type R *)
-	 pushActivation:  (Activation of: g baseType from: {ConcreteType dimensions: {} baseType: a baseType. ConcreteType dimensions: {} baseType: b baseType}).
-	 r:: g baseType body computeType.
-	 popActivation.   
-     (* Feed two copies of R into f to get Q. *)
-	 pushActivation:  (Activation of: f baseType from: {r. r}).
-	 q:: f baseType body computeType baseType.
-	 popActivation.
-     (* Peel last dim off of dims of a and first dim off of dims of b to get X & Y *)
-	ConcreteType dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
-	            baseType: q
-	]. 
-  ^result
-)
 primitiveRotate ^ <FunctionAST> = (
 (*  rotate(t: @S $T, n: Int): @S $T *)
   | result <FunctionAST> = super primitiveRotate. |
@@ -857,6 +915,40 @@ frameConcreteTypeArgument: arg <ConcreteType> forParameter: p <ParameterAST> ^ <
 	].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
+frameConcreteTypeArguments: args <List[ConcreteType]> of: callee <FunctionAST> ^ <List[TypeFrame]> = (
+  | argFrames <List[TypeFrame]> = List new: args size. |
+  args with: callee parameters do: [:a <ConcreteType> :p <ParameterAST> |
+  argFrames add: (frameConcreteTypeArgument: a forParameter: p)
+  ].
+  ^argFrames
+)
+primitiveRange ^ <FunctionAST> = (
+(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
+  | result <FunctionAST> = super primitiveRange. |
+
+  result body typeBlock: [:i :j | 
+    | 
+    minRange = i baseType. 
+    maxRange = j baseType. 
+    size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
+      ifTrue: [(maxRange - minRange) abs + 1]
+      ifFalse: [dynamic].
+    |
+    i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
+    j isIntegral ifFalse: [Error signal: 'Non-integral second argument to ..'].
+	ConcreteType dimensions: {size} baseType: 'Int'
+	]. 
+  ^result
+)
+currentTypeActivation ^ <TypeActivation> = (
+   ^typeCallStack last
+)
+popTypeActivation = (
+  typeCallStack removeLast.
+)
+pushTypeActivation: a <TypeActivation> = (
+  typeCallStack add: a
+)
 primitiveFold ^ <FunctionAST> = (
 (*  fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
   | r <FunctionAST> = super primitiveFold. |
@@ -869,9 +961,9 @@ primitiveFold ^ <FunctionAST> = (
     prevAcc ::= acc.
     callF = [:a :e | | retVal |
       (*check that f is applicable to acc & (properly framed) x *)
-      pushActivation:  (Activation of: fun from: {prevAcc. fx}).
+      pushTypeActivation:  (TypeActivation of: fun from: {prevAcc. fx}).
       retVal:: fun body computeType.
-	  popActivation. 
+	  popTypeActivation. 
       retVal
     ].
     | 
@@ -884,6 +976,72 @@ primitiveFold ^ <FunctionAST> = (
       ConcreteType dimensions: (x dimensions copyFrom: 2 to: x rank - fx dimensions size), acc dimensions baseType: result baseType
     ].
   ^r
+)
+primitiveGradientDescent ^ <FunctionAST> = (
+(* gradient_descent(lr: Float, loss: $T -> [$d]$S -> Float, initialParams: $T <: {}, otherParams: [$d]$S): $T*)
+  | result <FunctionAST> = super primitiveGradientDescent. |
+
+  result body typeBlock: [:lr :loss :params :otherParams |
+      | floatParams |
+      
+      lr baseType = 'Float' ifFalse: [Error signal: 'Non-floating point first argument to gradientDescent()'].      
+      params baseType isKindOfMap ifFalse: [Error signal: 'Third parameter to gradientDescent must be a record.'].
+      floatParams:: ConcreteType dimensions: params dimensions baseType: 
+        (params baseType collect: [:v <ConcreteType> | 
+          v isNumeric ifTrue: [ConcreteType dimensions: v dimensions baseType: 'Float'] 
+            ifFalse: [Error signal: 'Third parameter to gradientDescent must be record with all fields being Floats.'] 
+          ]
+        ). 
+      pushTypeActivation:  (TypeActivation of: loss baseType from: {floatParams. otherParams}).
+      loss baseType body computeType baseType = 'Float' ifFalse: [Error signal: 'loss function must return a Float in gradientDescent()'].
+	  popTypeActivation.      
+      ConcreteType dimensions: {} baseType: floatParams baseType
+    ].
+  ^result
+)
+primitiveInnerProduct ^ <FunctionAST> = (
+(* 
+innerProduct(a: @X:: [$n]$T, b: [$n]::@Y$S,  f: $R -> $R -> $Q $, g: $T -> $S -> $R): @X::@Y$Q
+*)
+  | result <FunctionAST> = super primitiveInnerProduct. |
+
+  result body typeBlock: [:a :b :f :g |  
+  | r q |
+    (* get scalar version of base types from a and b, feed them to a call of g, get result type R *)
+	 pushTypeActivation:  (TypeActivation of: g baseType from: {ConcreteType dimensions: {} baseType: a baseType. ConcreteType dimensions: {} baseType: b baseType}).
+	 r:: g baseType body computeType.
+	 popTypeActivation.   
+     (* Feed two copies of R into f to get Q. *)
+	 pushTypeActivation:  (TypeActivation of: f baseType from: {r. r}).
+	 q:: f baseType body computeType baseType.
+	 popTypeActivation.
+     (* Peel last dim off of dims of a and first dim off of dims of b to get X & Y *)
+	ConcreteType dimensions: (a dimensions copyFrom: 1 to: a dimensions size -1), (b dimensions copyFrom: 2 to: b dimensions size)
+	            baseType: q
+	]. 
+  ^result
+)
+primitiveOuterProduct ^ <FunctionAST> = (
+(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
+  | result <FunctionAST> = super primitiveOuterProduct. |
+
+  result body typeBlock: [:f <ConcreteType> :a <ConcreteType> :b <ConcreteType> |  
+    | 
+    fun <FunctionAST> = f baseType.
+    call  (*  hard part - how to make the call to f? Frame each arg separately. Then use their cells as args to f. *)
+    (* Remember to peal off first dim from incoming tensors, as it is the tensor elements that are fed to f. *)
+    frames <List[TypeFrame]> = frameConcreteTypeArguments: {ConcreteType dimensions: (a dimensions copyFrom: 2 to: a rank) baseType: a baseType. ConcreteType dimensions: (b dimensions copyFrom: 2 to: b rank) baseType: b baseType} of: fun.
+    argVector <List[ConcreteType]> = frames collect: [:frame <TypeFrame> | frame cells].
+    |
+    a rank < 1 ifTrue: [Error signal: 'Second argument to outerProduct must be of rank > 0'].
+    b rank < 1 ifTrue: [Error signal: 'Third argument to outerProduct must be of rank > 0'].    
+    fun isKindOfFunctionAST ifFalse: [Error signal: 'First parameter to outerProduct must be a function '].
+    pushTypeActivation: (TypeActivation of: fun from: argVector).
+    call:: fun body computeType.
+    popTypeActivation.
+	ConcreteType dimensions: {a dimensions first}, frames first dimensions, {b dimensions first}, frames last dimensions, call dimensions baseType: call baseType
+	]. 
+  ^result
 )
 primitiveReduce ^ <FunctionAST> = (
 (*  reduce(f: @S $T->@S $T->@S $T, acc: @S $T, x:[]::@R::@S $T): @R::@S $T *)
@@ -898,9 +1056,9 @@ primitiveReduce ^ <FunctionAST> = (
     prevAcc ::= acc.
     callF = [:a :e | | retVal |
       (*check that f is applicable to acc & (properly framed) x *)
-      pushActivation:  (Activation of: fun from: {prevAcc. fx}).
+      pushTypeActivation:  (TypeActivation of: fun from: {prevAcc. fx}).
       retVal:: fun body computeType.
-	  popActivation. 
+	  popTypeActivation. 
       retVal
     ].    
     |
@@ -929,9 +1087,9 @@ primitiveScan ^ <FunctionAST> = (
     prevAcc ::= acc.
     callF = [:a :e | | retVal |
       (*check that f is applicable to acc & (properly framed) x *)
-      pushActivation:  (Activation of: fun from: {prevAcc. fx}).
+      pushTypeActivation:  (TypeActivation of: fun from: {prevAcc. fx}).
       retVal:: fun body computeType.
-	  popActivation. 
+	  popTypeActivation. 
       retVal
     ].      
     |
@@ -946,77 +1104,6 @@ primitiveScan ^ <FunctionAST> = (
     ConcreteType dimensions: x dimensions, acc dimensions baseType: result baseType
 	]. 
   ^r
-)
-frameConcreteTypeArguments: args <List[ConcreteType]> of: callee <FunctionAST> ^ <List[TypeFrame]> = (
-  | argFrames <List[TypeFrame]> = List new: args size. |
-  args with: callee parameters do: [:a <ConcreteType> :p <ParameterAST> |
-  argFrames add: (frameConcreteTypeArgument: a forParameter: p)
-  ].
-  ^argFrames
-)
-computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
-  | 
-  argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
-  maxFrame <TypeFrame>
-  replicatedFrames <List[TypeFrame]>
-  zippedFrame <TypeFrame>
-  resultFrame <TypeFrame>
-  |
-(* replicate *)
-  maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
-	f1 max: f2
-	] ifEmpty: [emptyFrame].
-  replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
-  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
-(* map*)
-  resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
-	 | result  <TypeFrame> | 
-	 pushActivation:  (Activation of: callee from: argVector).
-	 result:: callee body computeType.
-	 popActivation.
-	 result.
-	].
-  ^resultFrame asConcreteType.  
-)
-primitiveOuterProduct ^ <FunctionAST> = (
-(*  outerProduct(f: @S1 $T1 -> @S2 T2 -> @S3 $T3, a: [d1]::@S4::@S1 $T1, b: [d2]::@S5::@S2 $T2): [d1]::@S4::[d2]::@S5::@S3 $T3 *)
-  | result <FunctionAST> = super primitiveOuterProduct. |
-
-  result body typeBlock: [:f <ConcreteType> :a <ConcreteType> :b <ConcreteType> |  
-    | 
-    fun <FunctionAST> = f baseType.
-    call  (*  hard part - how to make the call to f? Frame each arg separately. Then use their cells as args to f. *)
-    (* Remember to peal off first dim from incoming tensors, as it is the tensor elements that are fed to f. *)
-    frames <List[TypeFrame]> = frameConcreteTypeArguments: {ConcreteType dimensions: (a dimensions copyFrom: 2 to: a rank) baseType: a baseType. ConcreteType dimensions: (b dimensions copyFrom: 2 to: b rank) baseType: b baseType} of: fun.
-    argVector <List[ConcreteType]> = frames collect: [:frame <TypeFrame> | frame cells].
-    |
-    a rank < 1 ifTrue: [Error signal: 'Second argument to outerProduct must be of rank > 0'].
-    b rank < 1 ifTrue: [Error signal: 'Third argument to outerProduct must be of rank > 0'].    
-    fun isKindOfFunctionAST ifFalse: [Error signal: 'First parameter to outerProduct must be a function '].
-    pushActivation: (Activation of: fun from: argVector).
-    call:: fun body computeType.
-    popActivation.
-	ConcreteType dimensions: {a dimensions first}, frames first dimensions, {b dimensions first}, frames last dimensions, call dimensions baseType: call baseType
-	]. 
-  ^result
-)
-primitiveRange ^ <FunctionAST> = (
-(* range(start: $d1, end: $d1 + $d2): [$d2 + 1]Int *)
-  | result <FunctionAST> = super primitiveRange. |
-
-  result body typeBlock: [:i :j | 
-    | 
-    minRange = i baseType. 
-    maxRange = j baseType. 
-    size = (minRange isKindOfInteger and: [maxRange isKindOfInteger]) 
-      ifTrue: [(maxRange - minRange) abs + 1]
-      ifFalse: [dynamic].
-    |
-    i isIntegral ifFalse: [Error signal: 'Non-integral first argument to ..'].    
-    j isIntegral ifFalse: [Error signal: 'Non-integral second argument to ..'].
-	ConcreteType dimensions: {size} baseType: 'Int'
-	]. 
-  ^result
 )
 ) : (
 )

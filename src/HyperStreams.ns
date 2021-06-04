@@ -62,6 +62,9 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
 public contains: element <Object> ^ <Boolean> = (
    subclassResponsibility
 )
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+  subclassResponsibility
+)
 ) : (
 public fromScalar: o <T def> ^ <ScalarHyperStream[T]> = (
   ^ScalarHyperStream scalarValue: o
@@ -149,6 +152,9 @@ public = other <Object> ^ <Boolean>  = (
 )
 public printString ^ <String> = (
   ^'[', constant printString, ' ...]'
+)
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+  ^class on: (f value: constant) dimensions: ds
 )
 ) : (
 )
@@ -269,6 +275,10 @@ public printString ^ <String> = (
 	        separatedBy: [contentString:: contentString, ', '].
 	   ^'[', contentString, ']'.
 )
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+(* should we assert that result of map has the dimensions expected? *)
+  ^map: f
+)
 ) : (
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: i rank (
@@ -339,6 +349,9 @@ public printString ^ <String> = (
       window do: [:e | contentString:: contentString, e printString] 
 	        separatedBy: [contentString:: contentString, ', '].
 	   ^'[', contentString, ', ...]'.
+)
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+  ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f]) dimensions: {dimensions first}, ds 
 )
 ) : (
 )
@@ -608,6 +621,9 @@ public contains: element <Object> ^ <Boolean> = (
 public printString ^ <String> = (
   ^constant printString
 )
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
+  ^map: f
+)
 ) : (
 )
 class EmptyHyperStream = HyperStream rank: 0(
@@ -654,6 +670,8 @@ public contains: element <Object> ^ <Boolean> = (
 )
 public printString ^ <String> = (
   ^''
+)
+public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
 )
 ) : (
 )
