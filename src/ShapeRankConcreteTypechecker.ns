@@ -21,7 +21,7 @@ public class TypeInterpreter usingPlatform: p
 <Platform> collectionUtils: c = ASTClass usingPlatform: p collectionUtils: c (
   | 
   typeCallStack <List[TypeActivation]> = List new. 
-  unboundedDimension = UnboundedDimension new.
+  public unboundedDimension = UnboundedDimension new.
   scopeStack <List[ScopeAST]> = List new.
   typePrimitives <List[FunctionAST]> = List new.
   |
@@ -304,7 +304,7 @@ public computeType ^ <ConcreteType> = (
 )
 ) : (
 )
-class ConcreteType dimensions: ds <List[Integer | UnboundedDimension]> baseType: b <String | Integer | Map[String, ConcreteType]> = (
+public class ConcreteType dimensions: ds <List[Integer | UnboundedDimension]> baseType: b <String | Integer | Map[String, ConcreteType]> = (
 (*
 A base type is either a string (denoting an atomic type such as 'String' or 'Boolean'), an integer (identifying a specific number, for dimensional analysis), a map from strings to concrete types  (denoting a record type) or a ShapeRank function repressented as an AST. Dimensions are runtime dimensions: either integers or the unbounded dimension (aka ?).
 *)

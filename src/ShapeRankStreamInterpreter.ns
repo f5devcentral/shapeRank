@@ -251,10 +251,6 @@ public eval ^ <Tensor> = (
 public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[FunctionAST]> expression: e <ExprAST> position: p <{Integer. Integer}> = 
   super ProgramAST header: hdr declarations: ds expression: e position: p (
 ) (
-public body ^ <ExprAST> = (
-(* Emulate FunctionAST protocol *)
-  ^expression
-)
 public eval ^ <Tensor> = (
   computeType.
   ^expression eval.

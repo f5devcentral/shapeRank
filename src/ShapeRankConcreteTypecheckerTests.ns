@@ -1,12 +1,14 @@
 Newspeak3
 'Root'
-class ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+class ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s streams: hs = (
 |
 	private Stopwatch = platform kernel Stopwatch.
 	private Parser = parsing Parser.
 	private TestContext = minitest TestContext.
 	private Map = platform collections Map.
-
+	private HyperStream = hs HyperStream.
+        private ConcreteType = Parser new asts ConcreteType.
+        private unboundedDimension = Parser new asts unboundedDimension.
       supplier = s.
 |
 ) (
@@ -289,9 +291,6 @@ public testVector = (
   assert: result shape rank equals: 1.
   assert: (result shape dimensions at: 1) constant equals: 3.
   assert: result baseType id equals: 'Int'.
-)
-typecheckFileNamed: fn <String>  = (
-  ^typecheckCompilationUnit: (supplier supplyTestNamed: fn)
 )
 equals: s <TypeAST> type: t <TypeAST> ^<Boolean> = (
   (* type equality modulo distinct typevars in different typechecking passes *)
@@ -726,8 +725,96 @@ public testRange5 = (
   assert: (result shape dimensions at: 1) constant equals: 9.
   assert: result baseType id equals: 'Int'.
 )
+typecheckFileNamed: fn <String> withArguments: args <List[ConcreteType]> ^ <TensorTypeAST> = (
+  ^typecheckCompilationUnit: (supplier supplyTestNamed: fn) withArguments: args
+)
+typecheckFileNamed: fn <String> ^ <TensorTypeAST>  = (
+  ^typecheckCompilationUnit: (supplier supplyTestNamed: fn)
+)
+typecheckCompilationUnit: string <String> withArguments: args <List[ConcreteType]> ^ <TensorTypeAST> = (
+  ^(Parser new program parseString: string) computeTypeWithArguments: args 
+)
+threes ^ <ConcreteType> = (
+  ^ConcreteType dimensions: {unboundedDimension} baseType: 3.
+)
+twoToThe9th ^ <ConcreteType> = (
+  ^ConcreteType dimensions: {unboundedDimension} baseType: 'Int'.
+)
+public testDoubleStream  = (
+  | result = typecheckFileNamed: 'double_stream' withArguments: {threes}. |
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType equals: 'Int'.
+)
+public testDoubleStream2  = (
+  | result = typecheckFileNamed: 'double_stream' withArguments: {twoToThe9th}. |
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType equals: 'Int'.
+)
+public testTwice_Stream  = (
+  | result = typecheckFileNamed: 'twice_stream' withArguments: {threes}. |
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType equals: 'Int'.
+)
+public testTwice_Stream2  = (
+  | result = typecheckFileNamed: 'twice_stream' withArguments: {twoToThe9th}. |
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: result baseType equals: 'Int'.
+)
+public testStreamContains_true2 = (
+  | result = typecheckFileNamed: 'stream_contains' 
+     withArguments: {HyperStream fromList: {twoToThe9th. threes} dimensions: {2. unboundedDimension}}. |
+  assert: [result isKindOfConcreteType] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType equals: 'Bool'.
+)
+public testStreamContains_true1 = (
+  | result = typecheckFileNamed: 'stream_contains' withArguments: {twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType equals: 'Bool'.
+)
+public testPairStreamSync3 = (
+  | result = typecheckFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType equals: 'Int'.
+)
+public testPointwiseSyncStream = (
+  | 
+  result = typecheckFileNamed: 'pointwiseSyncStream' withArguments: {threes. twoToThe9th}.
+  |
+  assert: result rank equals: 1.
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.  
+  assert: (result dimensions at: 1) isKindOfUnboundedDimension.
+  assert: result baseType equals: 'Int'.
+)
+public testPairStreamSync1 = (
+  | result = typecheckFileNamed: 'pair_stream_sync1' withArguments: {threes}. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testPairStreamSync2 = (
+  | result = typecheckFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) constant isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
 ) : (
 TEST_CONTEXT = ()
 )
 ) : (
+public usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
+  ^usingPlatform: platform parsing: parsing minitest: minitest supplier: s streams: nil
+)
 )

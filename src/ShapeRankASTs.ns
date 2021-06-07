@@ -539,6 +539,10 @@ public parameters ^ <List[ParameterAST]> = (
 public isSynchronous ^ <Boolean> = (
   ^header isSynchronous
 )
+public body ^ <ExprAST> = (
+(* Emulate FunctionAST protocol *)
+  ^expression
+)
 ) : (
 )
 public class RerankAST reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}> = ExprAST position: p (

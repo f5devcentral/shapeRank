@@ -13,7 +13,7 @@ class ShapeRankParser usingPlatform: platform grammar: grammar asts: astClass co
 ) (
 public class Parser = ShapeGrammar (
 |
-private asts = astClass usingPlatform: platform collectionUtils: utils.
+public asts = astClass usingPlatform: platform collectionUtils: utils.
 private BlockAST = asts BlockAST.
 private BoolAST = asts BoolAST.
 private CallAST = asts CallAST.
