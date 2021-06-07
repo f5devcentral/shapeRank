@@ -346,9 +346,6 @@ public shape ^ <ShapeVectorAST> = (
 public isIntegral ^ <Boolean> = (
   ^baseType isKindOfInteger or: [baseType = 'Int']
 )
-public isNumeric ^ <Boolean> = (
-  ^isIntegral or: [baseType = 'Float']
-)
 public concreteBaseTypeToTypeAST ^ <TypeAST> = (
   baseType isKindOfString ifTrue: [^TypeIdAST named: baseType position: {0. 0}].
   baseType isKindOfInteger ifTrue: [^DimensionNumberAST number: baseType position: {0. 0}].
@@ -413,6 +410,9 @@ public = other ^ <Boolean> = (
   ] ifFalse: [baseType = other baseType ifFalse: [^false]].  
   dimensions with: other dimensions do: [:d1 :d2 |  d1 = d2 ifFalse: [^false]].
   ^true
+)
+public isNumeric ^ <Boolean> = (
+  ^isIntegral or: [baseType = 'Float' or: [baseType = 'Num']]
 )
 ) : (
 )
