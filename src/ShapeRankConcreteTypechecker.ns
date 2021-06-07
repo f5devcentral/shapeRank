@@ -1108,6 +1108,23 @@ primitiveScan ^ <FunctionAST> = (
 	]. 
   ^r
 )
+primitiveApply ^ <FunctionAST> = (
+(* apply(f: @R$X -> @S$Y, x: @R$X): @S$Y *)
+  | r <FunctionAST> = super primitiveApply. |
+
+  r body typeBlock: [:f <ConcreteType> :x <ConcreteType> |
+    |
+    result
+    fun = f baseType.
+    fx = (frameConcreteTypeArgument: x forParameter: (fun parameters first)) cells.
+    |
+    pushTypeActivation:  (TypeActivation of: fun from: {fx}).
+    result:: fun body computeType.
+	popTypeActivation. 
+    result   
+  ].
+  ^r
+)
 ) : (
 )
 ) : (

@@ -814,7 +814,4 @@ public testPairStreamSync2 = (
 TEST_CONTEXT = ()
 )
 ) : (
-public usingPlatform: platform parsing: parsing minitest: minitest supplier: s = (
-  ^usingPlatform: platform parsing: parsing minitest: minitest supplier: s streams: nil
-)
 )
