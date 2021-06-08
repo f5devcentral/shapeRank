@@ -205,30 +205,6 @@ concreteDimensionFor: d  <DimensionAST> = (
   d isKindOfDimensionNumberAST ifTrue: [^d val].
   Error signal: 'Unsupported dimension specification'
 )
-computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
-  | 
-  argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
-  maxFrame <TypeFrame>
-  replicatedFrames <List[TypeFrame]>
-  zippedFrame <TypeFrame>
-  resultFrame <TypeFrame>
-  |
-(* replicate *)
-  maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
-	f1 max: f2
-	] ifEmpty: [emptyFrame].
-  replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
-  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
-(* map*)
-  resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
-	 | result  <TypeFrame> | 
-	 pushTypeActivation:  (TypeActivation of: callee from: argVector visit: visits last).
-	 result:: callee body computeType.
-	 popTypeActivation.
-	 result.
-	].
-  ^resultFrame asConcreteType.  
-)
 concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
   t isKindOfTypeIdAST ifTrue: [^ t id].
   t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
@@ -263,6 +239,30 @@ We treat the typechecking of a parameterized program like typechecking a functio
   result:: computeCallType: self arguments: (concreteTypesOfArguments: args).
   thisVisit type: result.  
   ^result  
+)
+computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
+  | 
+  argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
+  maxFrame <TypeFrame>
+  replicatedFrames <List[TypeFrame]>
+  zippedFrame <TypeFrame>
+  resultFrame <TypeFrame>
+  |
+(* replicate *)
+  maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
+	f1 fuse: f2
+	] ifEmpty: [emptyFrame].
+  replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
+  zippedFrame:: zipFrame: replicatedFrames. (* zip *)
+(* map*)
+  resultFrame:: zippedFrame map: [:argVector <List[ConcreteType]> | 
+	 | result  <TypeFrame> | 
+	 pushTypeActivation:  (TypeActivation of: callee from: argVector visit: visits last).
+	 result:: callee body computeType.
+	 popTypeActivation.
+	 result.
+	].
+  ^resultFrame asConcreteType.  
 )
 ) : (
 )
@@ -426,11 +426,6 @@ In the abstract interpreter, cells is just a concrete type, representing the typ
 	public cells <ConcreteType> = cs.
 |
 ) (
-public max: t <TypeFrame> ^ <TypeFrame> = (
- (* should check that either my shape is a prefix of t's or vice versa *)
-  dimensions size > t dimensions size ifTrue: [^self].
-  ^t
-)
 public printString = (
   ^'TypeFrame of rank: ', rank printString
 )
@@ -453,24 +448,6 @@ public asConcreteType ^ <ConcreteType> = (
   ^ConcreteType 
       dimensions: dimensions, cells dimensions 
       baseType: cells baseType
-)
-fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
- | result <List[Integer | UnboundedDimension]> = List new. |
-  assert: ds1 size = ds2 size message: 'Internal error in fusing dimensions'.
-  ds1 with: ds2 do: [:d1 <Integer | UnboundedDimension> : d2 <Integer | UnboundedDimension> |
-    (d1 isKindOfUnboundedDimension or: [d2 isKindOfUnboundedDimension]) 
-       ifTrue: [result add: dynamic]
-       ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes!']].
-  ].
-  ^result
-)
-public fuseSuffix: f = (
-    |
-    diff = dimensions size - f dimensions size.
-    prefix = fuseDims: (dimensions copyFrom: 1 to:  f dimensions size) with: f dimensions.
-    suffix = dimensions copyFrom: diff + 1 to: dimensions size.
-    |
-    ^TypeFrame dimensions: prefix, suffix cells: cells
 )
 public fuse:  f <TypeFrame> ^ <TypeFrame> = (
   ^dimensions size > f dimensions size ifTrue: [fusePrefix: f] ifFalse: [f fusePrefix: self]
@@ -1156,6 +1133,16 @@ primitiveNegate ^ <FunctionAST> = (
     a isNumeric ifFalse: [Error signal: 'non-numeric argument to operator unary -'].
     ConcreteType dimensions: {} baseType: bt
     ]. 
+  ^result
+)
+fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
+ | result <List[Integer | UnboundedDimension]> = List new. |
+  assert: ds1 size = ds2 size message: 'Internal error in fusing dimensions'.
+  ds1 with: ds2 do: [:d1 <Integer | UnboundedDimension> : d2 <Integer | UnboundedDimension> |
+    (d1 isKindOfUnboundedDimension or: [d2 isKindOfUnboundedDimension]) 
+       ifTrue: [result add: dynamic]
+       ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes!']].
+  ].
   ^result
 )
 ) : (
