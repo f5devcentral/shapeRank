@@ -808,15 +808,6 @@ primitiveModulus ^ <FunctionAST> = (
     ].
   ^result
 )
-primitiveNegate ^ <FunctionAST> = (
-  | result <FunctionAST> = super primitiveNegate. |
-
-  result body typeBlock: [:a <ConcreteType>  | 
-    a isNumeric ifFalse: [Error signal: 'non-numeric argument to operator unary -'].
-    ConcreteType dimensions: {} baseType: a baseType
-    ]. 
-  ^result
-)
 primitiveNot ^ <FunctionAST> = (
   | result <FunctionAST> = super primitiveNot. |
 
@@ -1124,6 +1115,20 @@ primitiveApply ^ <FunctionAST> = (
     result   
   ].
   ^r
+)
+primitiveNegate ^ <FunctionAST> = (
+  | result <FunctionAST> = super primitiveNegate.  |
+
+  result body typeBlock: [:a <ConcreteType>  | 
+    |
+    bt = a baseType isKindOfInteger 
+       ifTrue: [(a baseType) negated] 
+       ifFalse: [a baseType].
+    |
+    a isNumeric ifFalse: [Error signal: 'non-numeric argument to operator unary -'].
+    ConcreteType dimensions: {} baseType: bt
+    ]. 
+  ^result
 )
 ) : (
 )
