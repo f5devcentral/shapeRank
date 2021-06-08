@@ -777,14 +777,6 @@ public testStreamContains_true1 = (
   assert: result shape rank equals: 0.
   assert: result baseType equals: 'Bool'.
 )
-public testPairStreamSync3 = (
-  | result = typecheckFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
-  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
-  assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
-  assert: (result shape dimensions at: 2) constant equals: 2.
-  assert: result baseType equals: 'Int'.
-)
 public testPointwiseSyncStream = (
   | 
   result = typecheckFileNamed: 'pointwiseSyncStream' withArguments: {threes. twoToThe9th}.
@@ -795,20 +787,32 @@ public testPointwiseSyncStream = (
   assert: result baseType equals: 'Int'.
 )
 public testPairStreamSync1 = (
-  | result = typecheckFileNamed: 'pair_stream_sync1' withArguments: {threes}. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  | result = typecheckFileNamed: 'pair_stream_sync1' withArguments: {twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
   assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) constant isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
   assert: (result shape dimensions at: 2) constant equals: 2.
-  assert: result baseType id equals: 'Int'.
+  assert: result baseType equals: 'Num'.
 )
 public testPairStreamSync2 = (
   | result = typecheckFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
   assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) constant isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
   assert: (result shape dimensions at: 2) constant equals: 2.
-  assert: result baseType id equals: 'Int'.
+  assert: result baseType equals: 'Num'.
+)
+public testPairStreamSync3 = (
+  | result = typecheckFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  (* The program infers its result base type from its declared input base types. 
+       Since the code is fully polymorphic, the base type is unconstrained,
+       and so we get 'Any' regardless of the specific base types of the arguments.
+  *)
+  assert: result baseType equals: 'Any'.
 )
 ) : (
 TEST_CONTEXT = ()

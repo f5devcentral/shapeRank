@@ -145,6 +145,13 @@ computeArgumentType: arg <ConcreteType> for: param <ParameterAST> ^ <ConcreteTyp
         ConcreteType dimensions: {} baseType: ast
      ] ifFalse: [arg computeType]
 )
+public computeType ^ <Tensor> = (
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
+  visits add: thisVisit.
+  result:: computeCallType: callee arguments: computeArgumentTypes.
+  thisVisit type: result.
+  ^result
+)
 computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
   | 
   argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
@@ -155,7 +162,7 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
   |
 (* replicate *)
   maxFrame:: argFrames reduce: [:f1 <TypeFrame> :f2 <TypeFrame> |
-	f1 max: f2
+	f1 fuse: f2
 	] ifEmpty: [emptyFrame].
   replicatedFrames:: argFrames collect: [:f <TypeFrame> | f replicateToMatch: maxFrame dimensions].
   zippedFrame:: zipFrame: replicatedFrames. (* zip *)
@@ -168,13 +175,6 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	 result.
 	].
   ^resultFrame asConcreteType.  
-)
-public computeType ^ <Tensor> = (
-  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
-  visits add: thisVisit.
-  result:: computeCallType: callee arguments: computeArgumentTypes.
-  thisVisit type: result.
-  ^result
 )
 ) : (
 )
@@ -453,6 +453,34 @@ public asConcreteType ^ <ConcreteType> = (
   ^ConcreteType 
       dimensions: dimensions, cells dimensions 
       baseType: cells baseType
+)
+fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
+ | result <List[Integer | UnboundedDimension]> = List new. |
+  assert: ds1 size = ds2 size message: 'Internal error in fusing dimensions'.
+  ds1 with: ds2 do: [:d1 <Integer | UnboundedDimension> : d2 <Integer | UnboundedDimension> |
+    (d1 isKindOfUnboundedDimension or: [d2 isKindOfUnboundedDimension]) 
+       ifTrue: [result add: dynamic]
+       ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes!']].
+  ].
+  ^result
+)
+public fuseSuffix: f = (
+    |
+    diff = dimensions size - f dimensions size.
+    prefix = fuseDims: (dimensions copyFrom: 1 to:  f dimensions size) with: f dimensions.
+    suffix = dimensions copyFrom: diff + 1 to: dimensions size.
+    |
+    ^TypeFrame dimensions: prefix, suffix cells: cells
+)
+public fuse:  f <TypeFrame> ^ <TypeFrame> = (
+  ^dimensions size > f dimensions size ifTrue: [fusePrefix: f] ifFalse: [f fusePrefix: self]
+)
+public fusePrefix: f = (
+    |
+    prefix = fuseDims: (dimensions copyFrom: 1 to:  f dimensions size) with: f dimensions.
+    suffix = dimensions copyFrom: f dimensions size + 1 to: dimensions size.
+    |
+    ^TypeFrame dimensions: prefix, suffix cells: cells
 )
 ) : (
 )
