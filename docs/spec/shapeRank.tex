@@ -24,7 +24,7 @@ ShapeRank does not support user-defined higher order functions. However, a numbe
 
 The language does not permit recursion and has no explicit looping constructs. These are not needed, since all iteration is implicit, dictated by the shape of the data. As a result, a program written in ShapeRank can never diverge or crash. 
 
-ShapeRank has no constructs to create recursive data structures, and so any data a program creates is acyclic. Hence, reference counting is a sufficient strategy for memory reclamation.
+ShapeRank has no constructs to create recursive data structures, and so any data a program creates is acyclic. Hence, reference counting is a sufficient strategy for fully automatic memory reclamation.
 
 
 
@@ -74,7 +74,12 @@ The rank therefore gives the number of dimensions in the hyperstream.
 \subsection{Scalars}
 \label{scalars}
 
-The most elementary hyperstreams are {\em scalar hyperstreams}. These include  booleans [\ref{bool}], numbers [\ref{number}], strings [\ref{string}] and  structs [\ref{structTypes}]. A scalar hyperstream consists of a single scalar value, and has zero dimensions, hence its shape is the empty sequence, $[]$. The rank of a scalar hyperstream is therefore $0$. We will often refer to scalar hyperstreams simply as scalars.
+The most elementary hyperstreams are {\em scalar hyperstreams}. These include  booleans [\ref{bool}], numbers [\ref{number}], strings [\ref{string}] and  structs [\ref{structTypes}]. A scalar hyperstream consists of a single scalar value, and has zero dimensions, hence its shape is the empty sequence, $[]$. 
+
+{\em The rank of a scalar hyperstream is therefore $0$.}
+
+ We will often refer to scalar hyperstreams simply as scalars.
+
 
 \subsection{Streams}
 \label{streams}
@@ -218,7 +223,7 @@ The $length$ function returns the length [\ref{concepts}] of a hyperstream.
 
 $length(s: \ATSIGN{} S \DOLLAR{} T): Number$
 
-If the hyperstream is unbounded, the value {\tt system::nan} [\ref{floatingPointLiterals}] is returned.
+If the hyperstream is unbounded, the value \QUESTIONMARK{} is returned.
 
 \subsection{Rank}
 \label{rank}
@@ -234,7 +239,7 @@ The $shapeOf$ function returns the shape [\ref{concepts}] of a hyperstream.
 
 {\em 
 It follows from the  definition of shape and length [\ref{length}] that
-if any  dimension of the hyperstream is unbounded, the shape will contain the value {\tt system::nan} [\ref{floatingPointLiterals}] at the corresponding  position.
+if any  dimension of the hyperstream is unbounded, the shape will contain the value \QUESTIONMARK{} at the corresponding  position.
 }
 
 $shapeOf(s: \ATSIGN{} S \DOLLAR{} T): \ATSIGN{} S$
@@ -383,7 +388,7 @@ Let $i \triangleq ID$.
 Evaluation of $i$ proceeds as follows:
 
 
-Let $s$ be the the current runtime scope. Then $ID$ iusd looked up in $s$. $ID$ must be either a variable or a function.
+Let $s$ be the the current runtime scope. Then $ID$ is looked up in $s$. $ID$ must be either a variable or a function.
 \begin{itemize}
 \item If $ID$ is bound to a variable $b$, then if no value is associated with $b$ then the definition of $b$ is executed. The value $v$ of $ID$ is then looked up in $s$. The value of $i$ is $v$.
 
@@ -436,7 +441,7 @@ Hyperstreams can be divided into frames and cells. A {\em frame} is a hyperstrea
 In that case, the frame is a 2-vector and the cells are 3-vectors.  Alternately, we can view it as a matrix, in which case the frame is the entire hyperstream, and the cells are scalars. A third way is to view the hyperstream as a frame of rank 0, which consists of a single cell of rank 2. In general, a hyperstream of rank $n$ can be decomposed into frames and cells in $n+1$ ways: a rank $n$ hyperstream with rank 0 elements, a rank $n-1$ hyperstream with vector elements, …, a rank 1 vector with rank $n-1$ cells, or a rank 0 frame with a single rank $n$ cell.
 }
 
-A hyperstream $h$, of shape $[d_1, \ldots, d_n]$ may be divided into a frame, $f_h$ of shape $[d_1, \ldots, d_k]$ and cells of shape $[d_{k+1}, , \ldots, d_n]$, for any $0 \le k \lt n$.
+A hyperstream $h$, of shape $[d_1, \ldots, d_n]$ may be divided into a frame, $f_h$ of shape $[d_1, \ldots, d_k]$ and cells of shape $[d_{k+1}, , \ldots, d_n]$, for any $0 \le k \le n$.
 The elements of the $h[1] \ldots [k]$ are known as the cells of of $f_h$.
 
 A function $g(a_1, \ldots, a_k)$ may be {\em mapped} on to a frame $f_h$, written $map(g, f_h)$, producing a new frame, $f_m$ of the same shape as $f_h$ such that for each cell $c_h$ of $f_h$, $f_m$ has a corresponding cell $c_m = g(c_{h_1}, \ldots, c_{h_k})$.
@@ -485,7 +490,13 @@ A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger fram
 
 Let $c \triangleq F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c$ proceeds as follows. 
 
-Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $pr_i$. Let $max\_frame \in \{i \in 1..k | f_i\}$ be a frame such that $rank(max\_frame) \ge rank(f_i), i \in 1 ..k$. Next, $f_i$ is replicated [\ref{replication}] into a frame $af_i$, of shape $shape(max\_frame), i \in 1..k$. 
+Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $pr_i$. Let $common\_frame$ be a frame such that:
+\begin{itemize}
+\item  $rank(common\_frame) = max(rank(f_i)), i \in 1 ..k$. 
+\item  If $shape(f_i)_j = \QUESTIONMARK{}$ then $shape(common\_frame)_j = \QUESTIONMARK{}$ otherwise $shape(common\_frame)_j =  shape(f_i)_j,i \in 1 ..k, j \in 1..rank(f_i)$.
+\end{itemize}
+
+Next, $f_i$ is replicated [\ref{replication}] into a frame $af_i$, of shape $shape(common\_frame), i \in 1..k$. 
 
 {\em
 Every formal parameter has an expected rank. However, arguments may be of higher rank. An argument of rank $n$ may be passed where a parameter of rank $k$ is expected, provided $n \ge k$. The argument is viewed as a frame of rank $n-k$ with cells of rank $k$. 
@@ -501,10 +512,12 @@ It is the use of the different zip functions that determine when a reactive func
 
 Let $r$ be the value of $map(F, zip(af_1, \ldots, af_k))$. $c$ evaluates to $r$.
 
-It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time error if $shape(f_i)$ is not a prefix of $shape(max\_frame), i \in 1..k$. 
+It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time error if the $i$th dimension of  $common\_frame$ is not required to be  \QUESTIONMARK{}, and the $i$th dimensions of two argument frames differ. 
+
+{\em In such a situation, the specification of $common\_frame$ would be ambiguous. Consequently, no consistent replication of the arguments is possible.}
 
 Let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$. The the type of $c$ is
-$shape(max\_frame), shape(R) baseType(R)$.
+$shape(common\_frame), shape(R) baseType(R)$.
 
 % define baseType, scope override etc. Is shape(max_frame well defined now?
 
