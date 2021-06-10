@@ -490,22 +490,72 @@ A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger fram
 
 Let $c \triangleq F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c$ proceeds as follows. 
 
-Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $pr_i$. Let $common\_frame$ be a frame such that:
+Let $ar_i$ be the rank of $a_i$ and let $pr_i$ be the rank of $p_i, i \in 1.. k$. Then  $a_i$ is divided into a frame $f_i$, of rank $ar_i - pr_i$ with cells of rank $pr_i$. 
+
+{\em
+Every formal parameter has an expected rank. However, arguments may be of higher rank. An argument of rank $n$ may be passed where a parameter of rank $k$ is expected, provided $n \ge k$. The argument is viewed as a frame of rank $n-k$ with cells of rank $k$. 
+
+The cells of an argument's frame are of the rank expected by the corresponding formal. If the argument is of higher rank than expected, framing breaks into cells that are suitable 
+arguments.
+
+The callee, $F$, will be invoked with arguments of the rank it expects; however, if any of its arguments are of higher rank than expected, it will be invoked multiple times.
+The results of these invocations will be assembled into a result stream. 
+
+It is easiest to understand the process by considering a function of one argument, such as logical negation, $not()$. Given a call such
+
+$not([true, false])$
+
+we see that the rank of the argument is 1, but the function expects a scalar argument, i.e, an argument of rank 1. We therefore produce a frame of rank $1 - 0 = 1$, with cells of rank $0$.  We can now invoke $not()$ on each of the two cells, and produce a result by assembling the scalar results into a result vector, $[false, true]$.
+
+If all functions were unary, the argument framing rules given so far would suffice. However, the situation is more complex given multiple arguments.
+To deal with these, we need the notion of common frame for all the arguments as described below.
+}
+
+Let $common\_frame$ be a frame such that:
 \begin{itemize}
 \item  $rank(common\_frame) = max(rank(f_i)), i \in 1 ..k$. 
 \item  If $shape(f_i)_j = \QUESTIONMARK{}$ then $shape(common\_frame)_j = \QUESTIONMARK{}$ otherwise $shape(common\_frame)_j =  shape(f_i)_j,i \in 1 ..k, j \in 1..rank(f_i)$.
 \end{itemize}
 
+{\em
+As noted above, framing arguments allows us to apply functions to arguments whose rank is higher than expected by the function. In the presence of multiple arguments,
+we may find that each argument may be framed differently. To make the call, we must determine a common frame for all the arguments. The function $F$ will be 
+invoked once per cell of the common frame.  
+
+To understand the definition above, let us first consider bounded hyperstreams - those whose dimensions are known (aka, arrays).
+In that case, no dimension is equal to \QUESTIONMARK{}. Rather, the $i$th dimension of the common frame is the same as that of the $i$th dimension of any of the argument frames (if they have such a dimension).  This implies that all the argument frames must agree on their $i$th dimension (if they do not, we have an error as specified below).
+In other words, the shape of each argument frame is a prefix of the shape of the common frame. This is known as the prefix rule in array programming languages such as J,  where it was introduced as a clean generalization of the original rules of APL.
+
+We adjust this rule to account for the generalization from arrays to streams, 
+stating that, if any of the arguments frames has \QUESTIONMARK{} as its $i$th dimension, we use \QUESTIONMARK{} as the $i$th dimension of the common frame.
+}
+
 Next, $f_i$ is replicated [\ref{replication}] into a frame $af_i$, of shape $shape(common\_frame), i \in 1..k$. 
 
 {\em
-Every formal parameter has an expected rank. However, arguments may be of higher rank. An argument of rank $n$ may be passed where a parameter of rank $k$ is expected, provided $n \ge k$. The argument is viewed as a frame of rank $n-k$ with cells of rank $k$. 
+Since we invoke $F$ once per cell of the common frame, we have to replicate cells of frames that have less cells.
+As a simple example, consider
+
+$[1, 2, 3] + 2$
+
+We expect to call $+$ once for each element of $[1, 2, 3]$, i.e., $1+2$, $2+2$, $3+2$. In other words, the argument $2$ is {\em replicated} to match the shape of the first argument, as if we wrote $[1, 2, 3] + [2, 2, 2]$.
+
+A lower level, more mechanistic  description is this:
+
+The two arguments of $+$ are framed differently. The first is a 3-vector (rank 1) and its frame is also of rank 1 with the same shape, $[3]$, and cells $1, 2$ and $3$.
+The second argument is  scalar,  and its frame has rank 0 and shape $[]$, and a single cell containing $2$. The common frame is of rank 1, of shape $[3]$. The first argument frame is already of the requisite shape. The second frame however is not, and so it is replicated into a frame of shape $[3]$, with three cells: $2, 2$ and $2$.
+
+At this point, all argument frames have the same shape, and therefore the same number of cells (modulo streaming) as the common frame. We can therefore invoke $F$ once per cell of the common frame;  for each call, we need to select corresponding cells from each argument frame. The precise mechanism we use to do that is given below. 
 }
 
 If $F$ is reactive[\ref{reactivityAndSynchronicity}], let $zip = zip_{react_k}$, otherwise let $zip = zip_{sync_k}$.
 
 {\em
-The use of zip serves to combine multiple arguments into one. An alternative formulation might use a $map_k$ function instead.
+The use of zip serves to combine multiple arguments into one.  
+Each cell of the zipped frame consists of an argument vector, whose elements are arguments of the rank expected by $F$.
+We will then invoke $F$ on each cell of the zipped frame.
+
+An alternative formulation might use a $map_k$ function instead.
 However, using zip gives us a convenient place to manage reactivity.
 It is the use of the different zip functions that determine when a reactive function will fire. 
 }
