@@ -543,6 +543,9 @@ public body ^ <ExprAST> = (
 (* Emulate FunctionAST protocol *)
   ^expression
 )
+public id ^ <String> = (
+  ^header id
+)
 ) : (
 )
 public class RerankAST reranking: fn <String> to: rs <List[Integer]> position: p <{Integer. Integer}> = ExprAST position: p (
