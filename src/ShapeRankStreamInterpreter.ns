@@ -143,7 +143,6 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
    result.
   ] withRangeOfDimensions:  thisVisit type dimensions.
   | 
-  
   ^resultFrame asStream.  
 )
 ) : (
@@ -175,44 +174,37 @@ public map: f <[T | X def]> ^ <Frame[X]> = (
         dimensions: dimensions 
         cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)])
 )
-public prefixOf: f <Frame> ^ <Boolean> = (
-  (* Answer whether my shape is a prefix of f's or vice versa *)
-    dimensions size >= f dimensions size ifTrue: [^f isPrefixOf: self].
-   ^isPrefixOf: f
-)
-inPrefixRelationWith: f <Frame> ^ <Boolean> = (
-  (* Answer whether my shape is a prefix of f's or vice versa *)
-    dimensions size >= f dimensions size ifTrue: [^f isPrefixOf: self].
-   ^isPrefixOf: f
-)
 public asStream ^ <HyperStream[T]> = (
   ^cells map: [:c <Cell[T]> | c contents size = 1 ifTrue:  [c contents first] ifFalse: [c contents] ]
 )
-public synchronouslyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
-  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
-    (*  Check that f's shape is a prefix of my shape or vice versa *)
-     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
-     (* fuse *)
-     ^Frame dimensions: maxdims cells: (synchronouslyFuse: cells with: f cells) 
-)
 public reactivelyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
-  | maxdims <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [dimensions] ifFalse: [f dimensions]. |
-    (*  Check that f's shape is a prefix of my shape or vice versa *)
-     (inPrefixRelationWith: f) ifFalse: [Error signal: 'Frame ', f printString, ' is not a prefix of ', printString, ' nor vice versa'].
+  | 
+  prefix <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [
+    fuseDims: (dimensions copyFrom: 1 to:  f dimensions size) with: f dimensions.
+    ] ifFalse: [fuseDims: (f dimensions copyFrom: 1 to:  dimensions size) with: dimensions.]. 
+    suffix = dimensions size > f dimensions size ifTrue: [
+      dimensions copyFrom: f dimensions size + 1 to: dimensions size
+      ] ifFalse: [f dimensions copyFrom: dimensions size + 1 to: f dimensions size].
+  |
      (* fuse *)
-     ^Frame dimensions: maxdims cells: (reactivelyFuse: cells with: f cells)
+     ^Frame dimensions: prefix, suffix cells: (reactivelyFuse: cells with: f cells)
 )
-public isPrefixOf: f <Frame> ^ <Boolean> = (
-  (* Answer whether my shape is a prefix of f's. Must only be called if length(shape(f))  >= length(shape(self)) *)
-   dimensions with: (f dimensions copyFrom: 1 to: dimensions size) do: [:d <Integer | UnboundedDimension> :fd <Integer | UnboundedDimension> |
-      (d = fd or: [d isKindOfUnboundedDimension or: [fd isKindOfUnboundedDimension ]]) ifFalse: [^false]
-   ].
-   ^true
+public synchronouslyFuse: f <Frame[S def]> ^ <Frame[T | S]> = (
+  | 
+  prefix <List[Integer | UnboundedDimension]> = dimensions size > f dimensions size ifTrue: [
+    fuseDims: (dimensions copyFrom: 1 to:  f dimensions size) with: f dimensions.
+    ] ifFalse: [fuseDims: (f dimensions copyFrom: 1 to:  dimensions size) with: dimensions.]. 
+    suffix = dimensions size > f dimensions size ifTrue: [
+      dimensions copyFrom: f dimensions size + 1 to: dimensions size
+      ] ifFalse: [f dimensions copyFrom: dimensions size + 1 to: f dimensions size].    
+    |
+     (* fuse *)
+     ^Frame dimensions: prefix, suffix cells: (synchronouslyFuse: cells with: f cells) 
 )
 public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
   ^Frame 
         dimensions: ds 
-        cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)])
+        cells: (cells map: [:c <Cell[T]> | Cell for: (f value: c contents)] withRangeOfDimensions: ds)
 )
 ) : (
 )
@@ -280,7 +272,6 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
    result.
   ] withRangeOfDimensions:  callee visits first type dimensions.
   | 
-  
   ^resultFrame asStream.  
 )
 ) : (
@@ -701,6 +692,9 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
   | 
   
   ^resultFrame asStream.  
+)
+fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
+  ^super fuseDims: ds1 with: ds2
 )
 ) : (
 )
