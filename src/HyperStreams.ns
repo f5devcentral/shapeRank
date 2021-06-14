@@ -281,7 +281,7 @@ public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDime
 )
 ) : (
 )
-public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: i rank (
+public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: ds size (
   |
   public iterator <Iterator[HyperStream[T]]> = i.
   public isComplete <Boolean> ::= false.
@@ -303,11 +303,6 @@ public filter: f <[:T | Boolean]> ^ <BoundedHyperStream[T]> = (
 )
 public isScalar ^ <Boolean> = (
   ^false
-)
-public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
- (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
-  ^class iteratingOver: (iterator map: f) dimensions: dimensions 
-
 )
 public = other <Object> ^ <Boolean> = (
   other isKindOfUnboundedHyperStream ifFalse: [^false].
@@ -350,21 +345,27 @@ public printString ^ <String> = (
 	        separatedBy: [contentString:: contentString, ', '].
 	   ^'[', contentString, ', ...]'.
 )
+public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
+ (* A shallow mapping. Distinct for hyperstreams with a nested structure *)
+  ^class iteratingOver: (iterator map: f withRank: rank) dimensions: dimensions 
+
+)
 public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
-  ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f]) dimensions: {dimensions first}, ds 
+  ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f withRangeOfDimensions: ds] withRank: dimensions size) dimensions: ds 
 )
 ) : (
 )
-class MappedIterator mapping: f <[:T | R]> on: i <Iterator> =  DerivedIterator fromIterator: i (
+class MappedIterator mapping: f <[:T | R]> on: i <Iterator> rank: r <Integer> =  DerivedIterator fromIterator: i (
   |
   function <[:T | R]> = f.
+  public rank <Integer> = r.
   |
 ) (
 public next ^ <R> = (
   ^function value: iterator next
 )
 public clone = (
-  ^class mapping: function on: iterator clone
+  ^class mapping: function on: iterator clone rank: rank
 )
 ) : (
 )
@@ -399,8 +400,11 @@ public rank ^ <Integer> = (
 public clone = (
   self subclassResponsibility
 )
+public map: f <[:T | R]> withRank: r <Integer> = (
+  ^MappedIterator mapping: f on: self rank: r 
+)
 public map: f <[:T | R]> = (
-  ^MappedIterator mapping: f on: self
+  ^MappedIterator mapping: f on: self rank: rank
 )
 ) : (
 )
