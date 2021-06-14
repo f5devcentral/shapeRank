@@ -288,6 +288,7 @@ public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]
   |
   window:: List new.
   dimensions:: ds.
+  assert: i rank = ds size message: 'Iterator rank and stream rank disagree'.
 ) (
 public isKindOfUnboundedHyperStream ^ <Boolean> = (
   ^true
@@ -351,7 +352,7 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
 
 )
 public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
-  ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f withRangeOfDimensions: ds] withRank: dimensions size) dimensions: ds 
+  ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f withRangeOfDimensions: ds] withRank: ds size) dimensions: ds 
 )
 ) : (
 )
