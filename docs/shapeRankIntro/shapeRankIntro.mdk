@@ -29,9 +29,9 @@ The evaluator is live: you can edit the
 expression and the result will recompute as you type. 
 
 
-A hyperstream has a shape, which is a vector of
+A hyperstream has a _shape_, which is a vector of
 integers giving its dimensions. In our example, the shape of the
-hyperstream is [3]. A hyperstream has a rank, which is the length of 
+hyperstream is [3]. A hyperstream also has a _rank_, which is the length of 
 its shape,
 so our example has rank 1. The rank and shape are displayed below the
 result, to help you become familiar with the concepts.
@@ -76,7 +76,7 @@ It also holds for hyperstreams of any rank.
 
 In mathematics, we often implicitly extend scalars to tensors when
   operating on tensors. ShapeRank does this automatically for
-  you. Again, this true regardless of function arity, and works for
+  you. Again, this is true regardless of function arity, and works for
   arbitrary ranked hyperstreams, as long as it makes sense.
 
 <div class="shapeRankEvaluator" expression = "2 * [1, 10, 100]"></div>
