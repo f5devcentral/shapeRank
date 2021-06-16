@@ -267,12 +267,13 @@ the ASCII CR character followed by the ASCII LF character
 \def\ParamList#1{\LPAREN{} \CommaList{#1}{} \RPAREN}
 \def\ParamListOp#1{\LPAREN{} \CommaListOp{#1}{} \RPAREN}
 
-\bnf{Program}{(\SYNC? \PROGRAM{} \synt{FunctionSignatureOptionalReturn})? \synt{Declaration}? \synt{Expression}}
+\bnf{Program}{(\SYNC? \PROGRAM{} \synt{ProgramSignature})? \synt{Declaration}? \synt{Expression}}
 
-\bnf {Parameter} {\VALIDENT{} \synt{TypeSigSuffix}}
+\bnf {Parameter} {\VALIDENT{} \synt{RankSigSuffix}?}
+\bnf {ProgramParameter} {\VALIDENT{} \synt{TypeSigSuffix}}
 \bnf {PropertyName} {\VALIDENT{} \alt \synt{StringLiteral}}
 \bnf {ParameterList} {\ParamList{\synt{Parameter}}}
-
+\bnf {ProgramParameterList} {\ParamList{\synt{ProgramParameter}}}
 
 %% Declarations
 \bnf {Declaration} {
@@ -282,17 +283,22 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{TypeDeclaration})
 }
 
-\bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList} \synt{TypeSigSuffix}}
-\bnf {FunctionSignatureOptionalReturn} {\VALIDENT{} \synt{ParameterList} \synt{TypeSigSuffix}?}
-\bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignatureOptionalReturn} \BIND \synt{Expression}}
-\bnf {LetBinding} {\LET{} \VALIDENT{} \synt{TypeSigSuffix}? \BIND{} \synt{Expression}}
+\bnf {ProgramSignature} {\VALIDENT{} \synt{ProgramParameterList}}
+\bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList}}
+\bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignature} \BIND \synt{Expression}}
+\bnf {LetBinding} {\LET{} \VALIDENT{} \BIND{} \synt{Expression}}
 \bnf {TypeDeclaration} {\TYPE{} \TYPEIDENT{} \BIND{} \synt{TypeSig}}
 \bnf {TypeSigSuffix} {\COLON{} \synt{TypeSig}}
+\bnf {RankSigSuffix} {\COLON{} \synt{RankSig}}
 
 %% Type signatures
 \bnf {TypeSig} {
   \synt{ElementType}
   \alt \synt{HyperstreamType}
+}
+
+\bnf {RankSig} {
+  \ATSIGN \alt \synt{[]+}
 }
 
 \bnf{ElementType}{
@@ -311,7 +317,8 @@ the ASCII CR character followed by the ASCII LF character
 \bnf{Shape}{\SHAPEPARAM  \BANG? \alt \synt{Shape :: Shape} \alt \synt{[Dimension?]*}}
 
 % Expressions
-\bnf {Expression} {\ATSIGN? \synt{WhereBindingExpression}}
+\bnf {Expression} {\ATSIGN? (\synt{WhereBindingExpression} \alt \synt{ParenthesizedExpression})}
+\bnf{ParenthesizedExpression}{\LPAREN{} \synt{Expression} \RPAREN}
 \bnf {WhereBindingExpression} {\synt{OrExpression} \alt \synt{WhereBindingExpression} \WHERE{} \VALIDENT{} \BIND{} \synt{OrExpression}}
 \bnf {ConditionalExpression} {\IF{} \synt{Expression} \THEN{} \synt{Expression} \ELSE{} \synt{Expression}}
 \bnf {OrExpression} {\synt{AndExpression} \alt  \synt{OrExpression} \OR{} \synt{AndExpression}}

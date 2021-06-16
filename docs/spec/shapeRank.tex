@@ -115,10 +115,9 @@ A {\em let binding} assigns a value to an identifier.
 
 \LetBinding{}
 
-The expression $\LET{}$ $ID$ \BIND{} $e$ is equivalent to $\LET{}$ $ID$\COLON{} $T$ \BIND{} $e$  where $T$ is the type of $e$.
-Let  $l \triangleq $ \LET{} $ID$\COLON{} $T$ \BIND{} $e$
+Let  $l \triangleq $ \LET{} $ID$ \BIND{} $e$
 
-The effect of $l$ is that variable $ID$ is added to the enclosing program's compile-time scope, with type [\ref{types}] $T$.
+The effect of $l$ is that variable $ID$ is added to the enclosing program's compile-time scope.
 
 
 \section{Functions}
@@ -127,59 +126,38 @@ The effect of $l$ is that variable $ID$ is added to the enclosing program's comp
 \FunctionDeclaration
 
 A function declaration defines a transformation of one or more input streams into an output stream. A function declaration has a
-{\em function signature} which specifies the name of the function, and the type of each of its parameters.
-
-{\em The type of a parameter will specify its element type and its shape (and therefore its rank). }
+{\em function signature} which specifies the name of the function, and the rank of each of its parameters.
 
 If the keyword \SYNC precedes the keyword \FUNC, the function is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
 \FunctionSignature{}
 
-\FunctionSignatureOptionalReturn{}
-
 \ParameterList{}
 
 \Parameter{}
 
-A function signature has the form  $F\LPAREN{}p_1\COLON T_1\COMMA{} \ldots\COMMA{} p_n\COLON T_n\RPAREN{}\COLON T_r$ where $F$ is an identifier that specifies the name of the function, and $p_i\COLON{} T_i, i \in 1..n$ specify the function's parameters; each $p_i$ is an identifier that names the $i$th parameter, and the corresponding $T_i$ is a type [\ref{types}], which implicitly specifies the parameter's rank.  Finally, $T_r$ specifies the {\em return type}, the type of a call [\ref{calls}] of a function that has said signature. The specification of the return type may be omitted in certain circumstances where it may be inferred, as discussed in section \ref{dexFunctions}.
-The signature corresponds to the function type [\ref{functionTypes}] $T_1, \ldots, T_n \to T_r$.
+\RankSigSuffix{}
 
-{\em
-Note that,  as described in section \ref{typeVariables}, the parameter list may implicitly declare type variables. However, the return type $T_r$ may not. If type variables are introduced, the resulting function type will of course be polymorphic. 
-}
+\RankSig{}
 
-Processing a function signature has the following effect:
-
-A new scope, $s_{sig}$, is introduced. The scope $s_{sig}$ is nested in the compile-time scope of the enclosing module definition, $s_m$, yielding a scope $s \triangleq s_m \leftarrow s_{sig}$. The scope $s$ is known as {\em the compile-time scope of the function signature}.
-The current compile-time scope is set to $s$, and the types of the formal parameters and the return type are checked in accordance with the rules of section \ref{typeExpressions}. Then the current compile-time scope is set back to $s_m$.
-
-{\em 
-The function signature scope is intended to contain bindings for any type variables [\ref{typeVariables}] that are introduced in the parameter list.
-}
+A function signature has the form  $F\LPAREN{}p_1\COLON R_1\COMMA{} \ldots\COMMA{} p_n\COLON R_n\RPAREN{}$ where $F$ is an identifier that specifies the name of the function, and $p_i\COLON{} T_i, i \in 1..n$ specify the function's parameters; each $p_i$ is an identifier that names the $i$th parameter, and the corresponding $R_i$ specifies the parameter's rank.  The specification of a parameter's rank may be omitted in which case it defaults to 0.
 
 It is a compile-time error if $p_i = p_j, i \ne j$.
 
-The function declaration \FUNC{}  $F\LPAREN{}p_1\COLON T_1\COMMA{} \ldots\COMMA{} p_n\COLON T_n\RPAREN{}$  \BIND{} $e$ is equivalent to \FUNC{} $F\LPAREN{}p_1\COLON T_1\COMMA{} \ldots\COMMA{} p_n\COLON T_n\RPAREN{}\COLON T_e$  \BIND{} $e$ where $T_e$ is the type of $e$ in the function's compile-time scope.
-
-Let $f \triangleq$ \FUNC{} $F\LPAREN{}p_1\COLON T_1\COMMA{} \ldots\COMMA{} p_n\COLON T_n\RPAREN{}\COLON T_r$  \BIND{} $e$.
+Let $f \triangleq$ \FUNC{} $F\LPAREN{}p_1\COLON R_1\COMMA{} \ldots\COMMA{} p_n\COLON R_n\RPAREN{}$  \BIND{} $e$.
 
 Processing of $f$  has the following effect:
 
-A binding of $F$ to $f$ is added to the compile-time scope of the enclosing program with the type schema [\ref{typeGeneralization}] $generalize(T_1, \ldots, T_n \to T_r)$ [\ref{functionTypes}].
+A binding of $F$ to $f$ is added to the compile-time scope of the enclosing program.
 
-{\em
-Generalization produces a type schema (aka polymorphic type) for the function, that will be instantiated separately at every call, allowing the function to be used polymorphically. 
-}
-
- Then the function signature is processed. Let $s_0$ be the compile-time scope of the function signature.
+ Let $s_0$ compile-time scope of the enclosing program.
 A new scope $s$ is created, and is known as the {\em immediate scope of} $f$. The scope $s_0 \leftarrow s$ is known as {\em the compile-time scope of $f$}.
 
-{\em Thus, $s$ is nested in the function signature's scope, which is nested in the enclosing module definition scope.}
+{\em Thus, $s$ is nested in the enclosing module definition scope.}
 
-The variables $p_i$ are added to $s$, with types $T_i, i \in 1..n$ respectively.
+The variables $p_i$ are added to $s$, with ranks $R_i, i \in 1..n$ respectively.
 
-Let $T_e$ be the type of $e$ in $s$. 
-It is a compile-time error if  $T_e$ is not a subtype [\ref{subtyping}] of $T_r$.  It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
+It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
 
 \section{Built-in Functions}
 \label{builtinFunctions}
@@ -200,7 +178,7 @@ The function $makeTensor(dims: \ATSIGN{}S, contents: []\DOLLAR{}T):\ATSIGN{}S \D
 will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
 
 {\em
-See sectiion \ref{hyperstreamTypes} for the details of the type annotations used above.
+See section \ref{hyperstreamTypes} for the details of the type annotations used above.
 }
 
 \subsection{Indices}
@@ -247,7 +225,7 @@ $shapeOf(s: \ATSIGN{} S \DOLLAR{} T): \ATSIGN{} S$
 \subsection{Higher-Order Functions}
 \label{higherOrderFunctions}
 
-ShapeRank supports a number of higher-order functions. They treat their function-valued arguments as scalar streams [\ref{scalars}]. We give the signatures of these functions as we do those of normal ShapeRank functions, but extended with the notation for function types.
+ShapeRank supports a number of higher-order functions. They treat their function-valued arguments as scalar streams [\ref{scalars}]. We give the signatures of these functions as we do those of  ShapeRank programs, but extended with the notation for function types.
 
 
 \subsubsection{Fold}
@@ -360,7 +338,7 @@ A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the 
 \label{programsAndIO}
 
 A {\em program} consists of an optional  {\em program signature}, followed by an optional  series of declarations, a semicolon and an expression.
-A program signature is exactly like a function signature [\ref{functions}], but it specifies the name of the program as whole. In addition it specifies the type of each of the program's parameters, and, optionally, it's result type.  Unlike a function, a program is not invoked a by function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
+A program signature specifies the name of the program as whole. In addition it specifies each of the program's parameters.  Each parameter has a specifiation similar to that of a function parameter;. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided. Unlike a function, a program is not invoked by a function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
 
 {\em 
 Thus, ShapeRank has no constructs for I/O in the traditional sense.
@@ -373,7 +351,9 @@ If the keyword \SYNC precedes the keyword \PROGRAM, the program is synchronous [
 \section{Expressions}
 \label{expressions}
 
-Expressions evaluate values. Values are computed relative to a runtime scope. When we say that $e$ evaluates to $v$, we mean it evaluates to $v$ in the current runtime scope. 
+Expressions evaluate to values. Values are computed relative to a runtime scope. When we say that $e$ evaluates to $v$, we mean it evaluates to $v$ in the current runtime scope.
+
+\Expression{} 
 
 Every expression in a legal ShapeRank program has a type [\ref{types}] that is determined statically, at compile-time. If no type can be determined for an expression, the expression and its enclosing program are illegal and a compile-time error must result. The process of determining the type of an expression is known as type inference [\ref{typeInference}]. Type inference  is usually dependent on the compile-time scope in which it occurs. When we say that an expression $e$ has type $T$, we mean that $e$ has type $T$ in the current compile-time scope.
 
@@ -405,10 +385,7 @@ It is a compile-time error if $ID$ is bound to a type.
 \subsection{Parenthesized Expressions}
 \label{parenthesizedExpressions}
 
-{\bf ParenthesizedExpression} $\rightarrow$ \LPAREN{} Expression \RPAREN{} $|$ \LPAREN{} Expression TypeSigSuffix \RPAREN{}
-
-
-The expression  $\LPAREN{}e \RPAREN{}$ is equivalent to the expression $\LPAREN{}e \COLON{} T \RPAREN{}$ where $T$ is the type of $e$.
+\ParenthesizedExpression{}
 
 Let $p \triangleq \LPAREN{}e \COLON{} T \RPAREN{}$.
 
@@ -449,7 +426,7 @@ A function $g(a_1, \ldots, a_k)$ may be {\em mapped} on to a frame $f_h$, writte
 \subsubsection{Zipping}
 \label{zipping}
 
-Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elements, $ i \in 1..k, k \ge 0$:
+Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elements, $ i \in 1..k, k > 0$:
 
  The function $zip_{sync_k}$ produces a hyperstream $h_{sync} \triangleq (h_{1_1}, \ldots, h_{k_1}), \ldots, (h_{1_n}, \ldots, h_{k_n})$ where $n = min(s_i), i \in 1..k$.
  The number of available elements of $h_{sync}$ at any time is no more than $min(n_i), i \in 1..k$
@@ -457,7 +434,7 @@ Given hyperstreams $h_i$, each with dynamic size $s_i$ and $n_i$  available elem
 {\em
 Note that the $h_i$ may include both bounded and unbounded streams. If any of the $h_i$ are bounded, then the result of $zip_{sync_k}$ is bounded, and it's length is that of the shortest of the $h_i$. If all  the $h_i$ are unbounded, then $zip_{sync_k}$ is unbounded, with a dynamic size that is the smallest of the dynamic sizes of the $h_i$.
 
-Of necessity, the number of available elements of $h_{sync}$ at any time is no more than the
+Of necessity, the number of available elements of $h_{sync}$ at any time is no more than the minimum among the $n_i$.
 
 An important property of $zip_{sync_k}$ is that it synchronizes its inputs.
 }
@@ -479,7 +456,7 @@ $zip{sync_k}$, and this too would be unacceptable.
 \subsubsection{Replication}
 \label{replication}
 
-A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger frame, $f_r$ of shape $[d_1, \ldots, d_n]$ for any $n$ where $n \ge k$. Each cell of $f_r$ is equal to $f_0$.
+A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger frame, $f_r$ of shape $[d_1, \ldots, d_n]$ for any $n$ where $n \ge k$. 
 
 
 
@@ -501,14 +478,14 @@ arguments.
 The callee, $F$, will be invoked with arguments of the rank it expects; however, if any of its arguments are of higher rank than expected, it will be invoked multiple times.
 The results of these invocations will be assembled into a result stream. 
 
-It is easiest to understand the process by considering a function of one argument, such as logical negation, $not()$. Given a call such
+It is easiest to understand the process by considering a function of one argument, such as the logical negation function, $not()$. Given a call such as
 
 $not([true, false])$
 
-we see that the rank of the argument is 1, but the function expects a scalar argument, i.e, an argument of rank 1. We therefore produce a frame of rank $1 - 0 = 1$, with cells of rank $0$.  We can now invoke $not()$ on each of the two cells, and produce a result by assembling the scalar results into a result vector, $[false, true]$.
+we see that the rank of the argument is 1, but the function expects a scalar argument, i.e, an argument of rank 0. We therefore produce a frame of rank $1 - 0 = 1$, with two cells of rank $0$.  We can now invoke $not()$ on each of the two cells, and produce a result by assembling the scalar results into a result vector, $[false, true]$.
 
 If all functions were unary, the argument framing rules given so far would suffice. However, the situation is more complex given multiple arguments.
-To deal with these, we need the notion of common frame for all the arguments as described below.
+To deal with these, we need the notion of {\em common frame} for all the arguments as described below.
 }
 
 Let $common\_frame$ be a frame such that:
@@ -589,7 +566,7 @@ Number literals are either integers literals or floating-point literals.
 \subsubsection{Integer Literals}
 \label{integerLiterals}
 
-An {\em integer literal} represents an integer scalar.  Integer literals have type $[]\INT{}$ in any scope $S$.
+An {\em integer literal} represents an integer scalar.  An integer literal with value $n$ have type $[]n{}$ in any scope $S$.
 
 Integer literals can be expressed in decimal and hexadecimal systems. The prefix `0x` or `0X` indicates a hexadecimal number literal. 
 
@@ -623,7 +600,7 @@ Single-line string literals are enclosed in double quotes (\textsf{"}), for exam
 \item Verbatim string literals are enclosed in back-ticks (`). Only back-tick characters must be escaped using another back-tick character.
 \end{itemize}
 
-The type of a string literal in any scope $S$ is $[]\STRING$.
+A string literal has type $[]\STRING$ in any scope $S$.
 
 \subsection{Hyperstream Literals}
 \label{hyperstreamLiterals}
@@ -637,6 +614,8 @@ Hyperstream literals denote hyperstreams [\ref{concepts}] of fixed length.
 Let $hs = [e_1, \ldots, e_n]$  be a hyperstream literal. 
 
 The type of $hs$ in scope $S$  is $[n] shape(t_1)gcs(t_i)$ where $t_i$ is the type of $e_i$ in $S, i = 1..n$.
+
+It is a compile time error if $shape(t_i) \ne shape(t_j)$ for any $i, j \in 1..n$.
 
 % define gcs. Decide on consistent notation for shape concatenation.
 
@@ -665,11 +644,13 @@ Let $m \triangleq e\DOT{}p$.
 
 Evaluation of $m$ proceeds as follows:
 
-The value of $m$ is the value of the call expression [\ref{calls}] $dot_T(e)$, where $dot_T$ is defined as if by the function declaration  [\ref{functions}] $\FUNC{}$ $dot_T(x: T): T_k = x.p$,  $T = \LCURLY{}p_1\COLON{} T_1\COMMA{} \ldots\COMMA{} p_n\COLON{} T_n\RCURLY$ is the type of $e$, and $p_k = p$.
+The value of $m$ is $v$ if the value of $e$ is a record scalar with a field $p$ with value $v$; otherwise it is the value of the call expression [\ref{calls}] $dot_T(e)$, where $dot_T$ is defined as if by the function declaration  [\ref{functions}] $\FUNC{}$ $dot_T(x) = x.p$.
 
-The type of $m$ is $T_k$. 
 
-It is a compile-time error if $T$ is not a struct type [\ref{structTypes}] with a member named $p$. 
+The type of $m$ scope $S$
+ is $T$ if the type of $e$ in $S$ is a scalar struct type [\ref{structTypes}] with a field $p$ with type $T$; otherwise it is the type of the call expression [\ref{calls}] $dot_T(e)$ in $S$, where $dot_T$ is defined as above.
+
+Let $T_e$ be the type of $e$ is scope $S$.  It is a compile-time error if the base type of $T_e$ is not a struct type with a member named $p$. 
 
 \subsection{Member Expressions}
 \label{memberExpression}
@@ -805,36 +786,18 @@ A {\em rerank expression} takes an existing function and produces a new one, who
 
 Let $r \triangleq  \RERANK{}$ $f$  $\TO{}$ $r_1, \ldots, r_n$.
 
-where $f$ is a function with signature $f(p_1: S_1 T_1, \ldots, p_n: S_n T_n)$ and let $r_i = rank(S_i), i \in 1..n$. Then
+where $f$ is a function with signature $f(p_1: R_1, \ldots, p_n: R_n)$. Then
 
 Then $r$ evaluates to a function with body $f(a_1, \ldots, a_n)$ and signature 
-$x(a_1: [d_{11}]\ldots [d_{1{r_1}}]), \ldots, a_n: [d_{n1}]\ldots [d_{n{r_n}}]))$, where $x$ is name unique in the program, and the $d_{ij}$ are fresh dimension variables, which are not necessarily distinct from each other.
+$x(a_1: []_1\ldots []_{r_1}), \ldots, a_n: []_1\ldots []_{r_n})$, where $x$ is name unique in the program.
 
-{\em
-The precise bindings of the $d_{ij}$ are determined such that they respect the constraints imposed by the body of $x$.
-
-For example:
-
-\RERANK{} * \TO{} 1, 1
-
-produces
-
-$*_{[1,1]}(a: [\DOLLAR{}d_1] Num, b: [\DOLLAR{}d_1] Num) = a * b$
-
-Here, the fresh type variable is shared across both parameters. In contrast, given  $f(a: T, b: [\DOLLAR{}d] T)$
-
-\RERANK{} f \TO{} 2, 1
-
- produces
-
-$f_{[2,1]}(a: [\DOLLAR{}d_{11}][\DOLLAR{}d_{12}] T, [\DOLLAR{}d_{21}] T) = f(a, b)$
-
-keeping all dimension variables distinct.
-
-The algorithm for computing the signature of the reranked function needs to be specified.
-}
-
-A rerank expression can only be used where a function is expected - as the target of a call, or as an argument to a higher-order function.
+It is a compile-time error if a rerank expression is used anywhere except the following:
+\begin{itemize}
+\item as the target of a call.
+\item  as an argument to a higher-order function whose base type is a function.
+\item as the value of a let binding, or 
+\item immediately following the keyword \RERANK{} another rerank expression. 
+\end{itemize}
 
 \subsection{Casts}
 \label{casts}
@@ -843,13 +806,13 @@ A {\em shape cast expression} can be used to dynamically test whether the shape 
 
 \ShapeCastExpression
 
-Let $sc \triangleq \SHAPECAST{}$ $e$ $\TO{}$ $e$.
-Let $s_e T_e$ be the type of $e$, and let $v$ be the value of $e$.
-Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, otherwise a runtime error occurs. The type of $sc$ is $s T_e$. 
+Let $sc \triangleq \SHAPECAST{}$ $e$ $\TO{}$ $s$.
+Let $s_e T_e$ be the type of $e$ in scope $S$, and let $v$ be the value of $e$.
+Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, otherwise a runtime error occurs. The type of $sc$ in scope $S$ is $s T_e$. 
 
-It is a compile-time error if the $s_e$ is statically incompatible with $s$.
+It is a compile-time error if the $s_e$ is not compatible $s$.
 
-{\em define what 'statically incompatible' means.}
+Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} \QUESTIONMARK{}$ or  $d_{2i} \QUESTIONMARK{}, i \in 1..r$
 
 
 
@@ -860,7 +823,7 @@ ShapeRank's type system guarantees that a ShapeRank program will not cause a typ
 Typing is determined with respect to a scope (or context) that varies per call site. 
 
 {\it
-This arrangement is unusual. It means that an expression is typechecked with respect to the types of the actual arguments of the surrounding function rather  than their
+This arrangement is unusual. It means that an expression is typechecked with respect to the types of the actual arguments of the surrounding function rather  than any
 formal types. This approach is possible because ShapeRank is not Turing complete and so we can perform type checking via an abstract interpretation that expands calls without risk of
 divergence. The abstract interpretation is independent of the size of the data the program operates on (except for literal arrays).
 
@@ -881,6 +844,9 @@ First, programmers need not specify shape and/or dimension variables in signatur
   \label{typeInference}
 
 Only the ranks of formal parameters of functions must be declared. All other information is inferred.
+
+Programs specify a type signature that specifies the rank and base type for each parameter. Programs also accept external functions as arguments.
+For parameters representing external functions, the base type is  function type where each parameter has a complete type signature including rank, dimensions and base type.
 
 The actual rules of type inference for each construct are given in the section describing that construct. However, these rules depend on a common set of concepts, defined in this section.
  
