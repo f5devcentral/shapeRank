@@ -158,20 +158,6 @@ public testLiterallInt = (
   assert: [result baseType isKindOfDimensionNumberAST].
   assert: result baseType dimension equals: 23.
 )
-public testMatVecmul = (
-  | result = typecheckFileNamed: 'matVecMul'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 1.
-  assert: (result shape dimensions at: 1) constant equals: 2.
-  assert: result baseType id equals: 'Int'.
-)
-public testMatVecmul_innerProduct = (
-  | result = typecheckFileNamed: 'matVecMul_inner_product'. |
-  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 1.
-  assert: (result shape dimensions at: 1) constant equals: 2.
-  assert: result baseType id equals: 'Int'.
-)
 public testMatmul = (
   | result = typecheckFileNamed: 'matmul'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -813,6 +799,40 @@ public testPairStreamSync3 = (
        and so we get 'Any' regardless of the specific base types of the arguments.
   *)
   assert: result baseType equals: 'Any'.
+)
+public testMatVecMul = (
+  | result = typecheckFileNamed: 'matVecMul'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testMatVecMulInnerProduct = (
+  | result = typecheckFileNamed: 'matVecMul_inner_product'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 1.
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: result baseType id equals: 'Int'.
+)
+public testMatmulRerank2  = (
+  expectTypeError: [typecheckFileNamed: 'matmul_rerank2'] 
+)
+public testMatmulInnerProduct2  = (
+  expectTypeError: [typecheckFileNamed: 'matmul_inner_product2']  
+)
+public testMatmulInnerProduct  = (
+  | result = typecheckFileNamed: 'matmul_inner_product'. |
+  assert: result shape rank equals: 2. 
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.  
+)
+public testMatmulRerank  = (
+  | result = typecheckFileNamed: 'matmul_rerank'. |
+  assert: result rank equals: 2. 
+  assert: (result shape dimensions at: 1) constant equals: 2.
+  assert: (result shape dimensions at: 2) constant equals: 3.
+  assert: result baseType id equals: 'Int'.
 )
 ) : (
 TEST_CONTEXT = ()

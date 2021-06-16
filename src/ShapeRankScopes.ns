@@ -906,24 +906,6 @@ primitiveTimes ^ <FunctionAST> = (
   |
   ^FunctionAST  named: #* parameters: ps returnType: (tyVNamed: #T) asTensorType body: body position: {0. 0}
 )
-public addPrelude: str withParser: parser = (
-  | preludeStr = 'func twice(x: Int):Int = 2*x
-func rank(t:@S$T): Int = length(shapeOf(t))
-func dotProduct(a: [$d]$T <: Num, b: [$d]$T): $T = reduce(+, 0, a*b)
-func vecMatmul(v: [$d1]$T <: Num, m: [$d1][$d2]$T): [$d2]$T = fold(+, 0, v*m)
-let timesVec = rerank * to 1, 1
-let reduceByRow = rerank fold to 0, 0 , 1
-func matVecmul( m: [$d1][$d2]$T <: Num, v: [$d2]$T): [$d1]$T = reduceByRow(+, 0, timesVec(v, m))
-func matmul(a: @X:: [$n]$T <: Num, b: [$n]::@Y $T): @X::@Y $T =
-  if length(shapeOf(b)) == 1 then matVecmul(a, b) else innerProduct(a, b, +, *)
-func !=(a: $S, b: $T): Bool = not(a == b)
-func avg(v: [$d]Float) = reduce(+, 0, v)/length(v)
-func softmax(a: [$d]Float): [$d]Float = exp(a)/reduce(+, 0, exp(a))
-func crossEntropy(p: [$d]Float, q: [$d]Float) = negate(p*log(q))
-func crossEntropyLoss(p: [$d]Float, q: [$d]Float) = reduce(+, 0, crossEntropy(p,q))/length(p)
-', str. |
-  (parser prelude parseString: preludeStr) do: [:ast | prelude add: ast ].
-)
 primitiveGeq ^ <FunctionAST> = (
   | 
   T = TypeVariableReferenceAST named: #T position: {0. 0}.
@@ -1441,6 +1423,24 @@ primitiveApply ^ <FunctionAST> = (
     ]. 
   |
   ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
+)
+public addPrelude: str withParser: parser = (
+  | preludeStr = 'func twice(x: Int):Int = 2*x
+func rank(t:@S$T): Int = length(shapeOf(t))
+func dotProduct(a: [$d]$T <: Num, b: [$d]$T): $T = reduce(+, 0, a*b)
+func vecMatmul(v: [$d1]$T <: Num, m: [$d1][$d2]$T): [$d2]$T = fold(+, 0, v*m)
+let timesVec = rerank * to 1, 1
+let reduceByRow = rerank fold to 0, 0 , 1
+func matVecmul( m: [$d1][$d2]$T <: Num, v: [$d2]$T): [$d1]$T = reduceByRow(+, 0, timesVec(v, m))
+func matmul(a: @X:: [$n]$T <: Num, b: [$n]::@Y $T): @X::@Y $T =
+   innerProduct(a, b, +, *)
+func !=(a: $S, b: $T): Bool = not(a == b)
+func avg(v: [$d]Float) = reduce(+, 0, v)/length(v)
+func softmax(a: [$d]Float): [$d]Float = exp(a)/reduce(+, 0, exp(a))
+func crossEntropy(p: [$d]Float, q: [$d]Float) = negate(p*log(q))
+func crossEntropyLoss(p: [$d]Float, q: [$d]Float) = reduce(+, 0, crossEntropy(p,q))/length(p)
+', str. |
+  (parser prelude parseString: preludeStr) do: [:ast | prelude add: ast ].
 )
 ) : (
 )
