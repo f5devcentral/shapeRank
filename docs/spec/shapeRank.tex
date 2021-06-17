@@ -117,7 +117,10 @@ A {\em let binding} assigns a value to an identifier.
 
 Let  $l \triangleq $ \LET{} $ID$ \BIND{} $e$
 
-The effect of $l$ is that variable $ID$ is added to the enclosing program's compile-time scope.
+Let $s$ be the enclosing program's compile-time scope, and let $T$ be the type of $e$ in $s$.
+The effect of $l$ is that variable $ID$ is added to $s$, and the type $T$ is associated with $ID$ in $s$
+
+{\em sloppy; need to make sure we cannot have recursive references.}.
 
 
 \section{Functions}
@@ -174,7 +177,7 @@ However, it is possible to define bounded hyperstreams.
 
 {\em In other words, arrays.}
 
-The function $makeTensor(dims: \ATSIGN{}S, contents: []\DOLLAR{}T):\ATSIGN{}S \DOLLAR{}T$
+The function $makeTensor(dims: \ATSIGN{}, contents: [])$
 will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
 
 {\em
@@ -184,9 +187,9 @@ See section \ref{hyperstreamTypes} for the details of the type annotations used 
 \subsection{Indices}
 \label{indices}
 
-The $indices$ function returns the indices of the first dimension of a hyperstream $s$. If $s$ is bounded, the result is $1 \RANGE{} length(s)$ [\ref{length}].  Otherwise, the result is a stream of integers in 1:1 correspondence with the elements of $s$, starting with 1, where each element is the natural number immediately succeeding its predecessor. The dynamic size [\ref{streams}] of $indices(s)$ is always equal to the dynamic size of $s$.
+The $indices$ function returns an integer vector consisting of the indices of the first dimension of a hyperstream $s$. If $s$ is bounded, the result is $1 \RANGE{} length(s)$ [\ref{length}].  Otherwise, the result is a stream of integers in 1:1 correspondence with the elements of $s$, starting with 1, where each element is the natural number immediately succeeding its predecessor. The dynamic size [\ref{streams}] of $indices(s)$ is always equal to the dynamic size of $s$.
 
-$indices(x: [\DOLLAR{}d]): [\DOLLAR{}d] Int$
+$indices(x: [])$
 
 {\em
 This allows us to compute things like the running average of a numeric stream $x$:
@@ -199,7 +202,7 @@ $\SYNC{}$  $\FUNC{}$ $avg(x) = scan(+, 0, x)/scan(+, 0, indices(x))$
 
 The $length$ function returns the length [\ref{concepts}] of a hyperstream.
 
-$length(s: \ATSIGN{} S \DOLLAR{} T): Number$
+$length(s: \ATSIGN{})$
 
 If the hyperstream is unbounded, the value \QUESTIONMARK{} is returned.
 
@@ -208,7 +211,7 @@ If the hyperstream is unbounded, the value \QUESTIONMARK{} is returned.
 
 The $rank$ function returns the rank [\ref{concepts}] of a hyperstream.
 
-$rank(s: \ATSIGN{} S \DOLLAR{} T): Int$
+$rank(s: \ATSIGN{})$
 
 \subsection{ShapeOf}
 \label{shapeOf}
@@ -220,7 +223,7 @@ It follows from the  definition of shape and length [\ref{length}] that
 if any  dimension of the hyperstream is unbounded, the shape will contain the value \QUESTIONMARK{} at the corresponding  position.
 }
 
-$shapeOf(s: \ATSIGN{} S \DOLLAR{} T): \ATSIGN{} S$
+$shapeOf(s: \ATSIGN{})$
 
 \subsection{Higher-Order Functions}
 \label{higherOrderFunctions}
@@ -232,7 +235,7 @@ ShapeRank supports a number of higher-order functions. They treat their function
 \label{fold}
 
 
-The $fold$ function takes a binary function $f$, an initial value $acc$ and a bounded stream $x$ of rank $r \ge 1$ and length $\DOLLAR{}d$. It then computes the rank-polymorphic call [\ref{calls}]
+The $fold$ function takes a binary function $f$, an initial value $acc$ and a bounded stream $x$ of rank $r \ge 1$ and length $d$. It then computes the rank-polymorphic call [\ref{calls}]
 $f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size of $x$.
 
 {\em It is worth emphasizing that the calls to f above are rank-polymorphic, and will therefore adapt to the dimensions of x. See the discussion of the signature of fold below.
@@ -240,10 +243,10 @@ $f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size 
 
 {\em Note that fold only returns a result when $x$ is completed, which is why it is restricted to bounded streams.}
 
-$fold(f: \ATSIGN{}P\DOLLAR{}T \to{}\ATSIGN{}Q\DOLLAR{}S \to{}\ATSIGN{}P\DOLLAR{}T, acc: \ATSIGN{}P\DOLLAR{}T, x:[\DOLLAR{}d\BANG]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}S): \ATSIGN{}R::\ATSIGN{}P \DOLLAR{}T $
+$fold(f: P$ $T \to{}Q$ $S \to{}P$ $T, acc: P$ $T, x:[d\BANG]::R::Q $ $S): R::P $ $T $
 
 {\em
-The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[\DOLLAR{}d]::\ATSIGN{}R::\ATSIGN{}Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
+The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[d]::R::Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
 }
 
 \subsubsection{Inner Product}
@@ -259,7 +262,7 @@ The $innerProduct$ function takes binary functions $f$ and $g$ and hyperstreams 
 
 }
 
-$innerProduct(a: \ATSIGN{}X:: [\DOLLAR{}n]\DOLLAR{}T, b: [\DOLLAR{}n]::\ATSIGN{}Y\DOLLAR{}S,  f: \DOLLAR{}R \to \DOLLAR{}R \to \DOLLAR{}Q, g: \DOLLAR{}T \to \DOLLAR{}S \to \DOLLAR{}R): \ATSIGN{}X::\ATSIGN{}Y\DOLLAR{}Q$
+$innerProduct(a: X:: [n]$ $T, b: [n]::Y$ $S,  f: R \to R \to Q, g: T \to S \to R): X::Y$ $Q$
 
 \subsubsection{OuterProduct}
 \label{outerProduct}
@@ -270,7 +273,7 @@ The $outerProduct$ function calls [\ref{calls}] a binary function $f$ on all app
 The outerProduct function is similar to the concept of outer product in mathematics, but there are important differences. It explicitly abstracts over the 'product' operator, $f$, which need not be a mathematical product in any sense. And of course, it applies to hyperstreams rather than tensors.
 }
 
-$outerProduct(f: \ATSIGN{}S_1 \DOLLAR{}T_1 \to{} \ATSIGN{}S_2 \DOLLAR{}T_2 \to{} \ATSIGN{}S_3 \DOLLAR{}T_3, a: [d_1]::\ATSIGN{}S_4::\ATSIGN{}S_1 \DOLLAR{}T_1, b: [d_2]::\ATSIGN{}S_5::\ATSIGN{}S_2 \DOLLAR{}T_2): [d_1]::\ATSIGN{}S_4::[d_2]::\ATSIGN{}S_5::\ATSIGN{}S_3 \DOLLAR{}T_3$
+$outerProduct(f: S_1 $ $T_1 \to{} S_2 $ $T_2 \to{} S_3 $ $T_3, a: [d_1]::S_4::S_1 $ $T_1, b: [d_2]::S_5::S_2 $ $T_2): [d_1]::S_4::[d_2]::S_5::S_3 $ $T_3$
 
 {\em
 The signature includes 'padding' much like that of fold above. Here, either the elements of $a$ or of $b$, or both, may have ranks that are strictly greater than what is required by $f$.
@@ -284,7 +287,7 @@ Hence, each has its own distinct padding shape ($S_4$ and $S_5$ respectively).
 The $reduce$ function takes a binary function $f$, an initial value $acc$ and a bounded stream $x$ of rank $r \ge 1$. It then computes
 $f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size of $x$.
 
-$reduce(f: \ATSIGN{}S \DOLLAR{}T \to{} \ATSIGN{}S \DOLLAR{}T \to{} \ATSIGN{}S \DOLLAR{}T, acc: \ATSIGN{}S \DOLLAR{}T, x:[\DOLLAR{}d\BANG]::\ATSIGN{}R::\ATSIGN{}S \DOLLAR{}T): \ATSIGN{}R::\ATSIGN{}S \DOLLAR{}T$
+$reduce(f: S $ $T \to{} S $ $T \to{} S $ $T, acc: S $ $T, x:[d\BANG]::R::S $ $T): R::S $ $T$
 
 {\em
 Reduce works just like fold, except that we insist that both of the arguments to $f$ must have the same type. This allows us to compute the
@@ -302,7 +305,7 @@ The $scan$ function operates like $fold$, except that it produces all of its int
 Therefore, scan, unlike fold, is suitable for application to unbounded hyperstreams. Since scan is inherently sequential, there is no justification for a separate version analogous to reduce.
 }
 
-$scan(f: \ATSIGN{}P \DOLLAR{}T \to{} \ATSIGN{}Q \DOLLAR{}T \to{} \ATSIGN{}P \DOLLAR{}T, acc: \ATSIGN{}P \DOLLAR{}T, x:[]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}T):[d]::\ATSIGN{}R::\ATSIGN{}Q \DOLLAR{}T$
+$scan(f: P $ $T \to{} Q $ $T \to{} P $ $T, acc: P $ $T, x:[]::R::Q $ $T):[d]::R::Q $ $T$
 
 \section{Modularity}
 \label{modularity}
@@ -338,7 +341,29 @@ A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the 
 \label{programsAndIO}
 
 A {\em program} consists of an optional  {\em program signature}, followed by an optional  series of declarations, a semicolon and an expression.
-A program signature specifies the name of the program as whole. In addition it specifies each of the program's parameters.  Each parameter has a specifiation similar to that of a function parameter;. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided. Unlike a function, a program is not invoked by a function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the parameters declared in the program signature to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
+
+\Program{}
+
+A program signature specifies the name of the program as whole. In addition it specifies the program's parameters.  These include {\em value parameters} and {\em type parameters}. 
+
+\ProgramSignature{}
+
+\ProgramParameterList{}
+
+\ProgramParameter{}
+
+\TypeSigSuffix{}
+
+\TypeSig{}
+
+Each value parameter has a specification similar to that of a function parameter. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided. Unlike a function, a program is not invoked by a function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the type parameters \ref{typeVariables} and value parameters of the program. 
+
+{\em
+How an implementation supplies type parameters is beyond the scope of this specification. Typically it will require them to be given explicitly by the user.
+It may be possible, in some environments, to infer some or all of the type variables.
+}
+
+The value parameters declared in the program signature are bound to external data sources. These sources are the program's sole source of input. The program's result is the value of its expression, and this is its sole external output. 
 
 {\em 
 Thus, ShapeRank has no constructs for I/O in the traditional sense.
@@ -346,7 +371,20 @@ Thus, ShapeRank has no constructs for I/O in the traditional sense.
 
 If the keyword \SYNC precedes the keyword \PROGRAM, the program is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
+Let $preludeScope$ be a scope that binds the name of every built-in function \ref{builtinFunctions} $f$'s name to $f$.
+Let $declarationScope$ be a scope that binds the name of every declaration $d$ given the the programs's list of declarations to $d$.
+Let $s$ be the scope $[p_i = a_i]$  where $p_i$ are the program's parameters, and $a_i$ the corresponding arguments.
 
+The {\em program scope} is $preludeScope \leftarrow declarationScope \leftarrow s$.  
+The program is well typed if its expression has valid type in the program scope.
+
+{\em Refine.
+
+The above implies a program is typechecked once for every set of  arguments, but this is not true.  A program needs to be checked once for every type of its arguments. 
+
+We need to flesh out these details, both for regular args and external functions.
+
+}
 
 \section{Expressions}
 \label{expressions}
@@ -662,7 +700,7 @@ A {\em member expression} is either an identifier expression [\ref{identifierExp
 \label{unaryExpressions}
 
 A {\em unary expression} is either a member expression [\ref{memberExpression}] or the application of a unary operator to two unary expressions.
-A {\em unary operator} is one of the operators \MINUS{} or  \NOT{}. The \MINUS{} operator implements IEEE floating point negation, with type $T \LT: \NUMBER{} \to T$. The \NOT{} operator implements boolean negation with type $\BOOL{} \to \BOOL$.
+A {\em unary operator} is one of the operators \MINUS{} or  \NOT{}. The \MINUS{} operator implements IEEE floating point negation, with type $T \LT: \NUM{} \to T$. The \NOT{} operator implements boolean negation with type $\BOOL{} \to \BOOL$.
 
 \UnaryExpression{}
 
@@ -679,7 +717,7 @@ A {\em multiplicative operator} is one of the operators \TIMES{}, \DIV{}, \MOD{}
 \MultiplicativeExpression{}
 \MultiplicativeOp{}
 
-The expression $e_1 \theta e_2$ where $\theta\LPAREN{}p_1\COLON{} T \LT: \NUMBER\COMMA{} p_2\COLON{} T\RPAREN\COLON{}T$ is a multiplicative operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$.
+The expression $e_1 \theta e_2$ where $\theta\LPAREN{}p_1\COLON{} T \LT: \NUM\COMMA{} p_2\COLON{} T\RPAREN\COLON{}T$ is a multiplicative operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$.
 
 \subsection{Additive Expressions}
 \label{additiveExpressions}
@@ -691,7 +729,7 @@ An {\em additive operator} is one of the operators \RANGE{}, \PLUS{}  and \MINUS
 \AdditiveOp{}
 
 
-The expression $e_1 \theta e_2$ where $\theta$ is an additive operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$, where the signature of $\theta$ is $\theta\LPAREN{}T \LT: \NUMBER\COMMA{}T\RPAREN\COLON{} T$.
+The expression $e_1 \theta e_2$ where $\theta$ is an additive operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$, where the signature of $\theta$ is $\theta\LPAREN{}T \LT: \NUM\COMMA{}T\RPAREN\COLON{} T$.
 
 \subsection{Relational Expressions}
 \label{relationalExpressions}
@@ -718,7 +756,7 @@ In any other case (i.e, if one or both of $v_1, v2$ are {\tt system::nan}) then 
 \RelExpression{}
 \RelOp{}
 
-The expression $e_1 \theta e_2$ where $\theta$ is a relational operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$. For $\theta{} \in \EQ{}, \NEQ{}, \LT{}, \GT{}, \LTE{}, \GTE{}$ the signature of $\theta$ is $\theta\LPAREN{}p_1\COLON{} \DOLLAR{}T\COMMA{} p_2\COLON{} \DOLLAR{}T\RPAREN\COLON{}\BOOL$.
+The expression $e_1 \theta e_2$ where $\theta$ is a relational operator, is equivalent to $\theta\LPAREN{}e_1\COMMA{} e_2\RPAREN$. The type of a relational expression \BOOL{} in any scope $S$.
 
 
 \subsection{Logical And}
@@ -769,7 +807,7 @@ Evaluation of $c$ proceeds as follows:
 The expression $b$ is evaluated. 
 If $b$ evaluates to \TRUE{}, $t$ is evaluated to a value $v_t$. The value of $c$ is $v_t$. Otherwise, $e$ is evaluated to a value $v_e$. The value of $c$ is $v_e$.
 
-Let $B$ be the type of $b$, let $T$ is the type of $t$, let $E$ be the type of $e$, and let $C$ be the least common supertype of $T$ and $E$. The type of $c$ is $C$. 
+Let $B$ be the type of $b$ in scope $S$, let $T$ is the type of $t$ in scope $S$, let $E$ be the type of $e$ in scope $S$, and let $C$ be the least common supertype of $T$ and $E$. The type of $c$  in scope $S$ is $C$. 
 
 It is a compile-time error if $B$ is not a subtype of \BOOL{}. It is a compile-time error if $T$ is not a subtype of $E$ or vice versa. 
 
@@ -814,6 +852,21 @@ It is a compile-time error if the $s_e$ is not compatible $s$.
 
 Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} \QUESTIONMARK{}$ or  $d_{2i} \QUESTIONMARK{}, i \in 1..r$
 
+\subsection{Where Expressions}
+\label{whereExpressions}
+
+A {\em where expression} allows an identifier to be bound in the context of a larger expression. A where expression is either a logical or expression \ref{logicalOr}, or a where expression followed by the keyword \WHERE{} , followed by a variable binding. A variable binding is identifier followed by an equal sign followed by an expression.
+
+\WhereBindingExpression{}
+
+\VALIDENT{}
+
+
+Let $we \triangleq e_1$ \WHERE{} $id = e_2$.
+
+Let $s$ be the current scope, and $v_2$ be the value of $e_2$. The value of $we$ is the value of $e_1$ in the scope $s \leftarrow [id = v_2]$.
+
+Let $T$ be the type of $e_2$ ins scope $S$. The type of $we$ in scope $S$ is the type of $e_1$ in the scope $S \leftarrow [id = T]$.
 
 
 \section{Types}
@@ -825,12 +878,14 @@ Typing is determined with respect to a scope (or context) that varies per call s
 {\it
 This arrangement is unusual. It means that an expression is typechecked with respect to the types of the actual arguments of the surrounding function rather  than any
 formal types. This approach is possible because ShapeRank is not Turing complete and so we can perform type checking via an abstract interpretation that expands calls without risk of
-divergence. The abstract interpretation is independent of the size of the data the program operates on (except for literal arrays).
+divergence. The abstract interpretation is independent of the size of the program inputs.
 
 The approach has significant advantages and disadvantages, but we feel the advantages greatly outweigh the disadvantages.
 
-First, programmers need not specify shape and/or dimension variables in signatures. Second, typing is actually more accurate.
+First, programmers need not specify base types, return types,  dimensions or type variables of any kind in function signatures. Second, typing is actually more accurate.
+The resulting language is easier to learn, use and implement.
 } 
+
 
 %The built in type system does not guarantee that a function is shape safe for all possible
 
@@ -846,7 +901,7 @@ First, programmers need not specify shape and/or dimension variables in signatur
 Only the ranks of formal parameters of functions must be declared. All other information is inferred.
 
 Programs specify a type signature that specifies the rank and base type for each parameter. Programs also accept external functions as arguments.
-For parameters representing external functions, the base type is  function type where each parameter has a complete type signature including rank, dimensions and base type.
+For parameters representing external functions, the base type is  a function type with each parameter type, and the return type, all have a complete type signature including rank, dimensions and base type.
 
 The actual rules of type inference for each construct are given in the section describing that construct. However, these rules depend on a common set of concepts, defined in this section.
  
@@ -854,7 +909,7 @@ The actual rules of type inference for each construct are given in the section d
   \subsubsection{Type Substitution}
   \label{typeSubstitution}
   
-  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{typeVariables}] to types, shapes and dimensions respectively. We write $[\DOLLAR{}X_1 \to T_1, \ldots\, \DOLLAR{}X_n \to T_n]$ to denote the substitution that maps $\DOLLAR{}X_i$ to $T_i, i \in 1..n$. A substitution $[\DOLLAR{}X_1 \to T_1, \ldots, \DOLLAR{}X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each occurrence of $\DOLLAR{}X_i$ in $T$ is replaced by $T_i ,\in 1..n$.
+  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{typeVariables}] to types, shapes and dimensions respectively. We write $[X_1 \to T_1, \ldots\, X_n \to T_n]$ to denote the substitution that maps $X_i$ to $T_i, i \in 1..n$. A substitution $[X_1 \to T_1, \ldots, X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each occurrence of $X_i$ in $T$ is replaced by $T_i ,\in 1..n$.
   
   {\em 
   In our setting, only type schemas bind type , shape and dimension variables, and we only perform substitution on types, shapes and dimensions, so capture is not an issue.
@@ -862,56 +917,44 @@ The actual rules of type inference for each construct are given in the section d
   
 If $\theta$ is a substitution, we write $\theta T$ to denote the application of $\theta$ to $T$.
 
-\subsubsection{bool}
+
+\subsection{Scalar Types}
+\label{scalarTypes}
+
+\subsubsection{Bool}
 \label{bool}
 
 The predefined type \BOOL{} contains the values true and false.  A boolean value is equal only to itself. The value true is greater than false. The type \BOOL{} is equal only to itself.
 
-\subsubsection{number}
+\subsubsection{Num}
 \label{number}
 
- The predefined type \NUMBER{} consists of the types \INT{} and \FLOAT. The type \NUMBER{} is equal only to itself. 
+ The predefined type \NUM{} consists of the types \INT{} and \FLOAT. The type \NUM{} is equal only to itself. 
  
- \paragraph{Int.} The predefined type \INT} consists of the integers. Equality and ordering are as defined for the integers in mathematics. The type \INT{} is equal only to itself.
+\subsubsection{Int}
+\label{int}
 
- \paragraph{Float.} The predefined type \FLOAT{} consists of the set of IEEE double precision floating point values.  Equality and ordering are defined by the IEEE floating point standard.  The type \FLOAT{} is equal only to itself.
- 
+The predefined type \INT} consists of the integers. Equality and ordering are as defined for the integers in mathematics. The type \INT{} is equal only to itself.
 
+
+\subsubsection{Float}
+\label{float}
+
+The predefined type \FLOAT{} consists of the set of IEEE double precision floating point values.  Equality and ordering are defined by the IEEE floating point standard.  The type \FLOAT{} is equal only to itself.
  
-\subsubsection{string}
+\subsubsection{Integer Singleton Types}
+\label{integerSingletonTypes}
+
+For each integer $n$, there exists a corresponding type consisting the singleton set of values $\{n\}$. 
+
+
+\subsubsection{String}
 \label{string}
 
 The predefined type \STRING{} is a sequence of zero or more Unicode code points. Equality and ordering of code points are defined by the Unicode standard. 
 The strings, $a = a_1, \ldots, a_n$ and $b = b_1, \ldots, b_n$ are equal iff $a_i = b_i, i \in 1..n$. Strings are ordered lexicographically., i.e., $a_1, \ldots, a_n < b_1, \ldots, b_m$ iff  either $a_1 < b_1$ or $a_1 = b1$ and $a_2, \ldots, a_n < b_2, \ldots, b_m$.
 
 The type \STRING{} is equal only to itself. 
-
-\subsubsection{Hyperstream Types}
-\label{hyperstreamTypes}
-
-Hyperstream types describe hyperstreams. A hyperstream type is composed of a shape descriptor and an element type. The shape may be omitted, in which case it defaults to $[]$, the empty shape. The hyperstream type $S$ $T$ denotes the set of hyperstreams of shape $S$ with elements of scalar type $T$.
-
-\paragraph{Dimension Descriptors.}
-A dimension descriptor has the form $[d]$ where $d$ is one of:
-\begin{itemize}
-\item An integer literal $n$ [\ref{integerLiterals}]. This indicates the size of the described dimension is the value of $n$.
-\item An optional dimension variable [\ref{typeVariables}] $v$, possibly followed by \BANG. This indicates the size of the described dimension is the value of $v$.
-The use of the \BANG{} suffix indicates the the described  dimension must be of fixed size. 
-{\em ergo, it must be an array, not a stream.}
-If $v$ is omitted, we assume a fresh dimension variable was specified. 
-\item  \QUESTIONMARK. This indicates the described dimension's size is unbounded.
- \end{itemize}
- 
-\paragraph{Shape Descriptors.}
- A shape descriptor denotes a shape vector. It takes one of the following forms:
- \begin{itemize}
- \item  A list $[d_1] \ldots [d_n]$, denoting the shape vector $[d_1, \ldots, d_n]$ where $[d_i], i \in 1..n$ are dimension descriptors.
- \item A shape variable [\ref{typeVariables}], possibly followed by \BANG. The use of the \BANG{} suffix indicates the the shape's  dimensions must all be of fixed size. 
- \item A shape append, of the form $s_1 :: s_2$, where $s_1, s_2$ are shape descriptors, denoting the concatenation of the shape vectors denoted by $s1$ and $s_2$. 
- \end{itemize}
- 
-\paragraph{Scalar Types.}
- A scalar type is either a type variable [\ref{typeVariables}] or one of \BOOL [\ref{bool}],  \NUMBER,[\ref{number}] \INT, \FLOAT, \STRING [\ref{string}], or a struct type [\ref{structTypes}].
 
 \subsubsection{Struct Types}
 \label{structTypes}
@@ -928,6 +971,33 @@ The type \LCURLY{}$f_1 \COLON{} T_1$\COMMA{} \ldots\COMMA{}  $f_k \COLON{} T_k$\
 {\em
 Structs are lexicographically ordered if we view structs as maps from field names to field values. 
 }
+
+\subsection{Hyperstream Types}
+\label{hyperstreamTypes} 
+
+A {\em hyperstream type} is a pair of a shape \ref{concepts} and a scalar type \ref{scalarTypes}. The scalar type component of a hyperstream type is known as its {\em base type}. The hyperstream type $(S,  T)$ denotes the set of hyperstreams of shape $S$ with elements of scalar type $T$. We often write $S$ $T$ to denote $(S,  T)$.
+
+\subsection{Function Types}
+\label{functionTypes}
+
+A {\em function type} describes the type of a function [\ref{functions}].
+
+A function type consists of a domain and a range. A {\em domain} is a list of types, composed from the types of the formal parameters of a function, in the order they appear in the function declaration. A {\em range} is a result type of a function. 
+We write a  function type as $T_1, \ldots, T_n \to T_r$, where $T_1, \ldots, T_n$ is the domain and $T_r$ is the range.
+
+Function types are used internally in this specification, but have no direct syntactic representation.
+
+{\em 
+Naturally, as ShapeRank does not support user-defined higher order functions.
+
+Function types  are derived from function signatures [\ref{functions}].
+}
+
+\subsection{Type Expressions}
+\label{typeExpressions}
+
+A {\em type expression} denotes a type. Type expressions are used whenever a type must be specified.
+
 
 \subsubsection{Type Identifiers}
 \label{typeIdentifiers}
@@ -949,9 +1019,8 @@ Scalar type, shape and dimension variables may be referred to as type, shape or 
  
  A type variable $t$ is said to {\em free} in some expression, type expression, type schema, signature or scope $x$ if $t$ is not declared in $x$.  More precisely, we define the {\em free type variables} of $x$ as follows:
  
- $free(ID) = \phi$.
  
- $free(\DOLLAR{}ID) = \{\DOLLAR{}ID\}$ 
+ $free(ID) = \{ID\}$ if $ID$ is a type variable or $\phi$ otherwise.
  
  $free([T]) = free(T)$.
  
@@ -966,13 +1035,13 @@ Scalar type, shape and dimension variables may be referred to as type, shape or 
  $free(\forall T_1, \ldots, T_n.T) = free(T) - \{T_1, \ldots, T_n\}$.
  
  
- We say a type variable $\DOLLAR{}X$ is free in a scope $S$, if there exists an identifier $ID$ with type $T$ defined in $S$, and $\DOLLAR{}X$ is free in $T$. The free type variables of $S$ are the set of all type variables that are free in $S$.
+ We say a type variable $X$ is free in a scope $S$, if there exists an identifier $ID$ with type $T$ defined in $S$, and $X$ is free in $T$. The free type variables of $S$ are the set of all type variables that are free in $S$.
 
 \paragraph{Scalar Type Variables.}
  
- Let $p \triangleq \DOLLAR{}T$.
+ Let $p \triangleq T$.
  
- Let $t$ be the type variable bound to $\DOLLAR{}T$ in the current compile-time scope. If $\DOLLAR{}T$ is not bound in the current compile-time scope, then, if $p$ occurs within  the parameter list of a function signature [\ref{functions}],  a binding of $\DOLLAR{}T$ to a fresh type variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the type variable bound to $T$ in the current compile-time scope. If $T$ is not bound in the current compile-time scope, then, if $p$ occurs within  the parameter list of a function signature [\ref{functions}],  a binding of $T$ to a fresh type variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
  {\em 
 No explicit declaration of a type variable is needed. They are declared by their first use, provided the use occurs in a function signature. This restriction reduces the attendant risk of inadvertently introduced parameters; furthermore, since
@@ -983,9 +1052,9 @@ No explicit declaration of a type variable is needed. They are declared by their
  
  \paragraph{Dimension Variables.}
  
- Let $p \triangleq \DOLLAR{}d$.
+ Let $p \triangleq d$.
  
- Let $t$ be the dimension variable bound to $\DOLLAR{}d$ in the current compile-time scope. If $\DOLLAR{}d$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of $\DOLLAR{}d$ to a fresh dimension variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the dimension variable bound to $d$ in the current compile-time scope. If $d$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of $d$ to a fresh dimension variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
 
  
  It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
@@ -993,30 +1062,38 @@ No explicit declaration of a type variable is needed. They are declared by their
  \paragraph{Shape Variables.}
 
 
- Let $p \triangleq \ATSIGN{}{}S$.
+ Let $p \triangleq S$.
  
- Let $t$ be the shape variable bound to  $\ATSIGN{}{}S$ in the current compile-time scope. If $\ATSIGN{}{}S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of  $\ATSIGN{}{}S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the shape variable bound to  $S$ in the current compile-time scope. If $S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of  $S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
  It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
  
+\subsubsection{Hyperstream Descriptors}
+\label{hyperstreamDescriptors}
 
+A {\em hyperstream type descriptor} is composed of a shape descriptor and a scalar type type descriptor. The shape descriptor may be omitted, in which case it defaults to $[]$, the empty shape. 
+
+\paragraph{Dimension Descriptors.}
+A dimension descriptor has the form $[d]$ where $d$ is one of:
+\begin{itemize}
+\item An integer literal $n$ [\ref{integerLiterals}]. This indicates the size of the described dimension is the value of $n$.
+\item An optional dimension variable [\ref{typeVariables}] $v$, possibly followed by \BANG. This indicates the size of the described dimension is the value of $v$.
+The use of the \BANG{} suffix indicates the the described  dimension must be of fixed size. 
+{\em ergo, it must be an array, not a stream.}
+If $v$ is omitted, we assume a fresh dimension variable was specified. 
+\item  \QUESTIONMARK. This indicates the described dimension's size is unbounded.
+ \end{itemize}
  
-\subsection{Function Types}
-\label{functionTypes}
-
-A {\em function type} describes the type of a function [\ref{functions}].
-
-A function type consists of a domain and a range. A {\em domain} is a list of types, composed from the types of the formal parameters of a function, in the order they appear in the function declaration. A {\em range} is a result type of a function. 
-We write a  function type as $T_1, \ldots, T_n \to T_r$, where $T_1, \ldots, T_n$ is the domain and $T_r$ is the range.
-
-Function types are used internally in this specification, but have no direct syntactic representation.
-
-{\em 
-Naturally, as ShapeRank does not support user-defined higher order functions.
-
-Function types  are derived from function signatures [\ref{functions}].
-}
-
+\paragraph{Shape Descriptors.}
+ A shape descriptor denotes a shape vector. It takes one of the following forms:
+ \begin{itemize}
+ \item  A list $[d_1] \ldots [d_n]$, denoting the shape vector $[d_1, \ldots, d_n]$ where $[d_i], i \in 1..n$ are dimension descriptors.
+ \item A shape variable [\ref{typeVariables}], possibly followed by \BANG. The use of the \BANG{} suffix indicates the the shape's  dimensions must all be of fixed size. 
+ \item A shape append, of the form $s_1 :: s_2$, where $s_1, s_2$ are shape descriptors, denoting the concatenation of the shape vectors denoted by $s1$ and $s_2$. 
+ \end{itemize}
+ 
+\paragraph{Scalar Type Descriptors.}
+ A scalar type descriptor is either a type variable [\ref{typeVariables}] or one of \BOOL [\ref{bool}],  \NUM,[\ref{number}] \INT, \FLOAT, \STRING [\ref{string}], an integer literal \ref{integerSingletonTypes}, or a struct type [\ref{structTypes}].
 
 
 \section{Lexical Rules}

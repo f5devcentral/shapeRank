@@ -100,9 +100,9 @@ the ASCII CR character followed by the ASCII LF character
 
 \lex{TYPEIDENT}{\TYPESTART{} \IDENTPART*}
 
-\lex{TYPEPARAM}{{\DOLLAR}\TYPEIDENT}
-\lex{SHAPEPARAM}{{\ATSIGN}\TYPEIDENT}
-\lex{DIMPARAM}{{\DOLLAR}\VALIDENT}
+\lex{TYPEPARAM}{\TYPEIDENT}
+\lex{SHAPEPARAM}{\TYPEIDENT}
+\lex{DIMPARAM}{\VALIDENT}
 
 \lex{DECIMAL}{{\keyword 0} ... {\keyword 9}}
 
@@ -203,6 +203,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\GTE{\keyword{\gt=}}
 
 \def\NUMBER{\keyword{Number}}
+\def\NUM{\keyword{Num}}
 \def\FLOAT{\keyword{Float}}
 \def\INT{\keyword{Int}}
 \def\BOOL{\keyword{Bool}}
@@ -308,7 +309,7 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{StructType}
 }
 
-\bnf {BuiltinType} {\BOOL{}  \alt \NUMBER{} \alt \STRING{}}
+\bnf {BuiltinType} {\BOOL{}  \alt \NUM{} \alt \STRING{}}
 \bnf {HyperstreamType} {\synt{Shape}? \synt{ElementType}}
 \bnf {PropertySig} {\synt{PropertyName} \COLON \synt{TypeSig}}
 \bnf {RefType} {\TYPEIDENT{} }
