@@ -47,7 +47,14 @@ Examples include expressions that do not have a valid type or references to unde
 
 \subsubsection{Presentation of Syntax}
 
-Syntax productions are given in a form of EBNF. The name of a production is given in {\bf bold}.  All non-terminals are enclosed in angle brackets. The symbol $\rightarrow$ is used to separate a production's left and right sides. Alternatives are separated by the $|$ symbol. Parentheses are used for grouping. The postfix $*$ denotes zero or more repetitions, and postfix $+$ denotes one or more repetitions. Optional items are postfixed by $?$. To distinguish terminals from EBNF notation, terminals appear in {\color{blue} blue}.
+Syntax productions are given in a form of EBNF. The name of a production is given in {\bf bold}.  All non-terminals are enclosed in angle brackets. The symbol $\rightarrow$ is used to separate a production's left and right sides. Alternatives are separated by the $|$ symbol. Parentheses are used for grouping. The postfix $*$ denotes zero or more repetitions, and postfix $+$ denotes one or more repetitions. Optional items are postfixed by $?$. 
+
+{\em
+Of course one should never confuse syntax with meta-syntax. In particular,we will call out one possible confusion due to the unusual use of \QUESTIONMARK{} in the Shape Rank syntax. The use of $?$ as a meta-syntactic symbol  is distinct from the use of \QUESTIONMARK{} in ShapeRank itself, where it denotes unknown shapes [\ref{functions}] and unbounded dimensions in type
+signatures, and the unbounded dimension value [\ref{concepts}] in expressions.
+}
+
+To distinguish terminals from EBNF notation, terminals appear in {\color{blue} blue}.
 
 {\em Examples:}
 \begin{itemize}
@@ -57,6 +64,25 @@ Syntax productions are given in a form of EBNF. The name of a production is give
 
 
 Lexical rules are similar, but the names of lexical productions are always given in uppercase, and the left and right hand sides are separated by ::=.
+
+\subsection{Scopes}
+\label{scopes}
+
+A {\em scope} is a mapping from names to entities such as variables [\ref{letBindings}, \ref{whereExpressions}], and function declarations [\ref{functions}]. 
+Declarations affect scopes by adding elements to them. 
+Modules [\ref{modules}], ShapeRank functions and where expressions [\ref{whereExpressions}] introduce scopes. 
+
+Let $s_1, s_2$ be scopes.  We write $s_1 \leftarrow s_2$, pronounced $s_1$ overridden by $s_2$, to denote the scope  which maps all names defined in $s_2$ to their values in $s_2$ and any other name to its mapping in $s_1$, if any. We write $\{id_1 \mapsto v_1, \ldots, id_n \mapsto v_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$,  $\{id_1 \mapsto v_1: T_1, \ldots, id_n \mapsto  v_n: T_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$ with type or type schema $T_i$, and $\{id_1 \rightsquigarrow  T_1, \ldots, id_n \rightsquigarrow T_n\}$ to denote a scope that associates $id_i$ with a type or type schema $T_i $ without regard to value, $i \in 1..n$.
+
+Scopes may nest. Nested scopes override their immediately enclosing scope: if a scope $s_{inner}$ is nested in a scope $s_{outer}$, then the effective scope is $s_{outer} \leftarrow s_{inner}$, and so all elements of $s_{outer}$ are {\em available in} $s_{inner}$ unless an element with the same name is added to $s_{inner}$.
+The scope of a function is always nested in the scope of its enclosing module. 
+
+{\em
+In short, we have lexical scoping.
+}
+
+The technical use of the term {\em scope} should not be confused with its informal use in phrases such as {\em beyond the scope of this specification.}
+
 
 
 \section{Concepts}
@@ -276,7 +302,7 @@ $shapeOf(s: \QUESTIONMARK{})$
 \subsection{Higher-Order Functions}
 \label{higherOrderFunctions}
 
-ShapeRank supports a number of higher-order functions. They treat their function-valued arguments as scalar streams [\ref{scalars}]. We give the signatures of these functions as we do those of  ShapeRank programs, but extended with the notation for function types.
+ShapeRank supports a number of higher-order functions. They treat their function-valued arguments as scalar streams [\ref{scalars}]. 
 
 
 \subsubsection{Fold}
@@ -291,10 +317,16 @@ $f(f( \ldots f(acc, x_1), \ldots x_{d-1}), x_d)$, where $d$ is the dynamic size 
 
 {\em Note that fold only returns a result when $x$ is completed, which is why it is restricted to bounded streams.}
 
+For documentation purposes, we use the signature notation used for external functions.
+
 $fold(f: P$ $T \to{}Q$ $S \to{}P$ $T, acc: P$ $T, x:[d\BANG]::R::Q $ $S): R::P $ $T $
 
 {\em
-The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (whose rank would be $Q+1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[d]::R::Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'.
+The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (such a stream would have rank $rank(Q) +1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[d]::R::Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'. The overall result shape is padded by $R$.
+
+The dimension $d$ is suffixed by \BANG{}, indicating that we require a bounded dimension (see [\ref{hyperstreamDescriptors}]). If $d$ were unbounded, $fold$ might diverge.
+
+Note that the function $f$ does not require that both its parameters have the same element type; it requires the first parameter to agree with $f$s return type, since the result of $f$ is fed back  into $f$. The second parameter is taken from $x$, and so it has the same element type as $x$. 
 }
 
 \subsubsection{Inner Product}
@@ -358,6 +390,12 @@ $scan(f: P $ $T \to{} Q $ $T \to{} P $ $T, acc: P $ $T, x:[]::R::Q $ $T):[d]::R:
 \section{Modularity}
 \label{modularity}
 
+
+{\em
+Unimplemented and subject to change.
+}
+
+
 \subsection{Modules}
 \label{modules}
 
@@ -388,11 +426,11 @@ A module invocation $m(a_1, \ldots, a_n)$ denotes a record whose fields are the 
 \section{Programs and I/O}
 \label{programsAndIO}
 
-A {\em program} consists of an optional  {\em program signature}, followed by an optional  series of declarations, a semicolon and an expression.
+A {\em program} consists of an optional  program signature, followed by an optional  series of declarations, a semicolon and an expression.
 
 \Program{}
 
-A program signature specifies the name of the program as whole. In addition it specifies the program's parameters.  These include {\em value parameters} and {\em type parameters}. 
+A {\em program signature} specifies the name of the program as whole. In addition it specifies the program's parameters, if any.  These include {\em value parameters} and {\em type parameters}. 
 
 \ProgramSignature{}
 
@@ -404,7 +442,14 @@ A program signature specifies the name of the program as whole. In addition it s
 
 \TypeSig{}
 
-Each value parameter has a specification similar to that of a function parameter. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided. Unlike a function, a program is not invoked by a function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the type parameters \ref{typeVariables} and value parameters of the program. 
+Each value parameter has a specification similar to that of a function parameter. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided, in which case it is taken to be empty. 
+
+{\em
+We require type signatures for program parameters because program arguments (unlike function arguments) are unavailable at compile time and so we cannot
+infer the types of the parameters.
+}
+
+Unlike a function, a program is not invoked by a function call [\ref{calls}]. Instead, it is invoked from the surrounding computing environment in an implementation specific manner.  The invocation binds the type parameters \ref{typeVariables} and value parameters of the program. 
 
 {\em
 How an implementation supplies type parameters is beyond the scope of this specification. Typically it will require them to be given explicitly by the user.
@@ -441,7 +486,7 @@ Expressions evaluate to values. Values are computed relative to a runtime scope.
 
 \Expression{} 
 
-Every expression in a legal ShapeRank program has a type [\ref{types}] that is determined statically, at compile-time. If no type can be determined for an expression, the expression and its enclosing program are illegal and a compile-time error must result. The process of determining the type of an expression is known as type inference [\ref{typeInference}]. Type inference  is usually dependent on the compile-time scope in which it occurs. When we say that an expression $e$ has type $T$, we mean that $e$ has type $T$ in the current compile-time scope.
+Every expression in a ShapeRank program is typechecked at compile-time. If no type [\ref{types}] can be determined for an expression, the expression and its enclosing program are illegal and a compile-time error must result. The process of determining the type of an expression is known as type inference [\ref{typeInference}]. Type inference  is usually dependent on the compile-time scope in which it occurs. When we say that an expression $e$ has type $T$, we mean that $e$ has type $T$ in the current compile-time scope.
 
 \subsection{Identifier Expressions}
 \label{identifierExpressions}
@@ -479,7 +524,7 @@ Evaluation of $p$ proceeds as follows:
 
 The expression $e$ is evaluated to $v$. The value of $p$ is $v$.
 
-The type of $p$ is the type of $e$.
+The type of $p$ in scope $S$ is the type of $e$ in scope $S$.
 
 \subsection{Calls}
 \label{calls}
@@ -1059,7 +1104,7 @@ It is a compile-time error if $T$ does not denote a type in the current compile-
 \subsubsection{Type Variables}
 \label{typeVariables}
 
-A {\em type variable} is either a {\em scalar type variable}, a {\em shape variable} or a {\em dimension variable}. Type variables may abstract over types, shapes and dimensions in the context of a type or function [\ref{functions}] declaration. Scalar type variables abstract over  scalar types. Shape variables abstract over the shapes of types. Dimension variables are used both to abstract over the dimensions in a shape, and over integer values, which are typically used as dimensions.
+A {\em type variable} is either a {\em scalar type variable}, a {\em shape variable} or a {\em dimension variable}. Type variables may abstract over types, shapes and dimensions in the context of the declaration of a program declaration [\ref{programsAndIO}] or external function [\ref{functions}]. Scalar type variables abstract over  scalar types. Shape variables abstract over shapes. Dimension variables are used both to abstract over the dimensions in a shape, and over integer values, which are typically used as dimensions.
 
 Scalar type, shape and dimension variables may be referred to as type, shape or dimension parameters respectively.
 
@@ -1119,7 +1164,7 @@ No explicit declaration of a type variable is needed. They are declared by their
 \subsubsection{Hyperstream Descriptors}
 \label{hyperstreamDescriptors}
 
-A {\em hyperstream type descriptor} is composed of a shape descriptor and a scalar type type descriptor. The shape descriptor may be omitted, in which case it defaults to $[]$, the empty shape. 
+A {\em hyperstream type descriptor} is composed of a shape descriptor and a scalar type type descriptor. The shape descriptor may be omitted, in which case it defaults to the empty shape. 
 
 \paragraph{Dimension Descriptors.}
 A dimension descriptor has the form $[d]$ where $d$ is one of:
