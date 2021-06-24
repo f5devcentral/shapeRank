@@ -143,11 +143,21 @@ If the keyword \SYNC precedes the keyword \FUNC, the function is synchronous [\r
 
 \RankSig{}
 
-A function signature has the form  $F\LPAREN{}p_1\COLON R_1\COMMA{} \ldots\COMMA{} p_n\COLON R_n\RPAREN{}$ where $F$ is an identifier that specifies the name of the function, and $p_i\COLON{} T_i, i \in 1..n$ specify the function's parameters; each $p_i$ is an identifier that names the $i$th parameter, and the corresponding $R_i$ specifies the parameter's rank.  The specification of a parameter's rank may be omitted in which case it defaults to 0.
+A function signature has the form  $F\LPAREN{}p_1 R_1\COMMA{} \ldots\COMMA{} p_n R_n\RPAREN{}$ where $F$ is an identifier that specifies the name of the function, and $p_i\COLON{} T_i, i \in 1..n$ specify the function's parameters; each $p_i$ is an identifier that names the $i$th parameter, and the corresponding $R_i$ specifies the parameter's rank $r_i$.  
+
+The specification $R_i$ of a parameter's rank has one of the following forms:
+\begin{itemize}
+\item A colon, followed by either of 
+\begin{itemize}
+\item One or more pairs of square brackets. The specified rank, $r_i$ is the number of such pairs.
+\item \QUESTIONMARK{}.  The specified rank, $r_i$ is unknown.
+\end{itemize}
+\item An empty specification. The specified rank, $r_i$ is 0.
+\end{itemize}
 
 It is a compile-time error if $p_i = p_j, i \ne j$.
 
-Let $f \triangleq$ \FUNC{} $F\LPAREN{}p_1\COLON R_1\COMMA{} \ldots\COMMA{} p_n\COLON R_n\RPAREN{}$  \BIND{} $e$.
+Let $f \triangleq$ \FUNC{} $F\LPAREN{}p_1 R_1\COMMA{} \ldots\COMMA{} p_n R_n\RPAREN{}$  \BIND{} $e$.
 
 Processing of $f$  has the following effect:
 
@@ -158,27 +168,65 @@ A new scope $s$ is created, and is known as the {\em immediate scope of} $f$. Th
 
 {\em Thus, $s$ is nested in the enclosing module definition scope.}
 
-The variables $p_i$ are added to $s$, with ranks $R_i, i \in 1..n$ respectively.
+The variables $p_i$ are added to $s$, with ranks $r_i$, where $r_i$ is the rank specified by $R_i, i \in 1..n$ respectively.
 
 It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
 
 \section{Built-in Functions}
 \label{builtinFunctions}
 
+This section describes those functions built-in to the ShapeRank language which cannot be implemented in ShapeRank itself. A ShapeRank implementation should provide additional functions via a standard prelude. The specification of such functions is beyond the scope of this document. 
+
 {\em
-Should we describe functions like contains()? Its stream semantics are not entirely trivial, though one can implement them on top of scan(), so it need not be a primitive strictly speaking.
+Functions that are implemented as primitives but that can be implemented in
+ShapeRank (e.g., contains()) are defined in a separate prelude specification. They can still be given a specification using ShapeRank code, augmented with prose
+and/or signature information as necessary.
 }
 
 \subsection{Hyperstream Creation}
 \label{streamCreation}
 
 Because ShapeRank prohibits recursion, it is not possible to create unbounded hyperstreams from scratch. One must obtain an unbounded hyperstream from input or by calling a function.
+
+{\em
+If we include a primitive that produces an unbounded stream, for example a function {\em time()}, then additional
+unbounded streams may be derived from it.
+}
+
 However, it is possible to define bounded hyperstreams.
 
 {\em In other words, arrays.}
 
-The function $makeTensor(dims: \ATSIGN{}, contents: [])$
+The function $makeTensor(dims: [], contents: [])$
 will produce a hyperstream whose shape is given by a bounded hyperstream, $dims$ and whose contents are given by a hyperstream $contents$.
+
+{\em
+Should we call this makeStream()? Or just reshape()?
+}
+
+Specifically, we define
+
+$makeTensor([d_1, \ldots, d_n], [c_1, \ldots, c_x]) = [e_1, \ldots e_{d_1}]$ where  
+\newline 
+$e_k  = makeTensor([d_2, \ldots, d_n], [c_{(k -1)\prod_{i=2}^{n} d_i}, \ldots, c_{k\prod_{i=2}^{n}d_i}])$
+
+$makeTensor([d], [c_1, \ldots, c_{d_c}]) = [c_1, \ldots, c_d]$ if $d \le d_c$, and $[c_1, \ldots, c_{d_c}, c_1, \ldots, c_{d -d_c}]$ otherwise.
+
+{\em 
+
+In the common case where $d = d_c$ we have
+
+$makeTensor([d], [c_1, \ldots, c_d]) = [c_1, \ldots, c_d]$
+
+If $d < d_c$ we truncate $content$ to length $d$.
+If $d > d_c$, we wrap around, repeating elements of $contents$ as needed.
+}
+
+{\em In the APL programming language family, this is known as the ravel order.}
+
+{\em
+One might prefer that the situation where $d_1 \ne d_c$ be considered an error.  This is easily arranged by defining a wrapper function.
+}
 
 {\em
 See section \ref{hyperstreamTypes} for the details of the type annotations used above.
@@ -194,7 +242,7 @@ $indices(x: [])$
 {\em
 This allows us to compute things like the running average of a numeric stream $x$:
 
-$\SYNC{}$  $\FUNC{}$ $avg(x) = scan(+, 0, x)/scan(+, 0, indices(x))$
+$\SYNC{}$  $\FUNC{}$ $avg(x:[]) = scan(+, 0, x)/scan(+, 0, indices(x))$
 }
 
 \subsection{Length}
@@ -202,7 +250,7 @@ $\SYNC{}$  $\FUNC{}$ $avg(x) = scan(+, 0, x)/scan(+, 0, indices(x))$
 
 The $length$ function returns the length [\ref{concepts}] of a hyperstream.
 
-$length(s: \ATSIGN{})$
+$length(s: \QUESTIONMARK{})$
 
 If the hyperstream is unbounded, the value \QUESTIONMARK{} is returned.
 
@@ -211,7 +259,7 @@ If the hyperstream is unbounded, the value \QUESTIONMARK{} is returned.
 
 The $rank$ function returns the rank [\ref{concepts}] of a hyperstream.
 
-$rank(s: \ATSIGN{})$
+$rank(s: \QUESTIONMARK{})$
 
 \subsection{ShapeOf}
 \label{shapeOf}
@@ -223,7 +271,7 @@ It follows from the  definition of shape and length [\ref{length}] that
 if any  dimension of the hyperstream is unbounded, the shape will contain the value \QUESTIONMARK{} at the corresponding  position.
 }
 
-$shapeOf(s: \ATSIGN{})$
+$shapeOf(s: \QUESTIONMARK{})$
 
 \subsection{Higher-Order Functions}
 \label{higherOrderFunctions}
