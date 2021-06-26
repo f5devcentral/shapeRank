@@ -1,0 +1,39 @@
+{
+  "name": "shaperank",
+  "version": "0.0.1",
+  "description": "ShapeRank is new programming language under development at F5.",
+  "main": "index.js",
+  "bashPath": "C:\\Program Files\\Git\\bin\\bash.exe",
+  "outputDirectory": "out",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "setup": "npm i && npx ts-node scripts/setup.ts",
+    "build": "npx ts-node  scripts/build.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f5devcentral/shapeRank.git"
+  },
+  "keywords": [
+    "ShapeRank",
+    "f5"
+  ],
+  "author": "Gilad Bracha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/f5devcentral/shapeRank/issues"
+  },
+  "homepage": "https://github.com/f5devcentral/shapeRank#readme",
+  "githubDependencies": {
+    "primordialsoup": "https://github.com/newspeaklanguage/primordialsoup",
+    "emsdk": "https://github.com/emscripten-core/emsdk.git"
+  },
+  "devDependencies": {
+    "codemirror": "^5.62.0",
+    "ts-node": "^10.0.0"
+  }
+}
