@@ -214,12 +214,6 @@ public letBinding ^ <CombinatorialParser[LetAST]> = (
 		LetAST named: id_token value expression: e position: {l start. e end}
 		]
 )
-public param ^ <CombinatorialParser[ParameterAST]> = (
-  ^super param wrapper:
-		[:id_token  <Token> :colon <Token> :t <TypeAST> |
-		  ParameterAST named: id_token value type: t position: {id_token start. t end}
-		]
-)
 public parenExpr = (
   ^super parenExpr wrapper:
 		[:lp <Token> :e <AST> :rp <Token> |
@@ -289,12 +283,6 @@ public typeId ^ <CombinatorialParser[TypeIdAST]> = (
 		  TypeIdAST named: id_token value position: {id_token start. id_token end}
 		]  
 )
-public typeVariable ^ <CombinatorialParser[TypeVariableReferenceAST]> = (
-  ^super typeVariable wrapper:
-		[:dollarSign <Token> :id_token <Token> |
-		  TypeVariableReferenceAST named: id_token value position: {dollarSign start. id_token end}
-		]  
-)
 public variableReference ^ <CombinatorialParser[IdentifierAST]> = (
   ^super variableReference wrap:
 		[:id_token <Token> |
@@ -311,23 +299,11 @@ newDimVarName ^ <String> = (
    dimVarCounter:: dimVarCounter + 1.
    ^'$$d', dimVarCounter printString
 )
-public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
-  ^super shapeVariable wrapper:
-		[:atSign <Token> :id <Token> |
-		  ShapeVariableReferenceAST named: id value position: {atSign start. id end}
-		]  
-)
 public expr ^ <CombinatorialParser[ExprAST]> = (
   ^super expr wrapper:
 		[:at <Token | Nil>  :w <WhereAST> |
 		  nil = at ifTrue: [w] ifFalse: [w isShape: true]
 		]
-)
-public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
-  ^super dimensionVariable wrapper:
-		[:dollarSign <Token> :idToken <Token> :bang <Token | Nil> |
-		  DimensionVariableReferenceAST named: idToken value position: {dollarSign start. idToken end}
-		]  
 )
 public unknownDimension  ^ <CombinatorialParser[UnknownDimensionAST]> = (
   ^super unknownDimension wrap:
@@ -363,26 +339,6 @@ public function ^ <CombinatorialParser[FunctionAST]> = (
 dummyHeader ^ <ProgramHeaderAST> = (
   ^ProgramHeaderAST named: '''Anonymous Program''' parameters: List new returnType: nil isSync: false position: {0. 0}
 )
-public programHeader = (
-(* programHeader = sync opt, programKw, identifier,  lparen, params, rparen, (colon , type) opt. *)
-  ^super programHeader wrapper: [
-        :syncKw <Token>
-        :pkw <Token> 
-		:id_token <Token> 
-		:lp <Token> 
-		:ps <List[ParameterAST]> 
-		:rp <Token> 
-		:rt <{Token. TypeAST} | Nil> | 
-        |
-        sync <Boolean> = syncKw isNil not.
-        params <List[ParameterAST]> = ps isNil ifTrue: [List new] ifFalse: [ps].
-        returnType = rt isNil ifFalse: [rt last]. 
-        start = sync ifTrue: [syncKw start] ifFalse: [pkw start].
-        end = rt isNil ifTrue: [rp end] ifFalse: [returnType end].
-        |
-		ProgramHeaderAST named: id_token value parameters: params returnType: returnType isSync: sync position: {start. end}
-  ]
-)
 public program ^ <CombinatorialParser[ProgramAST]> = (
 (* programHeader opt, declarationSection opt, expr, eoi *)
   ^super program wrapper:
@@ -396,6 +352,70 @@ public program ^ <CombinatorialParser[ProgramAST]> = (
 		|
 
 		ProgramAST header: header declarations: ds expression: e position: {header start. e end}
+		]
+)
+public programParam ^ <CombinatorialParser[ParameterAST]> = (
+  ^super programParam wrapper:
+		[:id_token  <Token> :colon <Token> :t <TypeAST> |
+		  ParameterAST named: id_token value type: t position: {id_token start. t end}
+		]
+)
+public param ^ <CombinatorialParser[ParameterAST]> = (
+  ^super param wrapper:
+		[:id_token  <Token> :rs <{Token. TypeAST}> |
+          | t = rs isNil ifTrue: [TypeIdAST named: #Unit position: {0. 0}] ifFalse: [rs last]. |
+		  ParameterAST named: id_token value type: t position: {id_token start. t end}
+		]
+)
+public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
+  ^super shapeVariable wrap:
+		[:id <Token> |
+		  ShapeVariableReferenceAST named: id value position: {id start. id end}
+		]  
+)
+public typeVariable ^ <CombinatorialParser[TypeVariableReferenceAST]> = (
+  ^super typeVariable wrap:
+		[:id_token <Token> |
+		  TypeVariableReferenceAST named: id_token value position: {id_token start. id_token end}
+		]  
+)
+public dimensionVariable ^ <CombinatorialParser[DimensionVariableAST]> = (
+  ^super dimensionVariable wrapper:
+		[:idToken <Token> :bang <Token | Nil> |
+          | end = bang isNil ifTrue: [idToken end] ifFalse: [bang end]. |
+		  DimensionVariableReferenceAST named: idToken value position: {idToken start. end}
+		]  
+)
+public programHeader = (
+(* programHeader = sync opt, programKw, identifier,  lparen, params, rparen. *)
+  ^super programHeader wrapper: [
+        :syncKw <Token>
+        :pkw <Token> 
+		:id_token <Token> 
+		:lp <Token> 
+		:ps <List[ParameterAST]> 
+		:rp <Token>  | 
+        |
+        sync <Boolean> = syncKw isNil not.
+        params <List[ParameterAST]> = ps isNil ifTrue: [List new] ifFalse: [ps].
+        returnType 
+        start = sync ifTrue: [syncKw start] ifFalse: [pkw start].
+        |
+		ProgramHeaderAST named: id_token value parameters: params returnType: returnType isSync: sync position: {start. rp end}
+  ]
+)
+public rankSig ^ <CombinatorialParser[TensorTypeAST]> = (
+  ^super rankSig wrap:
+		[:r <List[{Token. Token}] | Token> |
+          |  
+          s = r isKindOfList ifTrue: [
+            | dims <List[UnknownDimensionAST]> = r collect: [:p <{Token. Token}> | UnknownDimensionAST position: {0. 0} ]. |          
+            ShapeVectorAST dimensions: dims position: {0. 0}
+            ]  
+            ifFalse: [ShapeVariableReferenceAST named: #S position: {0. 0}]. 
+          t =  TensorTypeAST shape: s type: (TypeIdAST named: #Unit position: {0. 0}) position: {0. 0}.
+          |
+		  t
 		]
 )
 ) : (

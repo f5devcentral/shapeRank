@@ -812,11 +812,6 @@ public testStructDot = (
                 to: '[[1, 5], [7, 3]]'
        description: 'dot should be able to index tensors repeatedly'.
 )
-public testStructInFunctions = (
-  assertInterprets: 'func f(x: {foo: Int}): {bar: Int} = {bar: x.foo + 1}; f({foo: 3})'
-                to: '{bar: 4}'
-       description: 'functions should be able to take apart and build structs'.
-)
 public testStringLit = (
   | result = interpretCompilationUnit: '"hello \"wo\\rld\""'. |
   assertIsScalar: result.
@@ -856,16 +851,6 @@ public testMatmulRerank2  = (
 )
 public testPolyEval4 = (
   expectRuntimeError: [interpretFileNamed: 'polyEval4'] 
-)
-public testBlockStateBug = (
-  | result = interpretCompilationUnit:
-    'func abs(v: Int): Int = if v < 0 then -v else v;
-     abs(-4) + abs(5)'. |
-  assert: (result asScalar) = 9 description: 'blocks should not carry state'.
-)
-public testReplicateToOneBug = (
-  assertInterprets: 'func snd(x: Int, y: Int) = y; snd(2,[3])' to: '[3]'
-    description: 'we should be able to replicate to match 1-tensors'.
 )
 public testReduce = (
   | result = interpretFileNamed: 'reduce'. |
@@ -1086,6 +1071,21 @@ public testPairStreamSync2 = (
      assert: (next contents at: 2) asScalar equals: 2**i.
   ].
   assert: [result iterator hasNext not].
+)
+public testBlockStateBug = (
+  | result = interpretCompilationUnit:
+    'func abs(v) = if v < 0 then -v else v;
+     abs(-4) + abs(5)'. |
+  assert: (result asScalar) = 9 description: 'blocks should not carry state'.
+)
+public testReplicateToOneBug = (
+  assertInterprets: 'func snd(x, y) = y; snd(2,[3])' to: '[3]'
+    description: 'we should be able to replicate to match 1-tensors'.
+)
+public testStructInFunctions = (
+  assertInterprets: 'func f(x) = {bar: x.foo + 1}; f({foo: 3})'
+                to: '{bar: 4}'
+       description: 'functions should be able to take apart and build structs'.
 )
 ) : (
 TEST_CONTEXT = ()

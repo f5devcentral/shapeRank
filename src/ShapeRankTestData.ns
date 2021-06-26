@@ -11,186 +11,186 @@ public supplyTestNamed: tn <String> ^ <String> = (
   ^(mirror evaluate: 'test_', tn) result reflectee
 )
 test_append ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append([1, 3, 4], [7, 22, 355])
 '
 )
 test_append2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append([3], [4])
 '
 )
 test_append3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append(3, 4)
 '
 )
 test_append4 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append([1, 2, 3], 4)
 '
 )
 test_append5 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append(1, [2, 3, 4])
 '
 )
 test_append6 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append([[1, 3, 4]], [[7, 22, 355]])
 '
 )
 test_asArray ^ <String> = (
-^'func asArray(x: Int): [1]Int = [x];
+^'func asArray(x) = [x];
 
 asArray(42)
 '
 )
 test_contains_false ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 contains([[1, 2, 3],[7, 6, 5]], 9)
 '
 )
 test_contains_true ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 contains([[1, 2, 3],[7, 6, 5]], 6)
 '
 )
 test_empty_args ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 dummy()
 '
 )
 test_excess_args ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 dummy([3, 4], [5, 6])
 '
 )
 test_fun ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 reduce
 '
 )
 test_identity_3 ^ <String> = (
-^'func identity(x: Int):Int = x;
+^'func identity(x) = x;
 
 3
 '
 )
 test_identity_rec ^ <String> = (
-^'func identity(x: Int):Int = x;
+^'func identity(x) = x;
 
 identity(3)
 
 '
 )
 test_if11 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 if true then 4 else 5
 '
 )
 test_if21 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 if [true, false] then 4 else 5
 '
 )
 test_if22 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 if [true, false] then [3, 4] else [2, 1]
 '
 )
 test_iota ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 iota(6)
 '
 )
 test_iota2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 iota([1, 2])
 '
 )
 test_length ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 length([[3, 2, 5],[7, 10, 6]])
 '
 )
 test_literal_int ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 23
 '
 )
 test_mask ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 mask([false, true, true], [3, 4, 7])
 '
 )
 test_matrix ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 [[3, 2, 5],[7, 10, 6]]
 '
 )
 test_missing_arg ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 append([3, 4])
 '
 )
 test_mixedTypeTensor ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 [1, true]
 '
 )
 test_outerProduct ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 outerProduct(append, iota(4), iota(2))
 '
 )
 test_pair ^ <String> = (
-^'func pair(a: $T, b: $T): [2]$T = [a, b];
+^'func pair(a, b) = [a, b];
 
 pair([1, 2, 3, 4], [2, 4, 8, 16])
 '
 )
 test_polyReduce = (
-  ^'func first(x: Int, y: Int): Int = x;
+  ^'func first(x, y) = x;
 
 reduce(first, 0, [[1, 2, 3], [4, 5, 6]])
 
 '
 )
 test_polyReduce2 = (
-  ^'func second(x: Int, y: Int): Int = y;
+  ^'func second(x, y) = y;
 
 reduce(second, 0, [[1, 2, 3], [4, 5, 6]])
 '
@@ -210,126 +210,126 @@ rotate_rows([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 1)
 '
 )
 test_rotate_left0 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 0)
 '
 )
 test_rotate_left1 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 1)
 '
 )
 test_rotate_left2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 2)
 '
 )
 test_rotate_left3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 3)
 '
 )
 test_rotate_left4 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 4)
 '
 )
 test_rotate_right0 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], -0)
 '
 )
 test_rotate_right1 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], -1)
 '
 )
 test_rotate_right2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], -2)
 '
 )
 test_rotate_right3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], -3)
 '
 )
 test_rotate_right4 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
  
 
 rotate([[1, 2, 3], [10, 20, 30], [100, 200, 300]], -4)
 '
 )
 test_shapeCast ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 shapeCast mask([false, true, true], [3, 4, 7]) to [2]
 '
 )
 test_shapeCast2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 shapeCast mask([false, true, true], [3, 4, 7]) to [3]
 '
 )
 test_shapeCast3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 shapeCast mask([false, true, true], [3, 4, 7]) to [2][4]
 '
 )
 test_shapeCast4 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 shapeCast length([[3, 2, 5],[7, 10, 6]]) to [2]
 '
 )
 test_vector ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 [3, 2, 5]
 '
 )
 test_iota3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 iota(3 + 4)
 '
 )
 test_malordered ^ <String> = (
-^'func intBool(x: Int, y: Bool): Int = x;
+^'func intBool(x, y) = x;
 
 intBool(true, 3)
 '
 )
 test_noReturn ^ <String> = (
-^'func dummy(x: Int) = x;
+^'func dummy(x) = x;
  
 
 dummy(3)
 '
 )
 test_twice ^ <String> = (
-^'func twice(x: Int):Int = 2*x;
+^'func twice(x) = 2*x;
 
 twice(3)
 '
@@ -342,37 +342,37 @@ timesVec([5, 6, 7, 8], [10, 20, 30, 40])
 '
 )
 test_scan ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 scan(+, 0, [[1, 2, 3], [4, 5, 6]])
 
 '
 )
 test_scalarVectorMatrix ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 [10, 20, 30] + 2 * [[1, 2, 3],[4, 5, 6], [7, 8, 9]]
 '
 )
 test_range ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 2..6
 '
 )
 test_polyEval3 ^ <String> = (
-^'func polyEval(coefficients:[]Int, x: Int): Int = 
+^'func polyEval(coefficients:[], x) = 
   reduce(+,
     0,
    coefficients * scan(*, 1, replicate(x, length(coefficients)))
     )
 
-func replicate(x: $T, n: $n):[$n]$T = x + iota(n) - iota(n);
+func replicate(x, n) = x + iota(n) - iota(n);
 
 polyEval([1, 0, 0, 0, 3], 2)
 '
 )
 test_polyEval2 ^ <String> = (
-^'func polyEval(coefficients: [$d + 1]Int, x: Int): Int = 
+^'func polyEval(coefficients: [], x) = 
   reduce(+,
     0,
     coefficients * power(x, 0..$d)
@@ -385,7 +385,7 @@ polyEval([1, 0, 0, 0, 3], 2)
 '
 )
 test_polyEval1 ^ <String> = (
-^'func polyEval(coefficients: []Int, x: Int): Int = 
+^'func polyEval(coefficients: [], x) = 
   reduce(+,
     0,
     coefficients * power(x, 0.. length(coefficients) - 1)
@@ -395,25 +395,25 @@ polyEval([1, 0, 0, 0, 3], 2)
 '
 )
 test_pointwiseVectorScalar ^ <String> = (
-^'func pv(a: Int, b: Int): Int = a * b;
+^'func pv(a, b) = a * b;
 
 pv([1, 2, 3], 2)
 '
 )
 test_pointwiseVector ^ <String> = (
-^'func pv(a: Int, b: Int): Int = a*b;
+^'func pv(a, b) = a*b;
 
 pv([1, 2, 3], [2, 2, 2])
 '
 )
 test_plusExpr ^ <String> = (
-^'func dummy(x: Int): Int = 0;
+^'func dummy(x) = 0;
 
 [[1, 2, 3], [4, 5, 6]] + [[7, 8, 9], [10, 11, 12]]
 '
 )
 test_matmul_rerank ^ <String> = (
-^'func vecMatmul(v: [$d1]Int, m: [$d1][$d2]Int): [$d2]Int = fold(+, 0, v*m)
+^'func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
 
 let matmul = rerank vecMatmul to 2, 2;
  
@@ -422,21 +422,21 @@ matmul([[1, 2, 3, 4], [5, 6, 7, 8]], [[10, 20, 30], [40, 50, 60], [70, 80, 90], 
 '
 )
 test_outerProduct3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 outerProduct(2..6, 2..6, *)
 '
 )
 test_outerProduct2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 outerProduct(*, 2..6, 2..6)
 '
 )
 test_matmul2 ^ <String> = (
-^'func dotProduct(a: [$d]Int, b: [$d]Int): Int = fold(+, 0, a*b)
+^'func dotProduct(a: [], b: []) = fold(+, 0, a*b)
 
-func matmul(a:[$m][$n]Int, b:[$n][$p]Int):[$m][$p]Int =
+func matmul(a:[][], b:[][]) =
   fold(+, 0, a*b);
  
 
@@ -448,7 +448,7 @@ test_matVecMul ^ <String> = (
 let timesVec = rerank * to 1, 1
 let reduceByRow = rerank fold to 0, 0 , 1
 
-func matVecmul( m: [$d1][$d2]Int, v: [$d2]Int): [$d1]Int = reduceByRow(+, 0, timesVec(v, m));
+func matVecmul( m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m));
  
 
 matVecmul([[1, 2, 3, 4], [5, 6, 7, 8]], [10, 20, 30, 40])
@@ -459,9 +459,9 @@ test_matVecMul_inner_product2 ^ <String> = (
 let timesVec = rerank * to 1, 1
 let reduceByRow = rerank fold to 0, 0 , 1
 
-func matVecmul( m: [$d1][$d2]Int, v: [$d2]Int): [$d1]Int = reduceByRow(+, 0, timesVec(v, m))
+func matVecmul( m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m))
 
-func matmul(a: @X:: [$n] Int, b: [$n]::@Y Int): @X::@Y Int =  
+func matmul(a: ?, b: ?) =  
   if length(shapeOf(b)) = 1 then matVecmul(a, b) else innerProduct(a, b, +, *);
  
 
@@ -475,13 +475,13 @@ test_let ^ <String> = (
 '
 )
 test_dotProduct ^ <String> = (
-^'func dotProduct(a: [$d]Int, b: [$d]Int): Int = reduce(+, 0, a*b);
+^'func dotProduct(a: [], b: []) = reduce(+, 0, a*b);
 
 dotProduct([[1, 2, 3, 4], [5, 6, 7, 8]], [[10, 20, 30, 40], [50, 60, 70, 80]])
 '
 )
 test_makeTensor ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 makeTensor(@[2, 3], [1, 2, 3, 4, 5, 6])
 '
@@ -495,9 +495,9 @@ vecMatmul to multiply each row (an n-vector) of the matrix a by b. Each such cal
 yields a p-vector; there are m such calls, one per row. ShapeRank agregates of these into
 an m X p result.
 *)
-^'func vecMatmul(v: [$d1]Int, m: [$d1][$d2]Int): [$d2]Int = fold(+, 0, v*m)
+^'func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
 
-func matmul(a:[$m][$n]Int, b:[$n][$p]Int):[$m][$p]Int =
+func matmul(a:[][], b:[][]) =
   vecMatmul(a, b);
  
 
@@ -506,11 +506,11 @@ matmul([[1, 2, 3, 4], [5, 6, 7, 8]], [[10, 20, 30], [40, 50, 60], [70, 80, 90], 
 )
 test_vecMatmul ^ <String> = (
 (*
-The vector v is automatically replicated $d2 times and multiplied
+The vector v is automatically replicated  times and multiplied
 pointwise with m. The call to fold then sums the columns of the resulting
 matrix.
 *)
-^'func vecMatmul(v: [$d1]Int, m: [$d1][$d2]Int): [$d2]Int = fold(+, 0, v*m);
+^'func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m);
 
 vecMatmul([1, 2, 3, 4], [[10, 20, 30], [40, 50, 60], [70, 80, 90], [100, 200, 300]])
 '
@@ -520,7 +520,7 @@ test_matmul_rerank2 ^ <String> = (
 Should fail: The vector passed to dotProduct is of length 4
 but the matrix has rows of length 3
 *)
-^'func dotProduct(a: [$d]Int, b: [$d]Int): Int = fold(+, 0, a*b)
+^'func dotProduct(a: [], b: []) = fold(+, 0, a*b)
 
 let vecMatmul = rerank dotProduct to 1, 2
 let matmul = rerank vecMatmul to 2, 2 ;
@@ -538,19 +538,19 @@ has type [$d + 1] Int, so we can guarantee that multiplication has type
 work. However, maybe something like
 @shapeOf(coefficients)[1] - 1 would while giving precise types?
 *)
-^'func polyEval(coefficients:[$d+1]Int, x: Int): Int = 
+^'func polyEval(coefficients:[], x) = 
   reduce(+,
     0,
     coefficients * append([1], scan(*, 1, replicate(x, $d))) 
     )
 
-func replicate(x: $T, n: $n):[$n]$T = x + iota(n) - iota(n);
+func replicate(x, n) = x + iota(n) - iota(n);
 
 polyEval([1, 0, 0, 0, 3], 2)
 '
 )
 test_gradientDescent = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+^'func model(params, x: [])
      = softmax(matmul(params.W, x) + params.b)
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
    let trainingSet = [
@@ -559,22 +559,19 @@ test_gradientDescent = (
      [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
      [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
    ]
-   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+   func loss(params, data: []) =
      avg(crossEntropyLoss(data.yp, model(params, data.x)))
-   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
-             { W: [$cn][$fn]Float, b: [$cn]Float } =
+   func train(params, data: []) =
      gradientDescent(0.05, loss, params, data)
    let trainedParams = fold(train, initParams, trainingSet)
-   func infer(x: [2]Float): Int = argmax(model(trainedParams, x));
+   func infer(x: []) = argmax(model(trainedParams, x));
    infer([[0.25, 0.65], [0.2, 0.9], [0.1, 0.1], [0.7, 0]])'
 )
 test_matmul_inner_product ^ <String> = (
 ^'
-func vecMatmul(v: [$d1]Int, m: [$d1][$d2]Int): [$d2]Int = fold(+, 0, v*m)
+func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
 
-func matmul(a: @X:: [$n] Int, b: [$n]::@Y Int): @X::@Y Int =  
+func matmul(a: ?, b: ?) =  
   if length(shapeOf(b)) == 1 then vecMatmul(a, b) else innerProduct(a, b, +, *);
  
 
@@ -586,9 +583,9 @@ test_matVecMul_inner_product ^ <String> = (
 let timesVec = rerank * to 1, 1
 let reduceByRow = rerank fold to 0, 0 , 1
 
-func matVecmul( m: [$d1][$d2]Int, v: [$d2]Int): [$d1]Int = reduceByRow(+, 0, timesVec(v, m))
+func matVecmul( m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m))
 
-func matmul(a: @X:: [$n] Int, b: [$n]::@Y Int): @X::@Y Int =  
+func matmul(a: ?, b: ?) =  
   if length(shapeOf(b)) == 1 then matVecmul(a, b) else innerProduct(a, b, +, *);
  
 
@@ -596,16 +593,16 @@ matmul([[1, 2, 3, 4], [5, 6, 7, 8]], [10, 20, 30, 40])
 '
 )
 test_primes ^ <String> = (
-^'func primeHelper(r: []Int) =
+^'func primeHelper(r: []) =
   mask(not(contains(outerProduct(*, r, r), r)), r)
 
-func allPrimesUpTo(n: $n) = primeHelper(2..n);
+func allPrimesUpTo(n) = primeHelper(2..n);
 
 allPrimesUpTo(6)
 '
 )
 test_replicate ^ <String> = (
-^'func replicate(x: $T, n: $n):[$n]$T = x + iota(n) - iota(n);
+^'func replicate(x, n) = x + iota(n) - iota(n);
  
 
 replicate(42,  3 + 4)
@@ -623,119 +620,119 @@ compact(+, 0, [[1, 2, 3], [4, 5, 6]])
 test_fold_fst = (
 (* fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
 ^'
-func fst(a: $A, b: $B): $A = a; 
+func fst(a, b) = a; 
 fold(fst, 2, [1, 2, 3])
 '
 )
 test_outerProduct1 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 outerProduct(append, [iota(4)], [iota(2)])
 '
 )
 test_identity_vector ^ <String> = (
-^'func identity(x: Int):Int = x;
+^'func identity(x) = x;
 
 identity([3, 4])
 
 '
 )
 test_identity_matrix ^ <String> = (
-^'func identity(x: Int):Int = x;
+^'func identity(x) = x;
 
 identity([[3, 4], [5, 6], [7, 8]])
 
 '
 )
 test_manual_rerank2 ^ <String> = (
-^'func append_rows(a: [$d1]$T, b: [$d2]$T): [$d1 + $d2]$T = append(a, b);
+^'func append_rows(a: [], b: []) = append(a, b);
 
 append_rows([[1, 2, 3]], [[4, 5, 6]])
 
 '
 )
 test_manual_rerank3 ^ <String> = (
-^'func rotate_rows(x: [$d]$T, y: Int):[$d]$T  = rotate(x, y);
+^'func rotate_rows(x: [], y)  = rotate(x, y);
 
 rotate_rows([[1, 2, 3], [10, 20, 30], [100, 200, 300]], 1)
 
 '
 )
 test_program_identity_3 ^ <String> = (
-^'program identity3(x: Int) func identity(x: Int):Int = x;
+^'program identity3(x: T) func identity(x) = x;
 
 3
 '
 )
 test_append_streams1 ^ <String> = (
-^'program testAppendStreams1(s: [d]Int): [d + 3] Int;
+^'program testAppendStreams1(s: [d]Int);
  
 
 append([1, 3, 4], s)
 '
 )
 test_append_streams2 ^ <String> = (
-^'program testAppendStreams2(s: [d]Int): [d + 3] Int;
+^'program testAppendStreams2(s: [d]Int);
  
 
 append(s, [1, 3, 4])
 '
 )
 test_append_streams3 ^ <String> = (
-^'program testAppendStreams3(s1: [d1]Int, s2: [d2]Int): [d1 + d2] Int;
+^'program testAppendStreams3(s1: [d1]Int, s2: [d2]Int);
  
 
 append(s1, s2)
 '
 )
 test_reduce ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 reduce(+, 0, [[1, 2, 3], [4, 5, 6]])
 
 '
 )
 test_referential_transparency = (
-^'program referentialTransparency(s: []$E):[?][2] [?]
-sync func pair(a: $T, b: $T): [2]$T = [a, b]
-sync func foo(a: [?]$T, b: [?]$T, c: $T): [2][?]$T = pair(a, b);
+^'program referentialTransparency(s: []$E)
+sync func pair(a, b) = [a, b]
+sync func foo(a: [], b: [], c) = pair(a, b);
 foo(s, s, s)'
 )
 test_double_stream ^ <String> = (
-^'sync program doubleStream(s:[] Int) 
-func dummy(x: Int): Int = x
+^'sync program doubleStream(s:[?]Num) 
+func dummy(x) = x
 ; s*2
 '
 )
 test_pointwiseSyncStream ^ <String> = (
-^'sync program pointwiseStream(s1: [?] Int, s2: [?] Int): [?] Int sync func pv(a: Int, b: Int): Int = a*b;
+^'sync program pointwiseStream(s1: [?] Int, s2: [?] Int) sync func pv(a, b) = a*b;
 
 pv(s1, s2)
 '
 )
 test_stream_scan ^ <String> = (
-^'sync program streamScan(s: []Int): Int;
+^'sync program streamScan(s: []Int);
 
 scan(+, 0, s)
 
 '
 )
 test_twice_stream ^ <String> = (
-^'sync program twiceStream(s: []Int) sync func twice(x: Int):Int = 2*x;
+^'sync program twiceStream(s: []Int) sync func twice(x) = 2*x;
 
 twice(s)
 '
 )
 test_stream_contains ^ <String> = (
 ^'sync program streamContains(s: @S Int)
-func dummy(z: Int) = 3
+func dummy(z) = 3
 ;
 
 contains(s, 512)
 '
 )
 test_pair_stream_sync3 ^ <String> = (
-^'sync program pairStream3(s1: [?]$E, s2: []$E): [2]$E  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+^'sync program pairStream3(s1: [?]$E, s2: []$E)  sync func pair(a, b) = [a, b];
 
 pair(s1, s2)
 '
@@ -743,12 +740,12 @@ pair(s1, s2)
 test_fold_snd = (
 (* fold(f: @P$T->@Q$S->@P$T, acc: @P$T, x:[$d]::@R::@Q $S): @R::@P $T *)
 ^'
-func snd(a: $A, b: $B): $B = b; 
+func snd(a, b) = b; 
 fold(snd, 2, [1, 2, 3])
 '
 )
 test_argmax = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+^'func model(params, x: [])
      = softmax(matmul(params.W, x) + params.b)
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
    let trainingSet = [
@@ -757,19 +754,16 @@ test_argmax = (
      [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
      [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
    ]
-   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+   func loss(params, data: []) =
      avg(crossEntropyLoss(data.yp, model(params, data.x)))
-   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
-             { W: [$cn][$fn]Float, b: [$cn]Float } =
+   func train(params, data: []) =
      gradientDescent(0.05, loss, params, data)
    let trainedParams = fold(train, initParams, trainingSet)
 ;
    argmax(model(trainedParams, [0.25, 0.65]))'
 )
 test_trainedParams = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+^'func model(params, x: [])
      = softmax(matmul(params.W, x) + params.b)
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
    let trainingSet = [
@@ -778,12 +772,9 @@ test_trainedParams = (
      [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
      [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
    ]
-   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+   func loss(params, data: []) =
      avg(crossEntropyLoss(data.yp, model(params, data.x)))
-   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
-             { W: [$cn][$fn]Float, b: [$cn]Float } =
+   func train(params, data: []) =
      gradientDescent(0.05, loss, params, data)
    let trainedParams = fold(train, initParams, trainingSet)
    ;
@@ -801,21 +792,21 @@ test_fold_fst2 = (
                 let x = fold(firstVec, [0.1, 0.3], [[1]]); x'
 )
 test_structFn1 = (
-  ^'func f(arg: {x: Int}): Int = arg.x; f({x: 4})'
+  ^'func f(arg) = arg.x; f({x: 4})'
 )
 test_structFn2 = (
-  ^'func f(arg: {x: [4]Int, y: [4]Int}): [8]Int = append(arg.x, arg.y);
+  ^'func f(arg) = append(arg.x, arg.y);
                 f({x: [1,2,3,4], y: [5,6,7,8]})'
 )
 test_structFn3 = (
-  ^'func f(arg: [$d]{x: Int}): [$d]Int = arg.x;
+  ^'func f(arg: []) = arg.x;
                 f([{x: 1}, {x: 2}, {x: 3}])'
 )
 test_timesVec2D = (
   ^'let tv = rerank * to 1, 1; tv([[1, 2, 3], [4, 5, 6]], [[10, 20, 30], [40, 50, 60]])'
 )
 test_train = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+^'func model(params, x: [])
      = softmax(matmul(params.W, x) + params.b)
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
    let trainingSet = [
@@ -824,18 +815,15 @@ test_train = (
      [ {x: [0.4, 0.5], yp: [0, 1, 0]}, {x: [0.5, 0.5], yp: [0, 0, 1]} ],
      [ {x: [0.2, 0.6], yp: [0, 1, 0]}, {x: [0.4, 0.1], yp: [1, 0, 0]} ]
    ]
-   func loss(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-             data: [$batchSize]{x: [$fn]Float, yp: [$cn]Float}): Float =
+   func loss(params, data: []) =
      avg(crossEntropyLoss(data.yp, model(params, data.x)))
-   func train(params: { W: [$cn][$fn]Float, b: [$cn]Float },
-              data: [$batchSize]{ x: [$fn]Float, yp: [$cn]Float }):
-             { W: [$cn][$fn]Float, b: [$cn]Float } =
+   func train(params, data: []) =
      gradientDescent(0.05, loss, params, data)
    ;
    train(initParams, trainingSet)'
 )
 test_model = (
-^'func model(params: { W: [$cn][$fn]Float, b: [$cn]Float }, x: [$fn]Float): [$cn]Float
+^'func model(params, x: [])
      = softmax(matmul(params.W, x) + params.b)
    let initParams = { W: [[0,0],[0,0],[0,0]], b: [0,0,0] }
    let trainingSet = [
@@ -848,43 +836,43 @@ test_model = (
    model(initParams, trainingSet.x)'
 )
 test_range2 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 6..2
 '
 )
 test_range3 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 -6..2
 '
 )
 test_range4 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 -6..-2
 '
 )
 test_range5 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 2..-6
 '
 )
 test_range6 ^ <String> = (
-^'func dummy(x: Int): Int = x;
+^'func dummy(x) = x;
 
 -2..-6
 '
 )
 test_pair_stream_sync1 ^ <String> = (
-^'sync program pairStream1(s: [?]Num): [2]Num  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+^'sync program pairStream1(s: [?]Num)  sync func pair(a, b) = [a, b];
 
 pair([1, 2, 3, 4], s)
 '
 )
 test_pair_stream_sync2 ^ <String> = (
-^'sync program pairStream2(s: [?]Num): [2]Num  sync func pair(a: $T, b: $T): [2]$T = [a, b];
+^'sync program pairStream2(s: [?]Num)  sync func pair(a, b) = [a, b];
 
 pair(s, [2, 4, 8, 16])
 '
@@ -893,8 +881,8 @@ test_matmul_inner_product2 ^ <String> = (
 ^'
 let timesVec = rerank * to 1, 1
 let reduceByRow = rerank fold to 0, 0 , 1
-func matVecmul( m: [$d1][$d2]$T <: Num, v: [$d2]$T): [$d1]$T = reduceByRow(+, 0, timesVec(v, m))
-func matmul(a: @X:: [$n]$T <: Num, b: [$n]::@Y $T): @X::@Y $T =
+func matVecmul( m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m))
+func matmul(a:?, b: ?) =
   if length(shapeOf(b)) == 1 then matVecmul(a, b) else innerProduct(a, b, +, *)
 
 

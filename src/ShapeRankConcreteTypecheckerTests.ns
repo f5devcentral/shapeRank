@@ -342,47 +342,12 @@ public testMakeTensor = (
   assert: (result shape dimensions at: 2) baseType constant equals: 3.
   assert: result baseType id equals: 'Int'.
 )
-public testBoundedTypes = (
-  assertTyped: 'func f(x: { a: $T <: Num }): $T = x.a; f({ a: 3 })' as: '3'
-    desc: 'bounded types should preserve individual typing'.
-  assertTyped: 'func f(x: { a: $T <: Num }): $T = x.a; f({ a: 3.2 })' as: '3.2'
-    desc: 'bounded types should preserve individual typing, 2'.
-  expectTypeError: 'func f(x: $T <: Num): $T = x; f(true)'.
-  assertTyped: 'func f(x: $T <: Num): $T = x; f([1.8,2.1,3.3])' as: '[2.0,3.1,0.9]'
-    desc: 'bounded types should track inferred types across tensors'.
-  expectTypeError: 'func f(x: $T <: Num): $T = x; f([1.2, 2])'.
-)
 public testGradientDescent = (
   | result = typecheckFileNamed: 'gradientDescent'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
   assert: result shape rank equals: 1.
   assert: (result shape at: 1) dimension equals: 4.
   assert: result baseType id equals: 'Int'.
-)
-public testTypeBounds = (
-  assertTyped: 'func f(s: [$d]Float , x: [$e]Int): [$d]Float = s
-                let x = fold(f, [0.1, 0.3], [[1]]); x'
-           as: '[0.1, 0.3]'
-         desc: 'should be able to propagate constraints through folds and funcs'.
-  assertTyped: 'func f(s: { foo: [$z]Float }, x: [$y]Int): { foo: [$z]Float } = s
-                let x = fold(f, { foo: [0.1, 0.3] }, [[1]]); x'
-           as: '{ foo: [0.1, 0.3] }'
-         desc: 'should be able to propagate constraints through structs too'.
-)
-public testScopedTypeVariables = (
-  (* fold(f: $T -> $S -> $T, acc: $T, x:[]::@R $S): @R $T*)
-  assertTyped: 'func f(a: $S, b: $T): $S = a;
-                fold(f, true, [1])'
-           as: 'true'
-         desc: 'should not get confused with differently scoped tyvars'.
-  assertTyped: 'func f(a: $T, b: $S): $T = a;
-                fold(f, true, [1])'
-           as: 'true'
-         desc: 'should not get confused with differently scoped tyvars'.
-)
-public testShapeDimVarInference = (
-  assertTyped: 'func id1(x: [$d]$T): [$d]$T = x; apply(id1, [2])' as: '[2]'
-         desc: 'shape variables should be unified with dimension variable vectors'.
 )
 public testNumericSubtypes = (
   assertTyped: '3+4.2' as: '0.2' desc: 'ints should be promoted to floats (1)'.
@@ -528,20 +493,6 @@ public testPolyEval3 = (
   assert: result rank = 0.
   assert: result baseType id = 'Int'.
 )
-public testFloats = (
-  assertTyped: '0.213' as: '23.21' desc: 'floats should be typed'.
-  assertNotTyped: '0.102' as: '102' desc: 'float types should be distinct from ints'.
-  assertTyped: 'func f(arg: Num): Int = 3; f(0.3)'
-           as: 'func f(arg: Num): Int = 3; f(10)'
-         desc: 'functions should accept ints or floats when they accept Nums'.
-)
-public testBoundedStructTypes = (
-  assertTyped: 'func f(x: {}) = x; f({foo: 3})' as: '{foo: 3}' desc: 'width inference w/o bound'.
-  assertTyped: 'func f(x: $T <: {}) = x; f({foo: 3})' as: '{foo: 3}'
-         desc: 'width inference with bound'.
-  assertTyped: 'func f(x: $T <: {n: Num}) = x; f({n: 3.2})' as: '{n: 1.2}'
-         desc: 'depth inference with bound'.
-)
 public testPrimes = (
   | result = typecheckFileNamed: 'primes'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -576,11 +527,6 @@ public testSoftmax = (
   assert: result shape rank equals: 1.
   assert: (result shape at: 1) dimension equals: 3.
   assert: result baseType id equals: 'Float'.
-)
-assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
-  | t1 = (Parser new program parseString: str1) userType. t2 = (Parser new program parseString: str2) userType. |
-  assert: [equals: t1 type: t2]
-    description: d.
 )
 public testStructFn2 = (
   | result = typecheckFileNamed: 'structFn2'. |
@@ -833,6 +779,60 @@ public testMatmulRerank  = (
   assert: (result shape dimensions at: 1) constant equals: 2.
   assert: (result shape dimensions at: 2) constant equals: 3.
   assert: result baseType id equals: 'Int'.
+)
+public testBoundedStructTypes = (
+  assertTyped: 'func f(x) = x; f({foo: 3})' as: '{foo: 3}' desc: 'width inference w/o bound'.
+  assertTyped: 'func f(x) = x; f({foo: 3})' as: '{foo: 3}'
+         desc: 'width inference with bound'.
+  assertTyped: 'func f(x) = x; f({n: 3.2})' as: '{n: 1.2}'
+         desc: 'depth inference with bound'.
+)
+public testBoundedTypes = (
+  assertTyped: 'func f(x) = x.a; f({ a: 3 })' as: '3'
+    desc: 'bounded types should preserve individual typing'.
+  assertTyped: 'func f(x) = x.a; f({ a: 3.2 })' as: '3.2'
+    desc: 'bounded types should preserve individual typing, 2'.
+  expectTypeError: 'func f(x) = x; f(true)'.
+  assertTyped: 'func f(x) = x; f([1.8,2.1,3.3])' as: '[2.0,3.1,0.9]'
+    desc: 'bounded types should track inferred types across tensors'.
+  expectTypeError: 'func f(x) = x; f([1.2, 2])'.
+)
+public testFloats = (
+  assertTyped: '0.213' as: '23.21' desc: 'floats should be typed'.
+  assertNotTyped: '0.102' as: '102' desc: 'float types should be distinct from ints'.
+  assertTyped: 'func f(arg) = 3; f(0.3)'
+           as: 'func f(arg) = 3; f(10)'
+         desc: 'functions should accept ints or floats when they accept Nums'.
+)
+public testScopedTypeVariables = (
+  (* fold(f: $T -> $S -> $T, acc: $T, x:[]::@R $S): @R $T*)
+  assertTyped: 'func f(a, b) = a;
+                fold(f, true, [1])'
+           as: 'true'
+         desc: 'should not get confused with differently scoped tyvars'.
+  assertTyped: 'func f(a, b) = a;
+                fold(f, true, [1])'
+           as: 'true'
+         desc: 'should not get confused with differently scoped tyvars'.
+)
+public testTypeBounds = (
+  assertTyped: 'func f(s: [] , x:[]) = s
+                let x = fold(f, [0.1, 0.3], [[1]]); x'
+           as: '[0.1, 0.3]'
+         desc: 'should be able to propagate constraints through folds and funcs'.
+  assertTyped: 'func f(s, x: []) = s
+                let x = fold(f, { foo: [0.1, 0.3] }, [[1]]); x'
+           as: '{ foo: [0.1, 0.3] }'
+         desc: 'should be able to propagate constraints through structs too'.
+)
+public testShapeDimVarInference = (
+  assertTyped: 'func id1(x: []) = x; apply(id1, [2])' as: '[2]'
+         desc: 'shape variables should be unified with dimension variable vectors'.
+)
+assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
+  | t1 = (Parser new program parseString: str1) userType. t2 = (Parser new program parseString: str2) userType. |
+  assert: [equals: t1 type: t2]
+    description: d.
 )
 ) : (
 TEST_CONTEXT = ()

@@ -254,13 +254,6 @@ public testDotExprPrecedence = (
       (dot: {dot: {dot: {'a'. 'foo'} . 'bar'} . 'baz'}) ]
     description: 'Dot expressions should be left-recursive.'.
 )
-public testStructType = (
-  assert: [((parseCompilationUnit: 'func f(x: {foo: Int, bar: Bool}): Int = x.foo; 1')
-             declarations at: 1) =
-            (fn: {'f'. {{'x'. {{'foo'. 'Int'}. {'bar'. 'Bool'}}}}. 'Int'.
-                               dot: {'x'. 'foo'} }) ]
-    description: 'Struct type literal expected.'
-)
 public testStrLiterals = (
   assert: [(parseCompilationUnit: '"\"\\hello\\\""') = (str: '"\hello\"')]
     description: 'should be able to parse string literals with escapes'.
@@ -269,20 +262,12 @@ public testStrLiterals = (
        (eq: {str: '   hello    '. str:   ' world  '})]
     description: 'tokenisation should strip spaces from the appropriate places'.
 )
-public testFuncDeclWith = (
-  | result = parseCompilationUnit: 'func dummy(x: Int): Int = x; append(3, 4)'. |
-  assert: [result isKindOfProgramAST] description: 'Program expected'.
-)
 public fn: args <{String. List[{String. Object}]. Object. Object}> ^<FunctionAST> = (
   | name = args at: 1.
     params = (args at: 2) collect: [:v | param: v].
     rt = tensorTypeOf: (args at: 3).
     body = astOf: (args at: 4). |
   ^FunctionAST named: name parameters: params returnType: rt body: body isSync: false position: {0. 0}
-)
-public testProgramDecl = (
-  | result = parseCompilationUnit: 'program P(x: String) func dummy(x: Int): Int = x; append(3, 4)'. |
-  assert: [result isKindOfProgramAST] description: 'Program expected'.
 )
 public emptyProgramAround: ast <ExprAST> ^<ProgramAST> = (
   | 
@@ -295,6 +280,21 @@ public emptyProgramAround: ast <ExprAST> ^<ProgramAST> = (
               declarations: List new
               expression: ast
               position: {0. 0}
+)
+public testFuncDeclWith = (
+  | result = parseCompilationUnit: 'func dummy(x) = x; append(3, 4)'. |
+  assert: [result isKindOfProgramAST] description: 'Program expected'.
+)
+public testProgramDecl = (
+  | result = parseCompilationUnit: 'program p(x: String) func dummy(x) = x; append(3, 4)'. |
+  assert: [result isKindOfProgramAST] description: 'Program expected'.
+)
+public untestStructType = (
+  assert: [((parseCompilationUnit: 'func f(x) = x.foo; 1')
+             declarations at: 1) =
+            (fn: {'f'. {{'x'. {{'foo'. 'Int'}. {'bar'. 'Bool'}}}}. 'Int'.
+                               dot: {'x'. 'foo'} }) ]
+    description: 'Struct type literal expected.'
 )
 ) : (
 TEST_CONTEXT = ()
