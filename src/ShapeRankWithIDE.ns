@@ -15,7 +15,7 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private ShapeRankGrammar = manifest ShapeRankGrammar.
         private ShapeRankParser = manifest ShapeRankParser.
         private ShapeRankInterpreterTests = manifest ShapeRankInterpreterTests.
-        (* private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration. *)
+        private ShapeRankInterpreterTestsConfiguration = manifest ShapeRankInterpreterTestsConfiguration.
         private ShapeRankParserTests = manifest ShapeRankParserTests.
         private ShapeRankParsingTestsConfiguration = manifest ShapeRankParsingTestsConfiguration.
         private ShapeRankTestData = manifest ShapeRankTestData.
@@ -46,7 +46,7 @@ populateNamespace: namespace = (
 	namespace at: #ShapeRankParserTests put: ShapeRankParserTests.
 	namespace at: #ShapeRankParsingTestsConfiguration put: ShapeRankParsingTestsConfiguration.
 	namespace at: #ShapeRankInterpreterTests put: ShapeRankInterpreterTests.
-	(* namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration. *)
+	namespace at: #ShapeRankInterpreterTestsConfiguration put: ShapeRankInterpreterTestsConfiguration.
 	namespace at: #ShapeRankTypecheckerTests put: ShapeRankTypecheckerTests.
 	namespace at: #ShapeRankTypecheckerTestsConfiguration put: ShapeRankTypecheckerTestsConfiguration.
 	namespace at: #ShapeRankInferenceTests put: ShapeRankInferenceTests.
