@@ -9,6 +9,7 @@ platform asts: asts collectionUtils: utils streams: hs = (
     private Map = platform collections Map.
     private List = platform collections List.
     private Utils = utils.
+    private ObjectMirror = platform mirrors ObjectMirror.
     | ) (
 public class Evaluator usingPlatform: p
 <Platform> collectionUtils: c = ASTClass usingPlatform: p
@@ -465,6 +466,18 @@ External inputs have no syntactic representation by definition, but since this i
 public eval ^ <HyperStream> = (
 (* Return the value this node represents. *)
   ^binding
+)
+) : (
+)
+public class ExternalFunctionBodyAST = super ExternalFunctionBodyAST (
+) (
+public eval ^ <Tensor> = (
+(* Handle an external call. *)
+  | args  <List[Stream]> = currentActivation arguments. |
+  #BOGUS.
+  (* Only deals with nodeJS functions.
+  *)
+  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) perform: descriptor functionName with: args ifFail: [].
 )
 ) : (
 )

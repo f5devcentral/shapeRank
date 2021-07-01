@@ -286,10 +286,11 @@ the ASCII CR character followed by the ASCII LF character
 
 \bnf {ProgramSignature} {\VALIDENT{} \synt{ProgramParameterList}}
 \bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList}}
+\bnf {ExternalFunctionSignature} { \synt{ParameterList} \COLON{} \synt{TypeSig}}
 \bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignature} \BIND \synt{Expression}}
 \bnf {LetBinding} {\LET{} \VALIDENT{} \BIND{} \synt{Expression}}
 \bnf {TypeDeclaration} {\TYPE{} \TYPEIDENT{} \BIND{} \synt{TypeSig}}
-\bnf {TypeSigSuffix} {\COLON{} \synt{TypeSig}}
+\bnf {TypeSigSuffix} {\COLON{} (\synt{TypeSig} \alt \synt{ExternalFunctionSignature})}
 \bnf {RankSigSuffix} {\COLON{} \synt{RankSig}}
 
 %% Type signatures

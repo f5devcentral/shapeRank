@@ -6,7 +6,7 @@ class ShapeRankScopes usingPlatform: platform asts: asts <ShapeRankAST class> te
   private Map = platform collections Map.
   private List = platform collections List.
   private Tensorflow = Tensorflow.
-  private api = NodeAPI usingPlatform: platform.
+  api = NodeAPI usingPlatform: platform.
   private platform = platform.
   |
 ) (
@@ -560,6 +560,16 @@ public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicType
 ) (
 public addDimensionVariablesTo: s <Scope> = (
   (* Do nothing *)
+)
+) : (
+)
+public class ExternalFunctionBodyAST = ExprAST position: {0. 0} (
+) (
+public isKindOfExternalFunctionBodyAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  ^'<external function>'
 )
 ) : (
 )

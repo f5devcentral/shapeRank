@@ -474,6 +474,8 @@ class TypeActivation of: f <FunctionAST> from: argVector <List[ConcreteType]> vi
 |
 	function <FunctionAST> = f.
 	public arguments <List[ConcreteType]> = argVector.
+    (* Temporary hack. We don't really need type arguments for now, so just have a mock API. *)
+    public typeArguments = List new.
     public callVisit <CallVisit> = v.
 |
 ) (
@@ -523,6 +525,9 @@ public returnType ^ <ConcreteType> = (
   ].
   ^returnTypeSlot
 )
+public declaredReturnType ^ <TypeAST> = (
+  ^super returnType
+)
 ) : (
 public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = (
   (* Convenience factory to pass default reactivity *)
@@ -536,6 +541,28 @@ class CallVisit forCall: c <CallAST> callerVisit: cv <CallVisit | Nil> = (
 	public callerVisit <CallVisit> = cv.
 	|
 ) (
+) : (
+)
+public class ExternalFunctionBodyAST  = super ExternalFunctionBodyAST  (
+) (
+public computeType ^ <ConcreteType> = (
+  | 
+  args <List[ConcreteType]> = currentTypeActivation arguments.  
+  typeArgs <List[TypeAST]> = currentTypeActivation typeArguments.
+  rt <TypeAST>
+  |
+  (* Substitute type arguments into function signature *)
+  (* we can skip for now *)
+  #BOGUS.
+  (* Verify args against substituted parameter types *)
+  (* also inessential - extern sigs could be wrong anyway *)
+  #BOGUS.
+  (* Return substituted return type *)
+  (* For now, we have no type vars, so can just use declared return type *)
+  #BOGUS.
+  rt:: function declaredReturnType.
+  ^ConcreteType dimensions: rt dimensions baseType: rt baseType
+)
 ) : (
 )
 zipFrame: l <List[TypeFrame]> ^ <TypeFrame>  = (
