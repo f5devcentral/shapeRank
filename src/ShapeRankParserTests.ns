@@ -296,6 +296,10 @@ public untestStructType = (
                                dot: {'x'. 'foo'} }) ]
     description: 'Struct type literal expected.'
 )
+public testProgramDecl2 = (
+  | result = parseCompilationUnit: 'program p(x: (p1: []Int, p2: []Int): Int) func dummy(x) = x; x([3], [4, 5])'. |
+  assert: [result isKindOfProgramAST] description: 'Program expected'.
+)
 ) : (
 TEST_CONTEXT = ()
 )

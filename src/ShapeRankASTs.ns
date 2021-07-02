@@ -897,6 +897,16 @@ public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
 public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
   ^FunctionTypeAST parameterTypes: (parameterTypes collect: f) returnType: (f value: returnType) asTensorType position: position
 )
+public prettyPrint ^ <String> = (
+  | result <String> ::= '('. |
+  parameters do: [:p <ParameterAST> | 
+	result:: result,  (p type isKindOfFunctionAST ifTrue: [
+		'(', p prettyPrint, ')'.
+		] ifFalse: [p prettyPrint]).
+	] separatedBy: [result:: result,  ', '].
+   result:: result, ') : ', returnType printString.
+  ^result
+)
 ) : (
 )
 public class BoundedTypeAST base: s <TypeVariableReferenceAST> bound: t <TypeAST> position: p = BaseTypeAST position: p (
@@ -1010,6 +1020,9 @@ public class ProgramHeaderAST named: n <String> parameters: ps <List[ParameterAS
   public isSynchronous <Boolean> = s.
   |
 ) (
+public isKindOfProgramHeaderAST ^ <Boolean> = (
+  ^true
+)
 ) : (
 )
 emptyShape ^ <ShapeVectorAST> = (

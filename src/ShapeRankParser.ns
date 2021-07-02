@@ -23,6 +23,7 @@ private DimensionVariableAST = asts DimensionVariableAST.
 private DimensionVariableReferenceAST = asts DimensionVariableReferenceAST.
 private DynamicTypeAST = asts DynamicTypeAST.
 private FunctionAST = asts FunctionAST.
+private FunctionTypeAST = asts FunctionTypeAST.
 private IdentifierAST = asts IdentifierAST.
 private LetAST = asts LetAST.
 private NumAST = asts NumAST.
@@ -418,13 +419,12 @@ public rankSig ^ <CombinatorialParser[TensorTypeAST]> = (
 		  t
 		]
 )
-public externalFunctionSignature = (
- (*Need to return a function type AST, that would not require a name (whch we don't know here) body (whcih we do not, and cannot easily,  import)*)
-  #BOGUS.
+public externalFunctionSignature ^ <CombinatorialParser[FunctionTypeAST]> = (
   ^super externalFunctionSignature wrapper: 
   [:lp <Token> :ps <List[ParameterAST]> :rp <Token> :c <Token> :rt <TypeAST> |
-  | body = ExternalFunctionBodyAST new.  |
-  FunctionAST  named: #extern parameters: ps returnType: rt body: body isSync: true position: {lp start. rt end}
+  
+  | pts <List[TypeAST]> = ps collect: [:p <ParameterAST>  | p type]. |
+  FunctionTypeAST parameterTypes: ps returnType: rt position: {lp start. rt end}
   ].
 )
 ) : (
