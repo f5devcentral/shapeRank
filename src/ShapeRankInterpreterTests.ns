@@ -1,6 +1,6 @@
 Newspeak3
 'Root'
-class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs = (
+class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs ffi: webFFI <ShapeRankWebFFI> =  (
 |   (* Imports *)
 	private Stopwatch = platform kernel Stopwatch.
 	private Parser = parsing Parser.
@@ -8,6 +8,7 @@ class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minites
 	private TestContext = minitest TestContext.
     private HyperStream = hs isNil ifFalse: [hs HyperStream].
     private Iterator = hs isNil ifFalse: [hs Iterator].
+    ffi <ShapeRankWebFFI> = webFFI.
     (* Module variables *)
      supplier = s.
 |
@@ -1086,6 +1087,15 @@ public testStructInFunctions = (
   assertInterprets: 'func f(x) = {bar: x.foo + 1}; f({foo: 3})'
                 to: '{bar: 4}'
        description: 'functions should be able to take apart and build structs'.
+)
+public testExtern = (
+  | 
+  fun <FunctionAST> = ffi nodeFunction: 'readFileSync' ofModule: 'fs' signature: '(path: String, format: String): String'.
+  result = interpretFileNamed: 'extern' withArguments: {fun}. 
+  |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 0. 
+  assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
 )
 ) : (
 TEST_CONTEXT = ()

@@ -834,6 +834,13 @@ assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
   assert: [equals: t1 type: t2]
     description: d.
 )
+public testExtern = (
+(*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
+  | result = typecheckFileNamed: 'extern'. |
+  assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType id equals: 'String'.
+)
 ) : (
 TEST_CONTEXT = ()
 )

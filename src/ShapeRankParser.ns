@@ -22,6 +22,7 @@ private DimensionSumAST = asts DimensionSumAST.
 private DimensionVariableAST = asts DimensionVariableAST.
 private DimensionVariableReferenceAST = asts DimensionVariableReferenceAST.
 private DynamicTypeAST = asts DynamicTypeAST.
+private ExternalFunctionSignatureAST = asts ExternalFunctionSignatureAST.
 private FunctionAST = asts FunctionAST.
 private FunctionTypeAST = asts FunctionTypeAST.
 private IdentifierAST = asts IdentifierAST.
@@ -419,12 +420,12 @@ public rankSig ^ <CombinatorialParser[TensorTypeAST]> = (
 		  t
 		]
 )
-public externalFunctionSignature ^ <CombinatorialParser[FunctionTypeAST]> = (
+public externalFunctionSignature ^ <CombinatorialParser[ExternalFunctionSignatureAST]> = (
   ^super externalFunctionSignature wrapper: 
   [:lp <Token> :ps <List[ParameterAST]> :rp <Token> :c <Token> :rt <TypeAST> |
   
   | pts <List[TypeAST]> = ps collect: [:p <ParameterAST>  | p type]. |
-  FunctionTypeAST parameterTypes: ps returnType: rt position: {lp start. rt end}
+  ExternalFunctionSignatureAST parameters: ps returnType: rt position: {lp start. rt end}
   ].
 )
 ) : (

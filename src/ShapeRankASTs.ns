@@ -1025,6 +1025,38 @@ public isKindOfProgramHeaderAST ^ <Boolean> = (
 )
 ) : (
 )
+public class ExternalFunctionSignatureAST parameters: ps <List[ParameterAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = TypeAST position: p (
+|
+  public parameters <List[ParameterAST]> = ps.
+  public returnType <TypeAST> = t.
+|
+) (
+public isKindOfExternalFunctionSignatureAST ^ <Boolean> = (
+  ^true
+)
+public prettyPrint ^ <String> = (
+  | result <String> ::= '('. |
+  parameters do: [:p <ParameterAST> | 
+	result:: result,  (p type isKindOfFunctionAST ifTrue: [
+		'(', p prettyPrint, ')'.
+		] ifFalse: [p prettyPrint]).
+	] separatedBy: [result:: result,  ', '].
+   result:: result, ') : ', returnType printString.
+  ^result
+)
+public = other <Object> ^ <Boolean> = (
+  other isKindOfExternalFunctionSignatureAST ifFalse: [^false].
+  ^(Utils lists: parameters eq: other parameters) &
+    returnType = other returnType 
+)
+public hash ^<Integer> = (
+  (* arbitrary value chosen for empty parameters*)
+  | pHash = parameters isEmpty ifTrue: [194873]
+                               ifFalse: [Utils valueHashOf: parameters]. |
+  ^pHash bitXor: returnType hash
+)
+) : (
+)
 emptyShape ^ <ShapeVectorAST> = (
   ^ShapeVectorAST dimensions: {} position: {0. 0}
 )

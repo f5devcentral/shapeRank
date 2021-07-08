@@ -177,6 +177,15 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	].
   ^resultFrame asConcreteType.  
 )
+resolveParameterToFunction: ast <ParameterAST> = (
+  | 
+  t <TypeAST> = ast type. 
+  sig <ExternalFunctionSignature> = 
+      t isKindOfExternalFunctionSignatureAST ifTrue: [t] ifFalse: [Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'].
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig. 
+  |
+  ^FunctionAST named: ast id parameters: sig parameters returnType: sig returnType body: body isSync: true  position: {0. 0}
+)
 ) : (
 )
 public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
@@ -205,14 +214,6 @@ public computeType ^ <ConcreteType> = (
 concreteDimensionFor: d  <DimensionAST> = (
   d isKindOfDimensionNumberAST ifTrue: [^d val].
   Error signal: 'Unsupported dimension specification'
-)
-concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
-  t isKindOfTypeIdAST ifTrue: [^ t id].
-  t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
-  t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
-  t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
-  (* An unbounded type variable. Return Any *)
-  ^'Any'
 )
 concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
   | 
@@ -264,6 +265,15 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	 result.
 	].
   ^resultFrame asConcreteType.  
+)
+concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
+  t isKindOfTypeIdAST ifTrue: [^ t id].
+  t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
+  t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
+  t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
+  t isKindOfFunctionAST ifTrue: [^t].
+  (* An unbounded type variable. Return Any *)
+  ^'Any'
 )
 ) : (
 )
@@ -543,7 +553,8 @@ class CallVisit forCall: c <CallAST> callerVisit: cv <CallVisit | Nil> = (
 ) (
 ) : (
 )
-public class ExternalFunctionBodyAST  = super ExternalFunctionBodyAST  (
+public class ExternalFunctionBodyAST signature: sig  <ExternalFunctionSignature> = super ExternalFunctionBodyAST  signature: sig (
+  | signature <ExternalFunctionSignature> = sig.  |
 ) (
 public computeType ^ <ConcreteType> = (
   | 
@@ -560,8 +571,8 @@ public computeType ^ <ConcreteType> = (
   (* Return substituted return type *)
   (* For now, we have no type vars, so can just use declared return type *)
   #BOGUS.
-  rt:: function declaredReturnType.
-  ^ConcreteType dimensions: rt dimensions baseType: rt baseType
+  rt:: signature returnType asTensorType.
+  ^ConcreteType dimensions: rt shape dimensions baseType: rt baseType
 )
 ) : (
 )

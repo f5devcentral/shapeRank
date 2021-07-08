@@ -146,6 +146,11 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
   | 
   ^resultFrame asStream.  
 )
+resolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentActivation at: ast id. | 
+  v isKindOfFunctionAST ifTrue: [^v].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'
+)
 ) : (
 )
 class Frame dimensions: ds <List[Integer]> cells: cs <HyperStream[Cell[T def]]> = (
@@ -469,17 +474,22 @@ public eval ^ <HyperStream> = (
 )
 ) : (
 )
-public class ExternalFunctionBodyAST = super ExternalFunctionBodyAST (
+public class ExternalFunctionBodyAST descriptor: d signature: sig  <ExternalFunctionSignature> = super ExternalFunctionBodyAST signature: sig (
+  | descriptor = d. |
 ) (
 public eval ^ <Tensor> = (
 (* Handle an external call. *)
   | args  <List[Stream]> = currentActivation arguments. |
-  #BOGUS.
-  (* Only deals with nodeJS functions.
+  (* Only deals with nodeJS functions. Also needs to massage arguments and result.
   *)
+  #BOGUS.
   ^(ObjectMirror reflecting: (api require: descriptor moduleName)) perform: descriptor functionName with: args ifFail: [].
 )
 ) : (
+public signature: sig  <ExternalFunctionSignature> ^ <Instance> = (
+(* Hack for typechecker compatibility *)
+  ^descriptor: nil signature: sig
+)
 )
 public DimensionNumberAST ^ <DimensionNumberAST class> = (
   ^super DimensionNumberAST

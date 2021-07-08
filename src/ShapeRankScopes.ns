@@ -85,24 +85,32 @@ public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position
   |
   nestScopesOf: as.
 ) (
-public callee ^ <FunctionAST> = (
-| ast |
-  callee_slot isNil ifTrue: [
-	ast:: (programScope lookup: functionName) at: #ast.
-	callee_slot:: ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
-		ast isKindOfLetAST ifTrue: [ast expression etaExpansion] ifFalse: [
-			Error signal: 'Unexpected global binding'
-			]
-		]
-	].
-  callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
-  ^callee_slot
-)
 public clone ^ <CallAST> = (
   ^CallAST 
      function: functionName
      arguments: (arguments collect: [:a | a clone])
      position: position
+)
+resolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  subclassResponsibility
+)
+resolveToFunction: ast <AST> ^ <FunctionAST> = (
+  ^ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
+		ast isKindOfLetAST ifTrue: [ast expression etaExpansion] ifFalse: [
+            ast isKindOfParameterAST ifTrue: [resolveParameterToFunction: ast] ifFalse: [
+			  Error signal: 'Attempt to call a non-function'
+			]
+		]
+	].
+)
+public callee ^ <FunctionAST> = (
+| ast |
+  callee_slot isNil ifTrue: [
+	ast:: (programScope lookup: functionName) at: #ast.
+	callee_slot:: resolveToFunction: ast.
+	].
+  callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
+  ^callee_slot
 )
 ) : (
 )
@@ -563,13 +571,27 @@ public addDimensionVariablesTo: s <Scope> = (
 )
 ) : (
 )
-public class ExternalFunctionBodyAST = ExprAST position: {0. 0} (
+public class ExternalFunctionBodyAST signature: s <ExternalSignatureAST> = ExprAST position: {0. 0} (
 ) (
 public isKindOfExternalFunctionBodyAST ^ <Boolean> = (
   ^true
 )
 public prettyPrint ^ <String> = (
   ^'<external function>'
+)
+) : (
+)
+public class ExternalFunctionSignatureAST parameters: ps <List[ParameterAST]> returnType: t <TypeAST> position: p <{Integer. Integer}> = super ExternalFunctionSignatureAST parameters: ps returnType: t position: p  (
+) (
+public addTypeVariablesTo: s <Scope> = (
+  parameters do: [:p <ParameterAST> | p type addTypeVariablesTo: s].
+  returnType addTypeVariablesTo: s
+)
+public clone ^<TypeAST> = (
+  ^ExternalFunctionSignatureAST
+    parameters: (parameters collect: [:p | ParameterAST named: p id type: p type clone position: p position])
+    returnType: (returnType clone)
+    position: position
 )
 ) : (
 )
