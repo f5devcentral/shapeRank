@@ -7,9 +7,11 @@ class ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing
 	private TestContext = minitest TestContext.
 	private Map = platform collections Map.
 	private HyperStream = hs HyperStream.
-        private ConcreteType = Parser new asts ConcreteType.
-        private unboundedDimension = Parser new asts unboundedDimension.
-      supplier = s.
+    private ExternalFunctionBodyAST = Parser new asts ExternalFunctionBodyAST.
+    private FunctionAST = Parser new asts  FunctionAST.
+    private ConcreteType = Parser new asts ConcreteType.
+    private unboundedDimension = Parser new asts unboundedDimension.
+    supplier = s.
 |
 ) (
 public class TypecheckerTests = TestContext (
@@ -836,7 +838,12 @@ assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
 )
 public testExtern = (
 (*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
-  | result = typecheckFileNamed: 'extern'. |
+  | 
+  sig <ExternalFunctionSignature> = Parser new externalFunctionSignature parseString: '(path: String, format: String): String'.
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: nil signature: sig.
+  fun <FunctionAST> =  FunctionAST named: 'readFileSync' parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
+  result = typecheckFileNamed: 'extern' withArguments: {fun}. 
+  |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
   assert: result shape rank equals: 0.
   assert: result baseType id equals: 'String'.

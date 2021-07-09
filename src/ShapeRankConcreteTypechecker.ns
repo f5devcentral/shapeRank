@@ -146,13 +146,6 @@ computeArgumentType: arg <ConcreteType> for: param <ParameterAST> ^ <ConcreteTyp
         ConcreteType dimensions: {} baseType: ast
      ] ifFalse: [arg computeType]
 )
-public computeType ^ <Tensor> = (
-  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
-  visits add: thisVisit.
-  result:: computeCallType: callee arguments: computeArgumentTypes.
-  thisVisit type: result.
-  ^result
-)
 computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
   | 
   argFrames <List[TypeFrame]> = frameConcreteTypeArguments: args of: callee. (* frame *)
@@ -185,6 +178,36 @@ resolveParameterToFunction: ast <ParameterAST> = (
   body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig. 
   |
   ^FunctionAST named: ast id parameters: sig parameters returnType: sig returnType body: body isSync: true  position: {0. 0}
+)
+typecheckerResolveToFunction: ast <AST> ^ <FunctionAST> = (
+  ^ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
+		ast isKindOfLetAST ifTrue: [ast expression etaExpansion] ifFalse: [
+            ast isKindOfParameterAST ifTrue: [typecheckerResolveParameterToFunction: ast] ifFalse: [
+			  Error signal: 'Attempt to call a non-function'
+			]
+		]
+	].
+)
+public computeType ^ <Tensor> = (
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
+  visits add: thisVisit.
+  result:: computeCallType: typeCallee arguments: computeArgumentTypes.
+  thisVisit type: result.
+  ^result
+)
+typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentTypeActivation at: ast id. | 
+  v baseType isKindOfExternalFunctionSignatureAST ifTrue: [^v].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
+)
+public typeCallee ^ <FunctionAST> = (
+| ast |
+  callee_slot isNil ifTrue: [
+	ast:: (programScope lookup: functionName) at: #ast.
+	callee_slot:: typecheckerResolveToFunction: ast.
+	].
+  callee_slot isKindOfExternalFunctionSignatureAST ifFalse: [Error signal: 'Attempt to call non-function'].
+  ^callee_slot
 )
 ) : (
 )
@@ -271,7 +294,7 @@ concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] 
   t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
   t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
   t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
-  t isKindOfFunctionAST ifTrue: [^t].
+  t isKindOfExternalFunctionSignatureAST ifTrue: [^t].
   (* An unbounded type variable. Return Any *)
   ^'Any'
 )
@@ -1191,6 +1214,9 @@ fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | Un
        ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes! ', d1 printString, ' != ', d2 printString]].
   ].
   ^result
+)
+programScope ^ <Scope> = (
+  ^super programScope
 )
 ) : (
 )
