@@ -38,7 +38,4 @@ pushd out
     RuntimeWithMirrorsForPrimordialSoup ShapeRankCLI ShapeRankCLI.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankWorkspaceApp ShapeRankWorkspaceApp.vfuel \
     RuntimeWithMirrorsForPrimordialSoup ShapeRankNotebook ShapeRankNotebook.vfuel
-    
-
 popd
-

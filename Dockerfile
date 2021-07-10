@@ -20,7 +20,18 @@ RUN . /emsdk/emsdk_env.sh
 
 # remove the emsdk settings in build
 RUN sed '2,6d' newspeak/build.sh > newspeak/new_build.sh
-CMD cd newspeak && chmod 777 new_build.sh && ./new_build.sh
+RUN cd newspeak && chmod 777 new_build.sh && bash new_build.sh
+
+# setup shaperank directories
+RUN mkdir -p /src/shaperank/src
+COPY *.sh  /src/shaperank
+COPY ./src  /src/shaperank/src
+
+# remove the emsdk settings in build
+RUN sed '2,6d' shaperank/build.sh > shaperank/new_build.sh
+RUN cd shaperank && chmod 777 new_build.sh && bash new_build.sh
+
+
 
 
 

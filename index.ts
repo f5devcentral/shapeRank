@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+import { app, BrowserWindow } from 'electron';
 
 async function createWindow () {
   const win = new BrowserWindow({
@@ -16,7 +16,7 @@ async function createWindow () {
 
 app.whenReady()
   .then(createWindow)
-  .then(() => {}, err => console.error(err));
+  .then(() => {}, (err: any) => console.error(err));
 
 // Don't close the app when all its windows are closed on OSX
 app.on('window-all-closed', () => {
