@@ -231,9 +231,6 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
   super ProgramAST header: hdr declarations: ds expression: e position: p (
   | public visits <List[CallVisit]> = List new. |
 ) (
-public computeType ^ <ConcreteType> = (
-  ^expression computeType
-)
 concreteDimensionFor: d  <DimensionAST> = (
   d isKindOfDimensionNumberAST ifTrue: [^d val].
   Error signal: 'Unsupported dimension specification'
@@ -288,21 +285,42 @@ concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] 
   (* An unbounded type variable. Return Any *)
   ^'Any'
 )
+public computeTypeFromArgumentTypes: args <List[ConcreteType]> ^ <ConcreteType> = (
+(* 
+We treat the typechecking of a parameterized program like typechecking a function invocation.
+*)
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: nil. result <ConcreteType> |
+  visits add: thisVisit. 
+  result:: computeCallType: self arguments: args.
+  thisVisit type: result.  
+  ^result  
+)
+concreteParameterBaseTypes ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
+    ^parameters collect: [:p <ParameterAST> | 
+         | t <TypeAST> = concreteBaseTypeOf: p type. |
+         t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [externalFunctionNamed: p id signature: t].
+         ]. 
+)
 concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
   | 
-  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = 
-    concreteBaseTypesOfArguments: args. 
+  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteParameterBaseTypes. 
   dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
   result <List[ConcreteType]> = List new.
   |
   baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
   ^result
 )
-concreteBaseTypesOfArguments: args <List[HyperStream]> ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
-    ^parameters collect: [:p <ParameterAST> | 
-         | t <TypeAST> = concreteBaseTypeOf: p type. |
-         t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [externalFunctionNamed: p id signature: t].
-         ]. 
+public computeType ^ <ConcreteType> = (
+  parameters size > 0 ifTrue: [
+    | 
+    baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteParameterBaseTypes. 
+    dims <List[List[Integer | UnboundedDimension]]> = parameters collect: [:param <ParameterAST> | param type dimensions].
+    args <List[ConcreteType]> = List new.
+    |
+    baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+    ^computeTypeFromArgumentTypes: args
+  ].
+  ^expression computeType
 )
 ) : (
 )

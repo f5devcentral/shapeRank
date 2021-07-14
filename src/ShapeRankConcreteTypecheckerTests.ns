@@ -7,10 +7,12 @@ class ShapeRankConcreteTypecheckerTests usingPlatform: platform parsing: parsing
 	private TestContext = minitest TestContext.
 	private Map = platform collections Map.
 	private HyperStream = hs HyperStream.
-    private ExternalFunctionBodyAST = Parser new asts ExternalFunctionBodyAST.
-    private FunctionAST = Parser new asts  FunctionAST.
-    private ConcreteType = Parser new asts ConcreteType.
-    private unboundedDimension = Parser new asts unboundedDimension.
+    
+    private parser = Parser new.
+    private ExternalFunctionBodyAST = parser asts ExternalFunctionBodyAST.
+    private FunctionAST = parser asts  FunctionAST.
+    private ConcreteType = parser asts ConcreteType.
+    private unboundedDimension = parser asts unboundedDimension.
     supplier = s.
 |
 ) (
@@ -362,9 +364,6 @@ public disabled_testRerank = (
   assert: (result shape dimensions at: 1) constant equals: 2.
   assert: result baseType id equals: 'Int'.
 )
-typecheckCompilationUnit: string <String> ^ <TensorTypeAST> = (
-  ^(Parser new program parseString: string) userType
-)
 public testOuterProduct1 = (
   | result = typecheckFileNamed: 'outerProduct1'. |
   assert: [result isKindOfTensorTypeAST] description: 'Tensor type expected!'.
@@ -665,9 +664,6 @@ typecheckFileNamed: fn <String> withArguments: args <List[ConcreteType]> ^ <Tens
 typecheckFileNamed: fn <String> ^ <TensorTypeAST>  = (
   ^typecheckCompilationUnit: (supplier supplyTestNamed: fn)
 )
-typecheckCompilationUnit: string <String> withArguments: args <List[ConcreteType]> ^ <TensorTypeAST> = (
-  ^(Parser new program parseString: string) computeTypeWithArguments: args 
-)
 threes ^ <ConcreteType> = (
   ^ConcreteType dimensions: {unboundedDimension} baseType: 3.
 )
@@ -698,13 +694,6 @@ public testTwice_Stream2  = (
   assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
   assert: result baseType equals: 'Int'.
 )
-public testStreamContains_true2 = (
-  | result = typecheckFileNamed: 'stream_contains' 
-     withArguments: {HyperStream fromList: {twoToThe9th. threes} dimensions: {2. unboundedDimension}}. |
-  assert: [result isKindOfConcreteType] description: 'Tensor type expected!'.
-  assert: result shape rank equals: 0.
-  assert: result baseType equals: 'Bool'.
-)
 public testStreamContains_true1 = (
   | result = typecheckFileNamed: 'stream_contains' withArguments: {twoToThe9th}. |
   assert: [result isKindOfConcreteType] description: 'Tensor type expected!'.
@@ -719,34 +708,6 @@ public testPointwiseSyncStream = (
   assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.  
   assert: (result dimensions at: 1) isKindOfUnboundedDimension.
   assert: result baseType equals: 'Int'.
-)
-public testPairStreamSync1 = (
-  | result = typecheckFileNamed: 'pair_stream_sync1' withArguments: {twoToThe9th}. |
-  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
-  assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
-  assert: (result shape dimensions at: 2) constant equals: 2.
-  assert: result baseType equals: 'Num'.
-)
-public testPairStreamSync2 = (
-  | result = typecheckFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
-  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
-  assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
-  assert: (result shape dimensions at: 2) constant equals: 2.
-  assert: result baseType equals: 'Num'.
-)
-public testPairStreamSync3 = (
-  | result = typecheckFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
-  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
-  assert: result shape rank equals: 2.
-  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
-  assert: (result shape dimensions at: 2) constant equals: 2.
-  (* The program infers its result base type from its declared input base types. 
-       Since the code is fully polymorphic, the base type is unconstrained,
-       and so we get 'Any' regardless of the specific base types of the arguments.
-  *)
-  assert: result baseType equals: 'Any'.
 )
 public testMatVecMul = (
   | result = typecheckFileNamed: 'matVecMul'. |
@@ -836,10 +797,51 @@ assertTyped: str1 <String> as: str2 <String> desc: d <String> = (
   assert: [equals: t1 type: t2]
     description: d.
 )
+public testPairStreamSync3 = (
+  | result = typecheckFileNamed: 'pair_stream_sync3' withArguments: {threes. twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  (* The program infers its result base type from its declared input base types. 
+       Since the code is fully polymorphic, the base type is unconstrained,
+       and so we get 'Any' regardless of the specific base types of the arguments.
+  *)
+  assert: result baseType equals: 'Int'.
+)
+public testPairStreamSync2 = (
+  | result = typecheckFileNamed: 'pair_stream_sync2' withArguments: {threes}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType equals: 'Int'.
+)
+public testPairStreamSync1 = (
+  | result = typecheckFileNamed: 'pair_stream_sync1' withArguments: {twoToThe9th}. |
+  assert: [result isKindOfConcreteType] description: 'Concrete type expected!'.
+  assert: result shape rank equals: 2.
+  assert: (result shape dimensions at: 1) isKindOfUnknownDimensionAST.
+  assert: (result shape dimensions at: 2) constant equals: 2.
+  assert: result baseType equals: 'Int'.
+)
+public testStreamContains_true2 = (
+  | result = typecheckFileNamed: 'stream_contains' 
+     withArguments: {ConcreteType  dimensions: {2. unboundedDimension} baseType: 'Int'}. |
+  assert: [result isKindOfConcreteType] description: 'Tensor type expected!'.
+  assert: result shape rank equals: 0.
+  assert: result baseType equals: 'Bool'.
+)
+typecheckCompilationUnit: string <String> ^ <TensorTypeAST> = (
+  ^(parser program parseString: string) userType
+)
+typecheckCompilationUnit: string <String> withArguments: args <List[ConcreteType]> ^ <TensorTypeAST> = (
+  ^(parser program parseString: string) computeTypeFromArgumentTypes: args 
+)
 public testExtern = (
 (*  append(a: [$d1]$T, b: [$d2]$T):[$d1 + $d2]$T *)
   | 
-  sig <ExternalFunctionSignature> = Parser new externalFunctionSignature parseString: '(path: String, format: String): String'.
+  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: '(path: String, format: String): String'.
   body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
   fun <FunctionAST> =  FunctionAST named: 'readFileSync' parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
   result = typecheckFileNamed: 'extern' withArguments: {ConcreteType dimensions: {} baseType: fun}. 

@@ -1091,7 +1091,7 @@ public testStructInFunctions = (
 public testExtern = (
   | 
   fun <FunctionAST> = ffi nodeFunction: 'readFileSync' ofModule: 'fs' signature: '(path: String, format: String): String'.
-  result = interpretFileNamed: 'extern' withArguments: {fun}. 
+  result = interpretFileNamed: 'extern' withArguments: {HyperStream fromScalar: fun}. 
   |
   assert: [result isKindOfTensor] description: 'Tensor expected!'. 
   assert: result rank equals: 0. 

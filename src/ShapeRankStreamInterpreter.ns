@@ -149,7 +149,7 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
 resolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
   | v <AST> = currentActivation at: ast id. | 
   v isKindOfFunctionAST ifTrue: [^v].
-  Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
 ) : (
 )
@@ -718,6 +718,10 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
 )
 fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
   ^super fuseDims: ds1 with: ds2
+)
+api ^ <NodeAPI> = (
+  (* Make inherited method available in lexical scope *)
+  ^super api
 )
 ) : (
 )

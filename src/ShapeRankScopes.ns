@@ -593,6 +593,10 @@ public clone ^<TypeAST> = (
     returnType: (returnType clone)
     position: position
 )
+public shape ^ <ShapeAST> = (
+
+ ^emptyShape
+)
 ) : (
 )
 public IdentifierAST = (
@@ -1472,6 +1476,10 @@ func crossEntropy(p: [], q: []) = negate(p*log(q))
 func crossEntropyLoss(p: [], q: []) = reduce(+, 0, crossEntropy(p,q))/length(p)
 ', str. |
   (parser prelude parseString: preludeStr) do: [:ast | prelude add: ast ].
+)
+api ^ <NodeAPI> = (
+  (* Expose method in lexical scope to subclasses *)
+  ^outer ShapeRankScopes api
 )
 ) : (
 )
