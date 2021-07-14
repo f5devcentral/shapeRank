@@ -195,19 +195,19 @@ public computeType ^ <Tensor> = (
   thisVisit type: result.
   ^result
 )
-typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
-  | v <AST> = currentTypeActivation at: ast id. | 
-  v baseType isKindOfExternalFunctionSignatureAST ifTrue: [^v].
-  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
-)
 public typeCallee ^ <FunctionAST> = (
 | ast |
   callee_slot isNil ifTrue: [
 	ast:: (programScope lookup: functionName) at: #ast.
 	callee_slot:: typecheckerResolveToFunction: ast.
 	].
-  callee_slot isKindOfExternalFunctionSignatureAST ifFalse: [Error signal: 'Attempt to call non-function'].
+  callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
   ^callee_slot
+)
+typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentTypeActivation at: ast id. | 
+  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
 ) : (
 )
@@ -237,16 +237,6 @@ public computeType ^ <ConcreteType> = (
 concreteDimensionFor: d  <DimensionAST> = (
   d isKindOfDimensionNumberAST ifTrue: [^d val].
   Error signal: 'Unsupported dimension specification'
-)
-concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
-  | 
-  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = 
-    parameters collect: [:p <ParameterAST> | concreteBaseTypeOf: p type]. 
-  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
-  result <List[ConcreteType]> = List new.
-  |
-  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
-  ^result
 )
 concreteTypeFromType: t <TypeAST> = (  
   t isKindOfTensorTypeAST  ifTrue: [
@@ -297,6 +287,22 @@ concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] 
   t isKindOfExternalFunctionSignatureAST ifTrue: [^t].
   (* An unbounded type variable. Return Any *)
   ^'Any'
+)
+concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
+  | 
+  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = 
+    concreteBaseTypesOfArguments: args. 
+  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
+  result <List[ConcreteType]> = List new.
+  |
+  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+  ^result
+)
+concreteBaseTypesOfArguments: args <List[HyperStream]> ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
+    ^parameters collect: [:p <ParameterAST> | 
+         | t <TypeAST> = concreteBaseTypeOf: p type. |
+         t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [externalFunctionNamed: p id signature: t].
+         ]. 
 )
 ) : (
 )
@@ -1217,6 +1223,13 @@ fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | Un
 )
 programScope ^ <Scope> = (
   ^super programScope
+)
+externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
+  |
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
+  fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
+  |
+  ^fun
 )
 ) : (
 )
