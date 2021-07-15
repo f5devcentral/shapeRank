@@ -65,7 +65,8 @@ the OS to open them the first  time.
 ShapeRank also comes with a Dockerfile, which can be used to build the source. We use NPM to make it easy to build ShapeRank, so make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) and [NodeJS](https://nodejs.org/) installed.
 
 Use `npm i` to install dependencies.
-Use `npm run build` to build ShapeRank.
+
+Use `npm run build` to build ShapeRank. (Make sure you have Docker running.)
 ## Support
 For support, please open a GitHub issue. Note that ShapeRank is research project, not a product.
 
