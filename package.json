@@ -99,7 +99,7 @@
   },
   "scripts": {
     "build": "docker build --pull --rm -f 'Dockerfile' -t shaperank '.' && docker run --rm -it -d --name shaperank shaperank:latest && docker cp shaperank:'/src/shaperank/out' './out' && docker stop shaperank",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-demo": "npx -y ts-node demo_01.ts",
     "start": "node server.js"
   },
   "repository": {
