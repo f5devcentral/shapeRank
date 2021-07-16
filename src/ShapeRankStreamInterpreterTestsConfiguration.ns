@@ -30,7 +30,7 @@ public testModulesUsingPlatform: platform minitest: minitest = (
   parsers = CombinatorialParsing usingPlatform: platform.
   grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
   parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
-  ffi = ShapeRankWebFFI usingPlatform: platform asts: (Evaluator usingPlatform: platform collectionUtils: utils) parser: parsing Parser api: NodeAPI.
+  ffi = ShapeRankWebFFI usingPlatform: platform api: NodeAPI.
   supplier = ShapeRankTestData usingPlatform: platform.
   |
   ^{ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: supplier streams: Streams ffi: ffi}
