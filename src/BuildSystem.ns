@@ -1,0 +1,44 @@
+Newspeak3
+'Root'
+class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs <HyperStream> ffi: n <NodeAPI> 
+(* :exemplar: BuildSystem usingPlatform: platform parser: (ShapeRankParser) streams:  (HyperStreams usingPlatform: platform) HyperStream ffi: NodeAPI *) = (
+  |
+  private Parser = parsing Parser.
+  private HyperStream = hs.
+  api = n usingPlatform: p.
+  parser = Parser new.
+  ffi = api FFI parser: parser.
+  watcher =  ffi require: 'chokidar'.  
+  |
+) (
+public getFile: path  <String> ^ <HyperStream> = (
+  | stream <HyperStream> = HyperStream extensible. |
+  (watcher watch: path) on: 'all' do: [:event :filepath <String> | stream add: filepath]. 
+  ^stream
+)
+shapeRankSource ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [d!][?]String, flags: String): String)
+  func cc(target: String, deps: []String, flags: String):  [?]String = 
+  clang(getFile(target), zip(getFile(deps)), flags)
+
+  func link(target: String, deps: [][?]String, flags: String): [?]String =   basicLink(target, zip(deps), flags);
+  
+  link(‘myApp’, [
+   cc(‘a.c’, [‘b.h’], ‘-c’),
+   cc(‘b.c’, [‘b.h’, ‘c.h’], ‘-c’),
+   cc(‘c.c’, [‘c.h’], ‘-c’),
+   cc(‘d.c’, [], ‘-c’),                                     
+], ‘’) 
+  '
+)
+public run = (
+  | shapeRankProgram = parser parseString shapeRankSource. |
+  shapeRankProgram evaluateWithArguments: {
+    ffi newspeakFunction: #getFile: object: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies: object: self signature: '(target: String, deps: [?]String, flags: String): String'.   
+    ffi newspeakFunction: #link:dependencies: object: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
+    }.
+)
+) : (
+)
