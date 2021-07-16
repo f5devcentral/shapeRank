@@ -162,6 +162,15 @@ The effect of $l$ is that variable $ID$ is added to $s$, and the type $T$ is ass
 \section{Functions}
 \label{functions}
 
+Functions may be defined by either:
+\begin{itemize}
+\item A ShapeRank function declaration [\ref{shapeRankFunctionDeclarations}].
+\item An external function declaration [\ref{externalFunctionDeclarations}]. 
+\end{itemize}
+
+\subsection{ShapeRank Function Declarations}
+\label{shapeRankFunctionDeclarations}
+
 \FunctionDeclaration
 
 A function declaration defines a transformation of one or more input streams into an output stream. A function declaration has a
@@ -207,6 +216,14 @@ A new scope $s$ is created, and is known as the {\em immediate scope of} $f$. Th
 The variables $p_i$ are added to $s$, with ranks $r_i$, where $r_i$ is the rank specified by $R_i, i \in 1..n$ respectively.
 
 It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
+
+\subsection{External Function Declarations}
+\label{externalFunctionDeclarations}
+
+An {\em external function} is a function written in a programming language other than ShapeRank, that is used within provided to a ShapeRank program [\ref{programsAndIO}].
+An external function must, of necessity, be provided from outside the program. External functions are declared as parameters to the program, with function types [\ref{functionTypes}].
+
+
 
 \section{Built-in Functions}
 \label{builtinFunctions}
@@ -452,6 +469,10 @@ A {\em program signature} specifies the name of the program as whole. In additio
 
 \TypeSig{}
 
+\ExternalFunctionSignature{}
+
+\TypeParameterList{}
+
 Each value parameter has a specification similar to that of a function parameter. However, rather than specifying a rank for each parameter, a shape and base type are specified. The shape may be elided, in which case it is taken to be empty. 
 
 {\em
@@ -607,6 +628,16 @@ A frame $f_0$ of shape $[d_1, \ldots, d_k]$ may be replicated into a larger fram
 \subsubsection{Call Evaluation}
 \label{callEvaluation}
 
+Let $c_e \triangleq F[t_1, \ldots, t_m]\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c_e$ proceeds as follows. 
+
+The value of $c_e$ is the value of $F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$.
+
+It is a compile-time error if $F$ is not an external function [\ref{externalFunctionDeclarations}].
+It is a compile-time error if $F$ does not declare $m$ type parameters. 
+It is a compile-time error if the $i$th type parameter of $F$ is a shape variable, and $t_i$ is not a shape.
+It is a compile-time error if the $i$th type parameter of $F$ is a dimensions variable, and $t_i$ is not a dimension.
+It is a compile-time error if the $i$th type parameter of $F$ is a scalar type variable, and $t_i$ is not a scalar type.
+
 
 Let $c \triangleq F\LPAREN{}a_1\COMMA{} \ldots\COMMA{} a_k\RPAREN$. Evaluation of $c$ proceeds as follows. 
 
@@ -686,10 +717,32 @@ It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time er
 
 {\em In such a situation, the specification of $common\_frame$ would be ambiguous. Consequently, no consistent replication of the arguments is possible.}
 
-Let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$, and let $shape_c$ be the concatenation of $shape(common\_frame)$ and $shape(R)$. Then the type of $c$ is $shape_c baseType(R)$.
-
+If $F$ is a ShapeRank function declaration [\ref{shapeRankFunctionDeclaration}] then
+let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$. The the type of $c$ is
+$shape(common\_frame), shape(R) baseType(R)$.
 
 % define baseType, scope override etc. Is shape(max_frame well defined now?
+
+If $F$ is an external function declaration then let let $R_e$ be the return type declared in the signature of $F$,  let $V_i$ be the type variables declared in the signature of $F$, let 
+$T_e = [t_i/V_i]R_e, 1 \le i \le k$, let $s_e$ be the shape of $T_e$, and let $t_e$ be the base type of $T_e$.
+The type of $c$ is
+$shape(common\_frame), s_e t_e)$.
+
+{\em 
+
+Still missing checking of incoming parameter types.
+
+Only an external function may have type parameters, and these must be passed to it explicitly. They are then substituted [\ref{typeSubstitution}] into the function's declared return type.
+
+The motivation for these rules is as follows:
+
+Calls to ShapeRank functions have their type inferred based on their bodies and their actual parameters. The types of external function calls  cannot be inferred in this way,
+since the ShapeRank implementation has no access to, or understanding of, the internals of an external function. Instead, the type of the call is based on the function signature. 
+If the signature involves type variables, their bindings must be known.  To avoid the difficulties of type inference, we require that any type variables be passed explicitly.
+
+External functions are relatively few, and infrequently polymorphic; hence the burden of passing type arguments is not too onerous. Future versions of ShapeRank may 
+further ameliorate this burden, since  in most cases, inference is tractable.
+}
 
 
 \subsection{Boolean Literals}

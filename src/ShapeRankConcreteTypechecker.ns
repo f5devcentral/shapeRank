@@ -126,13 +126,10 @@ public computeType ^ <ConcreteType> = (
 ) : (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
-  | visits <List[CallVisit]> = List new. |
+  | 
+  visits <List[CallVisit]> = List new. 
+  |
 ) (
-computeArgumentTypes = (
-   | result = List new: arguments size. |
-   1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (callee parameters at: i))].
-   ^result
-)
 callerVisit ^ <CallVisit | Nil> = (
 (* Return the CallVisit representing my caller, or nil if this call is at top level. *)
   | top <TypeActivation | Nil> = typeCallStack isEmpty ifFalse: [typeCallStack last]. | 
@@ -145,13 +142,6 @@ computeArgumentType: arg <ConcreteType> for: param <ParameterAST> ^ <ConcreteTyp
         ast isKindOfParameterAST ifTrue: [^(currentTypeActivation at: ast id)].
         ConcreteType dimensions: {} baseType: ast
      ] ifFalse: [arg computeType]
-)
-public computeType ^ <Tensor> = (
-  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
-  visits add: thisVisit.
-  result:: computeCallType: callee arguments: computeArgumentTypes.
-  thisVisit type: result.
-  ^result
 )
 computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
   | 
@@ -177,6 +167,50 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	].
   ^resultFrame asConcreteType.  
 )
+resolveParameterToFunction: ast <ParameterAST> = (
+  | 
+  t <TypeAST> = ast type. 
+  sig <ExternalFunctionSignature> = 
+      t isKindOfExternalFunctionSignatureAST ifTrue: [t] ifFalse: [Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'].
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig. 
+  |
+  ^FunctionAST named: ast id parameters: sig parameters returnType: sig returnType body: body isSync: true  position: {0. 0}
+)
+typecheckerResolveToFunction: ast <AST> ^ <FunctionAST> = (
+  ^ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
+		ast isKindOfLetAST ifTrue: [ast expression etaExpansion] ifFalse: [
+            ast isKindOfParameterAST ifTrue: [typecheckerResolveParameterToFunction: ast] ifFalse: [
+			  Error signal: 'Attempt to call a non-function'
+			]
+		]
+	].
+)
+public computeType ^ <Tensor> = (
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: callerVisit. result <ConcreteType> |
+  visits add: thisVisit.
+  result:: computeCallType: typeCallee arguments: computeArgumentTypes.
+  thisVisit type: result.
+  ^result
+)
+typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentTypeActivation at: ast id. | 
+  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
+)
+computeArgumentTypes = (
+   | result = List new: arguments size. |
+   1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (typeCallee parameters at: i))].
+   ^result
+)
+public typeCallee ^ <FunctionAST> = (
+| ast |
+  callee_slot isNil ifTrue: [
+	ast:: (programScope lookup: functionName) at: #ast.
+	callee_slot:: typecheckerResolveToFunction: ast.
+	].
+  callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
+  ^callee_slot
+)
 ) : (
 )
 public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
@@ -199,30 +233,9 @@ public class ProgramAST header: hdr <ProgramHeaderAST> declarations: ds <List[Fu
   super ProgramAST header: hdr declarations: ds expression: e position: p (
   | public visits <List[CallVisit]> = List new. |
 ) (
-public computeType ^ <ConcreteType> = (
-  ^expression computeType
-)
 concreteDimensionFor: d  <DimensionAST> = (
   d isKindOfDimensionNumberAST ifTrue: [^d val].
   Error signal: 'Unsupported dimension specification'
-)
-concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
-  t isKindOfTypeIdAST ifTrue: [^ t id].
-  t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
-  t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
-  t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
-  (* An unbounded type variable. Return Any *)
-  ^'Any'
-)
-concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
-  | 
-  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = 
-    parameters collect: [:p <ParameterAST> | concreteBaseTypeOf: p type]. 
-  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
-  result <List[ConcreteType]> = List new.
-  |
-  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
-  ^result
 )
 concreteTypeFromType: t <TypeAST> = (  
   t isKindOfTensorTypeAST  ifTrue: [
@@ -264,6 +277,62 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	 result.
 	].
   ^resultFrame asConcreteType.  
+)
+concreteBaseTypeOf: t <TypeAST> ^ <String | Integer | Map[String, ConcreteType] | FunctionAST> = (
+  t isKindOfTypeIdAST ifTrue: [^ t id].
+  t isKindOfTensorTypeAST ifTrue: [^concreteBaseTypeOf: t baseType].
+  t isKindOfStructAST ifTrue: [^t table collect: [:e <TypeAST> | concreteTypeFromType: e]].
+  t isKindOfBoundedTypeAST ifTrue: [^concreteBaseTypeOf: t bound].
+  t isKindOfExternalFunctionSignatureAST ifTrue: [^t].
+  (* An unbounded type variable. Return Any *)
+  ^'Any'
+)
+public computeTypeFromArgumentTypes: args <List[ConcreteType]> ^ <ConcreteType> = (
+(* 
+We treat the typechecking of a parameterized program like typechecking a function invocation.
+*)
+  | thisVisit <CallVisit> = CallVisit forCall: self callerVisit: nil. result <ConcreteType> |
+  visits add: thisVisit. 
+  result:: computeCallType: self arguments: args.
+  thisVisit type: result.  
+  ^result  
+)
+concreteParameterBaseTypes ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
+    ^parameters collect: [:p <ParameterAST> | 
+         | t <TypeAST> = concreteBaseTypeOf: p type. |
+         t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [externalFunctionNamed: p id signature: t].
+         ]. 
+)
+public computeType ^ <ConcreteType> = (
+  parameters size > 0 ifTrue: [
+    | 
+    baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteParameterBaseTypes. 
+    dims <List[List[Integer | UnboundedDimension]]> = parameters collect: [:param <ParameterAST> | param type dimensions].
+    args <List[ConcreteType]> = List new.
+    |
+    baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+    ^computeTypeFromArgumentTypes: args
+  ].
+  ^expression computeType
+)
+concreteBaseTypesOfArguments: args  <List[HyperStream]> ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
+    | result <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = List new. |
+    parameters with: args do: [:p <ParameterAST>  :a <HyperStream> | 
+         | t <TypeAST> = concreteBaseTypeOf: p type. |
+         (* make sure we use the provided external function *)
+         (* we could generalize this and use the scalar value of any scalar argument for increased precision *)
+         result add: (t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [a asScalar]).
+         ]. 
+     ^result
+)
+concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
+  | 
+  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteBaseTypesOfArguments: args. 
+  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
+  result <List[ConcreteType]> = List new.
+  |
+  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+  ^result
 )
 ) : (
 )
@@ -474,6 +543,8 @@ class TypeActivation of: f <FunctionAST> from: argVector <List[ConcreteType]> vi
 |
 	function <FunctionAST> = f.
 	public arguments <List[ConcreteType]> = argVector.
+    (* Temporary hack. We don't really need type arguments for now, so just have a mock API. *)
+    public typeArguments = List new.
     public callVisit <CallVisit> = v.
 |
 ) (
@@ -523,6 +594,9 @@ public returnType ^ <ConcreteType> = (
   ].
   ^returnTypeSlot
 )
+public declaredReturnType ^ <TypeAST> = (
+  ^super returnType
+)
 ) : (
 public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <TensorTypeAST> body: b <ExprAST> position: p <{Integer. Integer}> = (
   (* Convenience factory to pass default reactivity *)
@@ -536,6 +610,29 @@ class CallVisit forCall: c <CallAST> callerVisit: cv <CallVisit | Nil> = (
 	public callerVisit <CallVisit> = cv.
 	|
 ) (
+) : (
+)
+public class ExternalFunctionBodyAST signature: sig  <ExternalFunctionSignature> = super ExternalFunctionBodyAST  signature: sig (
+  | signature <ExternalFunctionSignature> = sig.  |
+) (
+public computeType ^ <ConcreteType> = (
+  | 
+  args <List[ConcreteType]> = currentTypeActivation arguments.  
+  typeArgs <List[TypeAST]> = currentTypeActivation typeArguments.
+  rt <TypeAST>
+  |
+  (* Substitute type arguments into function signature *)
+  (* we can skip for now *)
+  #BOGUS.
+  (* Verify args against substituted parameter types *)
+  (* also inessential - extern sigs could be wrong anyway *)
+  #BOGUS.
+  (* Return substituted return type *)
+  (* For now, we have no type vars, so can just use declared return type *)
+  #BOGUS.
+  rt:: signature returnType asTensorType.
+  ^ConcreteType dimensions: rt shape dimensions baseType: rt baseType
+)
 ) : (
 )
 zipFrame: l <List[TypeFrame]> ^ <TypeFrame>  = (
@@ -1153,6 +1250,16 @@ fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | Un
        ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes! ', d1 printString, ' != ', d2 printString]].
   ].
   ^result
+)
+programScope ^ <Scope> = (
+  ^super programScope
+)
+externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
+  |
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
+  fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
+  |
+  ^fun
 )
 ) : (
 )

@@ -9,6 +9,7 @@ platform asts: asts collectionUtils: utils streams: hs = (
     private Map = platform collections Map.
     private List = platform collections List.
     private Utils = utils.
+    private ObjectMirror = platform mirrors ObjectMirror.
     | ) (
 public class Evaluator usingPlatform: p
 <Platform> collectionUtils: c = ASTClass usingPlatform: p
@@ -144,6 +145,11 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
   ] withRangeOfDimensions:  thisVisit type dimensions.
   | 
   ^resultFrame asStream.  
+)
+resolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = (currentActivation at: ast id) asScalar. | 
+  v isKindOfFunctionAST ifTrue: [^v].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
 ) : (
 )
@@ -468,6 +474,23 @@ public eval ^ <HyperStream> = (
 )
 ) : (
 )
+public class ExternalFunctionBodyAST descriptor: d signature: sig  <ExternalFunctionSignature> = super ExternalFunctionBodyAST signature: sig (
+  | descriptor = d. |
+) (
+public eval ^ <Tensor> = (
+(* Handle an external call. *)
+  | args  <List[Stream]> = currentActivation arguments collect: [:a | a isScalar ifTrue: [a asScalar] ifFalse: [a]]. |
+  (* Only deals with nodeJS functions. Also needs to massage arguments and result.
+  *)
+  #BOGUS.
+  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *).
+)
+) : (
+public signature: sig  <ExternalFunctionSignature> ^ <Instance> = (
+(* Hack for typechecker compatibility *)
+  ^descriptor: nil signature: sig
+)
+)
 public DimensionNumberAST ^ <DimensionNumberAST class> = (
   ^super DimensionNumberAST
 )
@@ -695,6 +718,10 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
 )
 fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
   ^super fuseDims: ds1 with: ds2
+)
+api ^ <NodeAPI> = (
+  (* Make inherited method available in lexical scope *)
+  ^super api
 )
 ) : (
 )

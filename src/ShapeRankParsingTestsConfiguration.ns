@@ -1,5 +1,5 @@
 Newspeak3
-'ShapeRank'
+'Root'
 class ShapeRankParsingTestsConfiguration packageTestsUsing: manifest = (
 (* WIP on tests *)
 |

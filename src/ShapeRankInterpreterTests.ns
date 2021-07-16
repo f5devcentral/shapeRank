@@ -1,6 +1,6 @@
 Newspeak3
 'Root'
-class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs = (
+class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minitest: minitest supplier: s  streams: hs ffi: webFFI <ShapeRankWebFFI> =  (
 |   (* Imports *)
 	private Stopwatch = platform kernel Stopwatch.
 	private Parser = parsing Parser.
@@ -8,7 +8,10 @@ class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minites
 	private TestContext = minitest TestContext.
     private HyperStream = hs isNil ifFalse: [hs HyperStream].
     private Iterator = hs isNil ifFalse: [hs Iterator].
+    ffi <ShapeRankWebFFI> = webFFI.
     (* Module variables *)
+    
+    private parser = Parser new.
      supplier = s.
 |
 ) (
@@ -64,9 +67,6 @@ public badtestMatmul  = (
 )
 expectRuntimeError: blk <[]> = (
   should: blk signal: Error
-)
-interpretCompilationUnit: string = (
-	^(Parser new program parseString: string) eval
 )
 interpretFileNamed: fn <String>  = (
   ^interpretCompilationUnit: (supplier supplyTestNamed: fn)
@@ -812,11 +812,6 @@ public testStructDot = (
                 to: '[[1, 5], [7, 3]]'
        description: 'dot should be able to index tensors repeatedly'.
 )
-public testStructInFunctions = (
-  assertInterprets: 'func f(x: {foo: Int}): {bar: Int} = {bar: x.foo + 1}; f({foo: 3})'
-                to: '{bar: 4}'
-       description: 'functions should be able to take apart and build structs'.
-)
 public testStringLit = (
   | result = interpretCompilationUnit: '"hello \"wo\\rld\""'. |
   assertIsScalar: result.
@@ -856,16 +851,6 @@ public testMatmulRerank2  = (
 )
 public testPolyEval4 = (
   expectRuntimeError: [interpretFileNamed: 'polyEval4'] 
-)
-public testBlockStateBug = (
-  | result = interpretCompilationUnit:
-    'func abs(v: Int): Int = if v < 0 then -v else v;
-     abs(-4) + abs(5)'. |
-  assert: (result asScalar) = 9 description: 'blocks should not carry state'.
-)
-public testReplicateToOneBug = (
-  assertInterprets: 'func snd(x: Int, y: Int) = y; snd(2,[3])' to: '[3]'
-    description: 'we should be able to replicate to match 1-tensors'.
 )
 public testReduce = (
   | result = interpretFileNamed: 'reduce'. |
@@ -966,9 +951,6 @@ public testManualRerank3 = (
   assert: ((result contents at: 3) contents at: 1) asScalar equals: 200.
   assert: ((result contents at: 3) contents at: 2) asScalar equals: 300.
   assert: ((result contents at: 3) contents at: 3) asScalar equals: 100.
-)
-interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
-   ^(Parser new program parseString: string) evaluateWithArguments: args
 )
 interpretFileNamed: fn <String> withArguments: args <List[HyperStream]> ^ <HyperStream> = (
   ^interpretCompilationUnit: (supplier supplyTestNamed: fn) withArguments: args
@@ -1086,6 +1068,36 @@ public testPairStreamSync2 = (
      assert: (next contents at: 2) asScalar equals: 2**i.
   ].
   assert: [result iterator hasNext not].
+)
+public testBlockStateBug = (
+  | result = interpretCompilationUnit:
+    'func abs(v) = if v < 0 then -v else v;
+     abs(-4) + abs(5)'. |
+  assert: (result asScalar) = 9 description: 'blocks should not carry state'.
+)
+public testReplicateToOneBug = (
+  assertInterprets: 'func snd(x, y) = y; snd(2,[3])' to: '[3]'
+    description: 'we should be able to replicate to match 1-tensors'.
+)
+public testStructInFunctions = (
+  assertInterprets: 'func f(x) = {bar: x.foo + 1}; f({foo: 3})'
+                to: '{bar: 4}'
+       description: 'functions should be able to take apart and build structs'.
+)
+public testExtern = (
+  | 
+  fun <FunctionAST> = ffi nodeFunction: 'readFileSync' ofModule: 'fs' signature: '(path: String, format: String): String'.
+  result = interpretFileNamed: 'extern' withArguments: {HyperStream fromScalar: fun}. 
+  |
+  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
+  assert: result rank equals: 0. 
+  assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
+)
+interpretCompilationUnit: string = (
+	^(parser program parseString: string) eval
+)
+interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
+   ^(parser program parseString: string) evaluateWithArguments: args
 )
 ) : (
 TEST_CONTEXT = ()
