@@ -1,0 +1,35 @@
+Newspeak3
+'Root'
+class ShapeRankWebFFI usingPlatform: platform api: NodeAPI <NodeAPI class>  = (
+  |
+  private List = platform collections List.
+  public api = NodeAPI usingPlatform: platform.
+  |
+) (
+class DescriptorForNode module: m <String> function: f <String> = (
+  | public moduleName <String> = m. public functionName <String> = f. |
+) (
+) : (
+)
+public class FFI parser: p <ShapeRankParser Parser> = (
+	| 
+    private ExternalFunctionBodyAST <ExternalFunctionBodyAST class> = p asts ExternalFunctionBodyAST.
+    private FunctionAST <FunctionAST class> = p asts FunctionAST.  
+    private parser <ShapeRankParser Parser> = p.    
+    |
+) (
+public api ^ <NodeAPI> = (
+  ^outer ShapeRankWebFFI api
+)
+public nodeFunction: fn <String> ofModule: mname <String> signature: s <String> ^ <FunctionAST> = (
+  |
+  d = DescriptorForNode module: mname function: fn.
+  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
+  |
+  ^FunctionAST named: fn parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}
+)
+) : (
+)
+) : (
+)
