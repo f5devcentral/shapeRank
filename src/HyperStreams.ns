@@ -95,6 +95,14 @@ public unboundedDimension = (
 public repeat:  k <T def> ^ <ConstantStream[T]> = (
   ^repeat:  k dimension: {UnboundedDimension new}
 )
+public extensibleWithDimensions: dims <List[Integer | UnboundedDimension]>  ^ <UnboundedHyperStream> = (
+  ^ iteratingOver: (ExtensibleIterator rank: dims size) dimensions: dims
+)
+public extensible ^ <UnboundedHyperStream> = (
+  | dims <List[Integer | UnboundedDimension]> = List new. |
+  dims add: UnboundedDimension new.
+  ^extensibleWithDimensions: dims
+)
 )
 class ConstantStream on: k <T def> dimension: ds <List[Integer | UnboundedDimension]> = HyperStream rank: ds size (
 (* A hyperstream , all of whose elements are equal to some fixed elemnt  *)
@@ -689,6 +697,30 @@ public rank ^ <Integer> = (
   ^0
 )
 public clone = (
+)
+) : (
+)
+class ExtensibleIterator rank: r <Integer> = Iterator (
+	|
+	contents <List[T]> = List new.
+    index <Integer> ::= 0.
+    public rank <Integer> = r.
+	|
+) (
+public hasNext ^ <Boolean> = (
+  ^index < contents size
+)
+public next ^ <T> = (
+  index:: index + 1.
+  ^contents at: index
+)
+public add: e <T> = (
+ contents add: e
+)
+public clone ^ <Self> = (
+  | result <Self> = class new. |
+  contents do: [:e | result add: e].
+  ^result
 )
 ) : (
 )
