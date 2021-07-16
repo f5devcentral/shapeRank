@@ -1,9 +1,7 @@
 import chokidar from 'chokidar';
 
-function getFiles(path: string) {
-    chokidar.watch(path).on('all', (event, path) => {
-        console.log(event, path);
-    });
+function getFiles(path: string, closure: Closure(event, path)) {
+    chokidar.watch(path).on('all', closure);
 }
 
 function compile() { }
