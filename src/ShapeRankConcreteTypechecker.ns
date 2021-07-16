@@ -1254,7 +1254,7 @@ fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | Un
 programScope ^ <Scope> = (
   ^super programScope
 )
-externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
+public externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
   |
   body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
   fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
