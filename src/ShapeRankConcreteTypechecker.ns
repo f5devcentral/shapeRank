@@ -126,13 +126,10 @@ public computeType ^ <ConcreteType> = (
 ) : (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
-  | visits <List[CallVisit]> = List new. |
+  | 
+  visits <List[CallVisit]> = List new. 
+  |
 ) (
-computeArgumentTypes = (
-   | result = List new: arguments size. |
-   1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (callee parameters at: i))].
-   ^result
-)
 callerVisit ^ <CallVisit | Nil> = (
 (* Return the CallVisit representing my caller, or nil if this call is at top level. *)
   | top <TypeActivation | Nil> = typeCallStack isEmpty ifFalse: [typeCallStack last]. | 
@@ -195,6 +192,16 @@ public computeType ^ <Tensor> = (
   thisVisit type: result.
   ^result
 )
+typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentTypeActivation at: ast id. | 
+  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
+)
+computeArgumentTypes = (
+   | result = List new: arguments size. |
+   1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (typeCallee parameters at: i))].
+   ^result
+)
 public typeCallee ^ <FunctionAST> = (
 | ast |
   callee_slot isNil ifTrue: [
@@ -203,11 +210,6 @@ public typeCallee ^ <FunctionAST> = (
 	].
   callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
   ^callee_slot
-)
-typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
-  | v <AST> = currentTypeActivation at: ast id. | 
-  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
-  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
 ) : (
 )
@@ -301,15 +303,6 @@ concreteParameterBaseTypes ^ <List[String | Integer | Map[String, ConcreteType] 
          t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [externalFunctionNamed: p id signature: t].
          ]. 
 )
-concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
-  | 
-  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteParameterBaseTypes. 
-  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
-  result <List[ConcreteType]> = List new.
-  |
-  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
-  ^result
-)
 public computeType ^ <ConcreteType> = (
   parameters size > 0 ifTrue: [
     | 
@@ -321,6 +314,25 @@ public computeType ^ <ConcreteType> = (
     ^computeTypeFromArgumentTypes: args
   ].
   ^expression computeType
+)
+concreteBaseTypesOfArguments: args  <List[HyperStream]> ^ <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = ( 
+    | result <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> = List new. |
+    parameters with: args do: [:p <ParameterAST>  :a <HyperStream> | 
+         | t <TypeAST> = concreteBaseTypeOf: p type. |
+         (* make sure we use the provided external function *)
+         (* we could generalize this and use the scalar value of any scalar argument for increased precision *)
+         result add: (t isKindOfExternalFunctionSignatureAST ifFalse: [t] ifTrue: [a asScalar]).
+         ]. 
+     ^result
+)
+concreteTypesOfArguments: args <List[HyperStream]> ^ <List[ConcreteType]> = (
+  | 
+  baseTypes <List[String | Integer | Map[String, ConcreteType] | FunctionAST]> =  concreteBaseTypesOfArguments: args. 
+  dims <List[List[Integer | UnboundedDimension]]> = args collect: [:arg <HyperStream> | arg dimensions].
+  result <List[ConcreteType]> = List new.
+  |
+  baseTypes with: dims do: [:bt <String | Integer | Map[String, ConcreteType] | FunctionAST> :ds <List[Integer | UnboundedDimension]> | result add: (ConcreteType dimensions: ds baseType: bt)].
+  ^result
 )
 ) : (
 )

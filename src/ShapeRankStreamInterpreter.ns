@@ -147,7 +147,7 @@ computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream
   ^resultFrame asStream.  
 )
 resolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
-  | v <AST> = currentActivation at: ast id. | 
+  | v <AST> = (currentActivation at: ast id) asScalar. | 
   v isKindOfFunctionAST ifTrue: [^v].
   Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
@@ -479,11 +479,11 @@ public class ExternalFunctionBodyAST descriptor: d signature: sig  <ExternalFunc
 ) (
 public eval ^ <Tensor> = (
 (* Handle an external call. *)
-  | args  <List[Stream]> = currentActivation arguments. |
+  | args  <List[Stream]> = currentActivation arguments collect: [:a | a isScalar ifTrue: [a asScalar] ifFalse: [a]]. |
   (* Only deals with nodeJS functions. Also needs to massage arguments and result.
   *)
   #BOGUS.
-  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) perform: descriptor functionName with: args ifFail: [].
+  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *).
 )
 ) : (
 public signature: sig  <ExternalFunctionSignature> ^ <Instance> = (

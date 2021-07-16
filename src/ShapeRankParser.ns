@@ -1,14 +1,14 @@
 Newspeak3
 'Root'
-class ShapeRankParser usingPlatform: platform grammar: grammar asts: astClass collectionUtils: utils = (
+class ShapeRankParser usingPlatform: p grammar: grammar asts: asts collectionUtils: u = (
 |
-	private List = platform collections List.
-        private Map = platform collections Map.
+	private List = p collections List.
+        private Map = p collections Map.
         private ShapeGrammar = grammar Grammar.
 
-        private astClass = astClass.
-        private platform = platform.
-        private utils = utils.
+        private astClass = asts.
+        private platform = p.
+        private utils = u.
 |
 ) (
 public class Parser = ShapeGrammar (

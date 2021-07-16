@@ -10,6 +10,8 @@ class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minites
     private Iterator = hs isNil ifFalse: [hs Iterator].
     ffi <ShapeRankWebFFI> = webFFI.
     (* Module variables *)
+    
+    private parser = Parser new.
      supplier = s.
 |
 ) (
@@ -65,9 +67,6 @@ public badtestMatmul  = (
 )
 expectRuntimeError: blk <[]> = (
   should: blk signal: Error
-)
-interpretCompilationUnit: string = (
-	^(Parser new program parseString: string) eval
 )
 interpretFileNamed: fn <String>  = (
   ^interpretCompilationUnit: (supplier supplyTestNamed: fn)
@@ -953,9 +952,6 @@ public testManualRerank3 = (
   assert: ((result contents at: 3) contents at: 2) asScalar equals: 300.
   assert: ((result contents at: 3) contents at: 3) asScalar equals: 100.
 )
-interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
-   ^(Parser new program parseString: string) evaluateWithArguments: args
-)
 interpretFileNamed: fn <String> withArguments: args <List[HyperStream]> ^ <HyperStream> = (
   ^interpretCompilationUnit: (supplier supplyTestNamed: fn) withArguments: args
 )
@@ -1096,6 +1092,12 @@ public testExtern = (
   assert: [result isKindOfTensor] description: 'Tensor expected!'. 
   assert: result rank equals: 0. 
   assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
+)
+interpretCompilationUnit: string = (
+	^(parser program parseString: string) eval
+)
+interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
+   ^(parser program parseString: string) evaluateWithArguments: args
 )
 ) : (
 TEST_CONTEXT = ()
