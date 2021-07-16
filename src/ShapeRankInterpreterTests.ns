@@ -10,8 +10,6 @@ class ShapeRankInterpreterTests usingPlatform: platform parsing: parsing minites
     private Iterator = hs isNil ifFalse: [hs Iterator].
     ffi <ShapeRankWebFFI> = webFFI.
     (* Module variables *)
-    
-    private parser = Parser new.
      supplier = s.
 |
 ) (
@@ -1084,20 +1082,21 @@ public testStructInFunctions = (
                 to: '{bar: 4}'
        description: 'functions should be able to take apart and build structs'.
 )
-public testExtern = (
-  | 
-  fun <FunctionAST> = ffi nodeFunction: 'readFileSync' ofModule: 'fs' signature: '(path: String, format: String): String'.
-  result = interpretFileNamed: 'extern' withArguments: {HyperStream fromScalar: fun}. 
-  |
-  assert: [result isKindOfTensor] description: 'Tensor expected!'. 
-  assert: result rank equals: 0. 
-  assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
+interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
+   ^(Parser new program parseString: string) evaluateWithArguments: args
 )
 interpretCompilationUnit: string = (
-	^(parser program parseString: string) eval
+	^(Parser new program parseString: string) eval
 )
-interpretCompilationUnit: string withArguments: args <List[HyperStream]> ^ <HyperStream> = (
-   ^(parser program parseString: string) evaluateWithArguments: args
+public testExtern = (
+  | 
+  parser = Parser new.
+  extern = ffi FFI parser: parser. 
+  fun <FunctionAST> = extern nodeFunction: 'readFileSync' ofModule: 'fs' signature: '(path: String, format: String): String'.
+  result = (parser program parseString: (supplier supplyTestNamed: 'extern' )) evaluateWithArguments: {HyperStream fromScalar: fun}.
+  |
+  assert: result rank equals: 0. 
+  assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
 )
 ) : (
 TEST_CONTEXT = ()
