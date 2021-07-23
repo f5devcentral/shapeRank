@@ -51,12 +51,6 @@ expandedDefinition = (
 collapsedDefinition = (
   ^(row: {label: subject name. mediumBlank. typecheck: subject source}) elasticity: 1
 )
-typecheck: declaration <String> = (
-	| result <TypeAST> |
-  [result:: subject typecheck: (withoutNbsp: declaration) ] on: Error do: [:e | ^linkForError: e]. 
-
-  ^(row: {label: 'Type'. blank: 4. label: ([result printString] on: Error do: [:e | ^linkForError: e])}) color: (Color r: 0 g: 1 b: 0); elasticity: 1. 
-)
 public tag ^ <String> = (
   ^subject name
 )
@@ -64,6 +58,12 @@ linkForError: exception = (
 	^(link: exception printString
 	action: [enterSubject: (ObjectSubject onModel: (ObjectMirror reflecting: exception))])
 	color: (Color r: 1 g: 0 b: 0)
+)
+typecheck: declaration <String> = (
+	| result <TypeAST> |
+  [result:: subject typecheck: (withoutNbsp: declaration) ] on: Error do: [:e | ^nothing]. 
+
+  ^(row: {label: 'Type'. blank: 4. label: ([result printString] on: Error do: [:e | ^linkForError: e])}) color: (Color r: 0 g: 1 b: 0); elasticity: 1. 
 )
 ) : (
 )

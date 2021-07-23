@@ -423,7 +423,7 @@ public prettyPrint ^ <String> = (
 		'(', p prettyPrint, ')'.
 		] ifFalse: [p prettyPrint]).
 	] separatedBy: [result:: result,  ', '].
-   result:: result, ') : ', returnType printString, ' = ', body prettyPrint.
+   result:: result, ')  = ', body prettyPrint.
   ^result
 )
 ) : (
@@ -507,7 +507,9 @@ public isKindOfParameterAST ^ <Boolean> = (
   ^true
 )
 public prettyPrint ^ <String> = (
-  ^id, ' : ', type prettyPrint
+  type hasRank ifFalse: [ ^id, ': ?'].
+  type rank  = 0 ifTrue: [^id].
+  ^type shape dimensions inject: id, ' : ' into: [:s1 :s2 | s1, '[]'].
 )
 ) : (
 )
@@ -899,8 +901,8 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 public prettyPrint ^ <String> = (
   | result <String> ::= '('. |
-  parameters do: [:p <ParameterAST> | 
-	result:: result,  (p type isKindOfFunctionAST ifTrue: [
+  parameterTypes do: [:p <ParameterAST> | 
+	result:: result,  (p isKindOfFunctionAST ifTrue: [
 		'(', p prettyPrint, ')'.
 		] ifFalse: [p prettyPrint]).
 	] separatedBy: [result:: result,  ', '].
