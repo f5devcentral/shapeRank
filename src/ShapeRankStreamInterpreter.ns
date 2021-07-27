@@ -480,15 +480,9 @@ public class ExternalFunctionBodyAST descriptor: d signature: sig  <ExternalFunc
 public eval ^ <Tensor> = (
 (* Handle an external call. *)
   | args  <List[Stream]> = currentActivation arguments collect: [:a | a isScalar ifTrue: [a asScalar] ifFalse: [a]]. |
-  (* Needs to massage arguments and result.
-  *)
-  descriptor isKindOfDescriptorForNode ifTrue: [
-  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *)
-  ].
-  descriptor isKindOfDescriptorForNewspeak ifTrue: [
+  (* Needs to massage arguments and result.*)
+
   ^(ObjectMirror reflecting: descriptor object) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *)
-  ].  
-  Error signal: 'Unknown FFI descriptor'.
 )
 ) : (
 public signature: sig  <ExternalFunctionSignature> ^ <Instance> = (
