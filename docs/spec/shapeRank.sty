@@ -288,6 +288,7 @@ the ASCII CR character followed by the ASCII LF character
 
 \bnf {ProgramSignature} {\VALIDENT{} \synt{ProgramParameterList}}
 \bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList}}
+% BOGUS: the parameters to an external function may not include external functions
 \bnf {ExternalFunctionSignature} { \synt{TypeParameterList}? \synt{ProgramParameterList} \COLON{} \synt{TypeSig}}
 \bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignature} \BIND \synt{Expression}}
 \bnf {LetBinding} {\LET{} \VALIDENT{} \BIND{} \synt{Expression}}
