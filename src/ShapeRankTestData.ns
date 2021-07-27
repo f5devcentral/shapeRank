@@ -894,5 +894,10 @@ test_extern = (
       readFileSync("Applications/NewspeakIDE.app/Contents/Resources/app/main.js", "utf8")
   '
 )
+test_externNewspeak = (
+  ^'program x10(tenX: (x: Int): Int)
+      tenX(2)
+  '
+)
 ) : (
 )
