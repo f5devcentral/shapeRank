@@ -18,7 +18,7 @@
 
 ShapeRank is a referentially transparent, decidable, rank-polymorphic statically shape-safe language. It is designed for data analysis, reactive programming and machine learning. 
 
-All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar, [\ref{scalars}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
+All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar [\ref{hyperstreams}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
 
 ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built into the language [\ref{higherOrderFunctions}]. User defined functions [\ref{functions}] may be used as arguments to these.
 
@@ -1015,7 +1015,7 @@ Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, othe
 
 It is a compile-time error if the $s_e$ is not compatible $s$.
 
-Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} \QUESTIONMARK{}$ or  $d_{2i} \QUESTIONMARK{}, i \in 1..r$
+Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} = \QUESTIONMARK{}$ or  $d_{2i} = \QUESTIONMARK{}, i \in 1..r$
 
 \subsection{Where Expressions}
 \label{whereExpressions}
