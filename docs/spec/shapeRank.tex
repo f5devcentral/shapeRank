@@ -220,8 +220,12 @@ It is a compile-time error if the compile-time scope of the enclosing program co
 \subsection{External Function Declarations}
 \label{externalFunctionDeclarations}
 
-An {\em external function} is a function written in a programming language other than ShapeRank, that is used within provided to a ShapeRank program [\ref{programsAndIO}].
-An external function must, of necessity, be provided from outside the program. External functions are declared as parameters to the program, with function types [\ref{functionTypes}].
+An {\em external function} is a function written in a programming language other than ShapeRank, that is used within a ShapeRank program [\ref{programsAndIO}].
+An external function must, of necessity, be provided from outside the program. External functions are declared as parameters to the program.  A program parameter declares an external function if its declared type is an external function signature.  
+
+\ExternalFunctionSignature{}
+
+An {\em external function signature} lists the names and types of each of the function's parameters in parentheses, followed by a colon followed by the function's return type, and defines a  function type [\ref{functionTypes}] whose domain is cartesian product of the  listed parameter types and whose range is the given return type.
 
 
 
