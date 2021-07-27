@@ -1150,12 +1150,11 @@ A {\em function type} describes the type of a function [\ref{functions}].
 A function type consists of a domain and a range. A {\em domain} is a list of types, composed from the types of the formal parameters of a function, in the order they appear in the function declaration. A {\em range} is a result type of a function. 
 We write a  function type as $T_1, \ldots, T_n \to T_r$, where $T_1, \ldots, T_n$ is the domain and $T_r$ is the range.
 
-Function types are used internally in this specification, but have no direct syntactic representation.
+Function types are used internally in this specification, but can only occur syntactically in external function declarations [\ref{externalFunctionDeclarations}].
 
 {\em 
-Naturally, as ShapeRank does not support user-defined higher order functions.
-
-Function types  are derived from external function signatures [\ref{functions}].
+There are two reasons for this.  The base types of ShapeRank variables, other than program parameters, are always inferred. Furthermore, ShapeRank does not support user-defined higher order functions, and so users have no need to declare function signatures as types of parameters,
+with the exception of external functions declared as program parameters.
 }
 
 \subsection{Type Expressions}
