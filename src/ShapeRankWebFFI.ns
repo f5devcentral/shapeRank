@@ -9,6 +9,12 @@ class ShapeRankWebFFI usingPlatform: platform api: NodeAPI <NodeAPI class>  = (
 class DescriptorForNode module: m <String> function: f <String> = (
   | public moduleName <String> = m. public functionName <String> = f. |
 ) (
+public isKindOfDescriptorForNode ^ <Boolean> = (
+  ^true
+)
+public object  = (
+  ^api require: moduleName
+)
 ) : (
 )
 public class FFI parser: p <ShapeRankParser Parser> = (
@@ -28,6 +34,28 @@ public nodeFunction: fn <String> ofModule: mname <String> signature: s <String> 
   body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
   |
   ^FunctionAST named: fn parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}
+)
+functionFromDescriptor: d signature: s <String> ^ <FunctionAST> = (
+  |
+  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
+  |
+  ^FunctionAST named: d functionName parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}
+)
+public newspeakFunction: fn <String> ofObject: o <Object> signature: s <String> ^ <FunctionAST> = (
+  | d = DescriptorForNewspeak object: o function: fn. |
+  ^functionFromDescriptor: d  signature: s
+)
+public isKindOfFFI ^ <Boolean> = (
+  ^true
+)
+) : (
+)
+class DescriptorForNewspeak object: o <Object> function: f <String> = (
+  | public object <Object> = o. public functionName <String> = f. |
+) (
+public isKindOfDescriptorForNewspeak ^ <Boolean> = (
+  ^true
 )
 ) : (
 )

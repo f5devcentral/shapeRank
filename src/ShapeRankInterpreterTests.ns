@@ -1098,6 +1098,19 @@ public testExtern = (
   assert: result rank equals: 0. 
   assert: result asScalar equals: ((ffi api require: 'fs') readFileSync: 'Applications/NewspeakIDE.app/Contents/Resources/app/main.js' format: 'utf8').
 )
+public testExternNewspeak = (
+  | 
+  parser = Parser new.
+  extern = ffi FFI parser: parser. 
+  fun <FunctionAST> = extern newspeakFunction: 'newspeakTestFunction:' ofObject: self signature: '(x: Int): Int'.
+  result = (parser program parseString: (supplier supplyTestNamed: 'externNewspeak' )) evaluateWithArguments: {HyperStream fromScalar: fun}.
+  |
+  assert: result rank equals: 0. 
+  assert: result asScalar equals: 20.
+)
+public newspeakTestFunction: x <Integer> ^ <Integer> = (
+  ^x*10
+)
 ) : (
 TEST_CONTEXT = ()
 )
