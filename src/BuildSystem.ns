@@ -1,14 +1,52 @@
 Newspeak3
 'Root'
-class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs <HyperStream> ffi: n <NodeAPI> 
-(* :exemplar: BuildSystem usingPlatform: platform parser: (ShapeRankParser) streams:  (HyperStreams usingPlatform: platform) HyperStream ffi: NodeAPI *) = (
+class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs <HyperStream class> ffi: swf <ShapeWebFFI> 
+(* :nonexemplar: [
+	|
+	namespace
+	embedder
+	ide
+	parsers
+	grammar
+	parsing
+	parser
+	Evaluator
+    utils
+    hyperstreams
+	Scopes
+    InterimTypechecker
+	Typechecker
+	interpreter
+	hopscotchPlatform
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    hyperstreams:: HyperStreams usingPlatform: platform.
+	Scopes::
+	  (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+    InterimTypechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.     
+    Typechecker::
+	  (ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams)
+	     TypeInterpreter.
+    interpreter:: ShapeRankStreamInterpreter usingPlatform: platform
+	                                    asts: Typechecker
+                                        collectionUtils: utils
+                                        streams: hyperstreams.
+    Evaluator:: interpreter Evaluator.
+    parsers:: CombinatorialParsing usingPlatform: platform.
+    grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+    parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
+
+    BuildSystem usingPlatform: platform parser: parsing streams:  hyperstreams HyperStream ffi: (ShapeRankWebFFI usingPlatform: platform api: NodeAPI)] value *) = (
   |
   private Parser = parsing Parser.
-  private HyperStream = hs.
-  api = n usingPlatform: p.
+  private HyperStream <HyperStream class> = hs.
   parser = Parser new.
-  ffi = api FFI parser: parser.
-  watcher =  ffi require: 'chokidar'.  
+  api <NodeAPI> = swf api.
+  ffi <ShapeRankWebFFI FFI> = swf FFI parser: parser.
+  watcher <Alien> =  ffi api require: 'chokidar'.  
   |
 ) (
 public getFile: path  <String> ^ <HyperStream> = (
@@ -35,9 +73,22 @@ shapeRankSource ^ <String> = (
 public run = (
   | shapeRankProgram = parser parseString shapeRankSource. |
   shapeRankProgram evaluateWithArguments: {
-    ffi newspeakFunction: #getFile: object: self signature: '(filePath: String): [?] String'.
-    ffi newspeakFunction: #cc:dependencies: object: self signature: '(target: String, deps: [?]String, flags: String): String'.   
-    ffi newspeakFunction: #link:dependencies: object: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
+    ffi newspeakFunction: #link:dependencies: ofObject: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
+    }.
+)
+shapeRankSource2  ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String):  [?]String = 
+;
+  getFile(‘Applications/NewspeakIDE.app/Contents/Resources/app/main.js’)
+ '
+)
+public run2 = (
+  | shapeRankProgram = parser parseString shapeRankSource2. |
+  ^shapeRankProgram evaluateWithArguments: {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
     }.
 )
 ) : (
