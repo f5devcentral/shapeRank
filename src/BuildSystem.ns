@@ -9,7 +9,6 @@ class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs
 	parsers
 	grammar
 	parsing
-	parser
 	Evaluator
     utils
     hyperstreams
