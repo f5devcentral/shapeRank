@@ -18,7 +18,7 @@
 
 ShapeRank is a referentially transparent, decidable, rank-polymorphic statically shape-safe language. It is designed for data analysis, reactive programming and machine learning. 
 
-All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar, [\ref{scalars}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
+All values in ShapeRank are hyperstreams [\ref{concepts}]. A {\em hyperstream} is either scalar [\ref{hyperstreams}] or a sequence [\ref{streams}] of hyperstreams. Hyperstreams may be of a pre-determined size, or they may be unbounded. 
 
 ShapeRank does not support user-defined higher order functions. However, a number of useful higher-order functions are built into the language [\ref{higherOrderFunctions}]. User defined functions [\ref{functions}] may be used as arguments to these.
 
@@ -225,8 +225,7 @@ An external function must, of necessity, be provided from outside the program. E
 
 \ExternalFunctionSignature{}
 
-An {\em external function signature} lists the names and types of each of the function's parameters in parentheses, followed by a colon followed by the function's return type, and defines a  function type [\ref{functionTypes}] whose domain is cartesian product of the  listed parameter types and whose range is the given return type.
-
+An {\em external function signature} lists the names and types of each of the function's parameters in parentheses, followed by a colon followed by the function's return type, and defines a  function type [\ref{functionTypes}] whose domain is the cartesian product of the listed parameter types and whose range is the given return type.
 
 
 \section{Built-in Functions}
@@ -1016,7 +1015,7 @@ Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, othe
 
 It is a compile-time error if the $s_e$ is not compatible $s$.
 
-Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} \QUESTIONMARK{}$ or  $d_{2i} \QUESTIONMARK{}, i \in 1..r$
+Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} = \QUESTIONMARK{}$ or  $d_{2i} = \QUESTIONMARK{}, i \in 1..r$
 
 \subsection{Where Expressions}
 \label{whereExpressions}
@@ -1151,12 +1150,11 @@ A {\em function type} describes the type of a function [\ref{functions}].
 A function type consists of a domain and a range. A {\em domain} is a list of types, composed from the types of the formal parameters of a function, in the order they appear in the function declaration. A {\em range} is a result type of a function. 
 We write a  function type as $T_1, \ldots, T_n \to T_r$, where $T_1, \ldots, T_n$ is the domain and $T_r$ is the range.
 
-Function types are used internally in this specification, but have no direct syntactic representation.
+Function types are used internally in this specification, but can only occur syntactically in external function declarations [\ref{externalFunctionDeclarations}].
 
 {\em 
-Naturally, as ShapeRank does not support user-defined higher order functions.
-
-Function types  are derived from external function signatures [\ref{functions}].
+There are two reasons for this.  The base types of ShapeRank variables, other than program parameters, are always inferred. Furthermore, ShapeRank does not support user-defined higher order functions, and so users have no need to declare function signatures as types of parameters,
+with the exception of external functions declared as program parameters.
 }
 
 \subsection{Type Expressions}
