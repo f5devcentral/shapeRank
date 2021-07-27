@@ -480,10 +480,15 @@ public class ExternalFunctionBodyAST descriptor: d signature: sig  <ExternalFunc
 public eval ^ <Tensor> = (
 (* Handle an external call. *)
   | args  <List[Stream]> = currentActivation arguments collect: [:a | a isScalar ifTrue: [a asScalar] ifFalse: [a]]. |
-  (* Only deals with nodeJS functions. Also needs to massage arguments and result.
+  (* Needs to massage arguments and result.
   *)
-  #BOGUS.
-  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *).
+  descriptor isKindOfDescriptorForNode ifTrue: [
+  ^(ObjectMirror reflecting: (api require: descriptor moduleName)) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *)
+  ].
+  descriptor isKindOfDescriptorForNewspeak ifTrue: [
+  ^(ObjectMirror reflecting: descriptor object) performPublic: descriptor functionName with: args asArray (* ifFail: [:e | e printString out] *)
+  ].  
+  Error signal: 'Unknown FFI descriptor'.
 )
 ) : (
 public signature: sig  <ExternalFunctionSignature> ^ <Instance> = (
