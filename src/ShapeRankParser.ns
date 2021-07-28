@@ -428,6 +428,12 @@ public externalFunctionSignature ^ <CombinatorialParser[ExternalFunctionSignatur
   ExternalFunctionSignatureAST parameters: ps returnType: rt position: {lp start. rt end}
   ].
 )
+public externalFunctionParam ^ <CombinatorialParser[ParameterAST]> = (
+  ^super externalFunctionParam wrapper:
+		[:id_token  <Token> :colon <Token> :t <TypeAST> |
+		  ParameterAST named: id_token value type: t position: {id_token start. t end}
+		]
+)
 ) : (
 )
 ) : (
