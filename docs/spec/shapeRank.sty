@@ -272,9 +272,11 @@ the ASCII CR character followed by the ASCII LF character
 
 \bnf {Parameter} {\VALIDENT{} \synt{RankSigSuffix}?}
 \bnf {ProgramParameter} {\VALIDENT{} \synt{TypeSigSuffix}}
+\bnf {ExternalFunctionParameter} {\VALIDENT{} \synt{ExternalFunctionTypeSigSuffix}}
 \bnf {PropertyName} {\VALIDENT{} \alt \synt{StringLiteral}}
 \bnf {ParameterList} {\ParamList{\synt{Parameter}}}
 \bnf {ProgramParameterList} {\ParamList{\synt{ProgramParameter}}}
+\bnf {ExternalFunctionParameterList} {\ParamList{\synt{ExternalFunctionParameter}}}
 \bnf {TypeParameterList} {\ParamList{\synt{TypeParameter}}}
 \bnf {TypeParameter} {\TYPEPARAM{}}
 
@@ -288,12 +290,12 @@ the ASCII CR character followed by the ASCII LF character
 
 \bnf {ProgramSignature} {\VALIDENT{} \synt{ProgramParameterList}}
 \bnf {FunctionSignature} {\VALIDENT{} \synt{ParameterList}}
-% BOGUS: the parameters to an external function may not include external functions
-\bnf {ExternalFunctionSignature} { \synt{TypeParameterList}? \synt{ProgramParameterList} \COLON{} \synt{TypeSig}}
+\bnf {ExternalFunctionSignature} { \synt{TypeParameterList}? \synt{ExternalFunctionParameterList} \COLON{} \synt{TypeSig}}
 \bnf {FunctionDeclaration} {\SYNC? \FUNC{} \synt{FunctionSignature} \BIND \synt{Expression}}
 \bnf {LetBinding} {\LET{} \VALIDENT{} \BIND{} \synt{Expression}}
 \bnf {TypeDeclaration} {\TYPE{} \TYPEIDENT{} \BIND{} \synt{TypeSig}}
 \bnf {TypeSigSuffix} {\COLON{} (\synt{TypeSig} \alt \synt{ExternalFunctionSignature})}
+\bnf {ExternalFunctionTypeSigSuffix} {\COLON{} \synt{TypeSig}}
 \bnf {RankSigSuffix} {\COLON{} \synt{RankSig}}
 
 %% Type signatures
