@@ -2,6 +2,7 @@ Newspeak3
 'Root'
 class ShapeRankWorkspace 
    usingPlatform: platform <Platform> 
+   browsing: b <Browsing>
    engine: engine <ShapeRankTypechecker>
    parser: parsingModule <ShapeRankParser>
    code: code <String>
@@ -14,6 +15,7 @@ class ShapeRankWorkspace
     private Color = platform graphics Color. 
     private Gradient = platform hopscotch Gradient.
     private ObjectMirror = platform mirrors ObjectMirror.
+    private ObjectSubject = b ObjectSubject.
     
     (* module variables *)
     parser <ShapeRankParser> = parsingModule Parser new.
