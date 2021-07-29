@@ -53,29 +53,6 @@ public getFile: path  <String> ^ <HyperStream> = (
   (watcher watch: path) on: 'all' do: [:event :filepath <String> | stream add: filepath]. 
   ^stream
 )
-shapeRankSource ^ <String> = (
-  ^'
-  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [d!][?]String, flags: String): String)
-  func cc(target: String, deps: []String, flags: String):  [?]String = 
-  clang(getFile(target), zip(getFile(deps)), flags)
-
-  func link(target: String, deps: [][?]String, flags: String): [?]String =   basicLink(target, zip(deps), flags);
-  
-  link(‘myApp’, [
-   cc(‘a.c’, [‘b.h’], ‘-c’),
-   cc(‘b.c’, [‘b.h’, ‘c.h’], ‘-c’),
-   cc(‘c.c’, [‘c.h’], ‘-c’),
-   cc(‘d.c’, [], ‘-c’),                                     
-], ‘’) 
-  '
-)
-shapeRankSource2  ^ <String> = (
-  ^'
-  program build(getFile: (filePath: String): [?] String):  [?]String = 
-;
-  getFile(‘Applications/NewspeakIDE.app/Contents/Resources/app/main.js’)
- '
-)
 public run = (
   | shapeRankProgram = parser program parseString: shapeRankSource. |
   shapeRankProgram evaluateWithArguments: {
@@ -89,6 +66,28 @@ public run2 = (
   ^shapeRankProgram evaluateWithArguments: {
     ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
     }.
+)
+shapeRankSource2  ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String)
+  getFile("Applications/NewspeakIDE.app/Contents/Resources/app/main.js")
+ '
+)
+shapeRankSource ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [d!][?]String, flags: String): String)
+  func cc(target: String, deps: []String, flags: String) = 
+  clang(getFile(target), zip(getFile(deps)), flags)
+
+  func link(target: String, deps: [][?]String, flags: String): [?]String =   basicLink(target, zip(deps), flags);
+  
+  link("myApp", [
+   cc("a.c", ["b.h"], "-c"),
+   cc(‘b.c’, ["b.h", "c.h"], "-c"),
+   cc(‘c.c’, [‘c.h’], ‘-c’),
+   cc("d.c", [], "-c"),                                     
+], "") 
+  '
 )
 ) : (
 )
