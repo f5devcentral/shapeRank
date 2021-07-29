@@ -1,7 +1,7 @@
 Newspeak3
 'Root'
 class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs <HyperStream class> ffi: swf <ShapeWebFFI> 
-(* :nonexemplar: [
+(* :exemplar: [
 	|
 	namespace
 	embedder
@@ -69,14 +69,6 @@ shapeRankSource ^ <String> = (
 ], ‘’) 
   '
 )
-public run = (
-  | shapeRankProgram = parser parseString shapeRankSource. |
-  shapeRankProgram evaluateWithArguments: {
-    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
-    ffi newspeakFunction: #cc:dependencies: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
-    ffi newspeakFunction: #link:dependencies: ofObject: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
-    }.
-)
 shapeRankSource2  ^ <String> = (
   ^'
   program build(getFile: (filePath: String): [?] String):  [?]String = 
@@ -84,8 +76,16 @@ shapeRankSource2  ^ <String> = (
   getFile(‘Applications/NewspeakIDE.app/Contents/Resources/app/main.js’)
  '
 )
+public run = (
+  | shapeRankProgram = parser program parseString: shapeRankSource. |
+  shapeRankProgram evaluateWithArguments: {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
+    ffi newspeakFunction: #link:dependencies: ofObject: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
+    }.
+)
 public run2 = (
-  | shapeRankProgram = parser parseString shapeRankSource2. |
+  | shapeRankProgram = parser program parseString: shapeRankSource2. |
   ^shapeRankProgram evaluateWithArguments: {
     ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
     }.
