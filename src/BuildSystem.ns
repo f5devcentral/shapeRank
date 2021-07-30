@@ -48,23 +48,12 @@ class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs
   watcher <Alien> =  ffi api require: 'chokidar'.  
   |
 ) (
-public getFile: path  <String> ^ <HyperStream> = (
-  | stream <HyperStream> = HyperStream extensible. |
-  (watcher watch: path) on: 'all' do: [:event :filepath <String> | stream add: filepath]. 
-  ^stream
-)
 public run = (
   | shapeRankProgram = parser program parseString: shapeRankSource. |
   shapeRankProgram evaluateWithArguments: {
     ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
     ffi newspeakFunction: #cc:dependencies: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
     ffi newspeakFunction: #link:dependencies: ofObject: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
-    }.
-)
-public run2 = (
-  | shapeRankProgram = parser program parseString: shapeRankSource2. |
-  ^shapeRankProgram evaluateWithArguments: {
-    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
     }.
 )
 shapeRankSource2  ^ <String> = (
@@ -88,6 +77,22 @@ shapeRankSource ^ <String> = (
    cc("d.c", [], "-c"),                                     
 ], "") 
   '
+)
+public run2 = (
+  | shapeRankProgram = parser program parseString: shapeRankSource2. |
+  ^shapeRankProgram evaluateWithArguments: {
+      HyperStream fromScalar:
+       (ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String')
+    }.
+)
+public getFile: path  <String> ^ <HyperStream> = (
+  | stream <HyperStream> = HyperStream extensible. |
+  stream iterator add: path.
+ (watcher watch: path) on: 'all' do: [:filepath <String> :event <String>  :x | 
+     stream iterator add: path.
+     nil
+     ].
+  ^stream
 )
 ) : (
 )
