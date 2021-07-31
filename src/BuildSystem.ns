@@ -45,7 +45,7 @@ class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs
   parser = Parser new.
   api <NodeAPI> = swf api.
   ffi <ShapeRankWebFFI FFI> = swf FFI parser: parser.
-  watcher <Alien> =  ffi api require: 'chokidar'.  
+  watcher <Alien> =  ffi api require: 'build_demo_lib'.  
   |
 ) (
 public run = (
@@ -55,12 +55,6 @@ public run = (
     ffi newspeakFunction: #cc:dependencies: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
     ffi newspeakFunction: #link:dependencies: ofObject: self signature: '(target: String, deps: [d!][?]String, flags: String): String'.    
     }.
-)
-shapeRankSource2  ^ <String> = (
-  ^'
-  program build(getFile: (filePath: String): [?] String)
-  getFile("Applications/NewspeakIDE.app/Contents/Resources/app/main.js")
- '
 )
 shapeRankSource ^ <String> = (
   ^'
@@ -85,10 +79,16 @@ public run2 = (
        (ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String')
     }.
 )
+shapeRankSource2  ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String)
+  getFile("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c")
+ '
+)
 public getFile: path  <String> ^ <HyperStream> = (
   | stream <HyperStream> = HyperStream extensible. |
   stream iterator add: path.
- (watcher watch: path) on: 'all' do: [:filepath <String> :event <String>  :x | 
+ watcher getFiles: path do: [:filepath <String> | 
      stream iterator add: path.
      nil
      ].

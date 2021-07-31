@@ -1,0 +1,23 @@
+{
+    "name": "build_demo_lib",
+    "private": true,
+  "version": "0.0.6",
+  "description": "Experimental wrapper for node utilties for ShapeRank build demo",
+  "main": "build_demo_lib.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/f5devcentral:gbracha-f5/shapeRank.git"
+  },
+  "author": {
+    "name": "Gilad Bracha",
+    "email": "g.bracha@f5.com"
+  },
+  "license": "Apache 2.0",
+  "devDependencies": {
+    "electron": "^9.1.1"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.2"
+  }
+}
+
