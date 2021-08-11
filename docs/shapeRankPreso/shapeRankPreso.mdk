@@ -171,53 +171,78 @@ Implicitly, $map(+, zip(replicate(2, [3]), a ))$.
 # Language Overview
 
 * Functional, statically typed
-* Only formal parameters require explicit types
-* Types may be:
-    * Hyperstream types
-    * Type variables, $\$T$
-    * dynamic
+* Types, including shapes, are inferred, except for external functions 
+  and streams passed to the program from the outside world 
+* Formal parameters require explicit rank annotations,
+  but no other shape or type information.
+* A rank annotation is either $[]\ldots []$ 
+where each pair of square brackets denotes one dimension,
+ or $?$, denoting arbitrary rank
 
-Hyperstream types consist of 
+  ## Example Function Headers
+  
 
-  * Shape (omitted for scalars)
-  * Base type (e.g., Int, Bool, record type)
 
-Types statically capture the shape of the data - its rank and the dimensions at each rank
+$\bf{func}$ $+(a, b)$
 
-* Shapes are either
-  * Shape vectors - lists of dimensions
-  * Shape variables, @S
-  * Shape appends, S1::S2 (in restricted cases)
+$\bf{func}$ $sum(x: []) = reduce(+, 0, x)$
+
+$\bf{func}$ $append(a: [], b: [])$
+
+$\bf{func}$ $contains(v: ?, x)$
+
+## Streams
+
+Hyperstreams can have the unbounded dimension, $?$, denoting a stream of
+ indeterminate (and potentially infinite) length.
+ 
+# Types
+
+Types statically capture the shape of the data - its rank and 
+the dimensions at each rank, as well as the type of the individual
+elements of a stream.
+
+Concretely, types consist of 
+
+  * A shape vector - a list of dimensions
+  * a scalar base type (e.g., Int, Bool, record type)
+
+
+## Type Annotations
+
+Type annotations are used only in the program header, where they
+ indicate
+the  types of program parameters.
+
+A type annotation consists of a shape annotation followed by a
+base type annotation. The shape annotation may be omitted if the type denotes
+a scalar hyperstream.
+
+* Shape annotations are either
+  * A shape vector - a list of dimension annotations
+  * A shape variable $S$.
+  * A *shape append*, $S_1::S_2$ denoting the 
+    concatenation of two shapes.
 
 *  Dimensions are given between brackets. A dimension may be:
   * An integer
-  * A dimension variable $\$d$
+  * A dimension variable $d$
   * A sum of dimensions, $d_1 + d_2$
-  * Empty (don’t care)
   * The unbounded dimension, ? (for streams; no sums allowed)
   
-  ## Examples
-  
-
-
-$+(a: Int, b: Int): Int$
-
-$sum(x: []Int) = reduce(+, 0, x)$
-
-$append(a: [\$d1]\$T, b: [\$d2]\$T): [\$d1 + \$d2]\$T$
-
-$contains(v: @S\$T, x: \$T): Bool$
-
 
 A dimension variable or sum can be used as a type; it is 
-shorthand for the integer subset it denotes
+shorthand for the integer subset it denotes.
 
-Example:
+A base type annotation is either an identifier denoting
+an predefined type or a type variable, or a record type.
+
+### Example:
 
 
-$..(start: \$d1, end: \$d1 + \$d2): [\$d2 + 1]Int$
+$\bf func$ $..(start, end)$
 
-where $..$ is the infix range operator, which produces
+is the infix range operator, which produces
 a vector whose elements are the integers between its two
 arguments (inclusive).
 
@@ -226,19 +251,17 @@ arguments (inclusive).
 A shape variable or append can be used as a type; It matches 
 specially marked integer vectors that specify a shape
 
-Example:
+### Example:
 
-$makeTensor(dims: @S, contents: []\$T): @S\$T$
+$makeTensor(dims: [], contents: [])$
 
-$makeTensor(@[2, 3], [1, 2, 3, 4, 5, 6])$
+$makeTensor([2, 3], [1, 2, 3, 4, 5, 6])$
 
 <div class="shapeRankEvaluator" 
-  expression = "makeTensor(@[2, 3], [1, 2, 3, 4, 5, 6])">
+  expression = "makeTensor([2, 3], [1, 2, 3, 4, 5, 6])">
 </div>
-  
-The use of $@$ as a prefix identifies an expression as a
-shape expression. This only effects the expression's
-type, not its value.
+
+### Example:
 
 In some cases, the shape of a hyperstream cannot be captured 
 statically, e.g.:
@@ -250,30 +273,31 @@ statically, e.g.:
          *, 2..7, 2..7), 2..7)),  
          2..7)"></div>
 
-Type dynamic is useful here. A dynamically checked cast must 
-be used to use it where a type other than dynamic is expected.
+The dimension of the result is inferred to be $?$. 
+A dynamically checked cast must be used to use it where a 
+dimension other than $?$ is expected.
 
-## Streams (WIP: TBD)
-
-Hyperstreams can have the unbounded dimension, $?$, denoting a stream of
- indeterminate (and potentially infinite) length.
  
  # Machine Learning
  
 ## Some common functions:
 
 
-$\bf{func}$ $boolToFloat(b: Bool): Float = if$ $b$ $then$ $1.0$ $else$ $0.0$
+$\bf{func}$ $boolToFloat(b) = if$ $b$ $then$ $1.0$ $else$ $0.0$
 
-$\bf{func}$ $mean(x: []Float): Float = sum(x)/length(x)$
+$\bf{func}$ $mean(x: []) = sum(x)/length(x)$
 
-$\bf{func}$ $softmax(x: [\$d]Float): [\$d]Float = e^x / sum(x)$
+$\bf{func}$ $softmax(x: []) = e^x / sum(x)$
 
-${\bf func}\hbox{ }cross\_entropy(y: [\$d]Float, y\_prime: [\$d]Float): Float = 
+${\bf func}\hbox{ }cross\_entropy(y: [], y\_prime: []) = 
     -sum(y\_prime * log(y))$
     
-${\bf func}\hbox{ }argmax(v: []Float]): Float =$
-$\hbox{    }fold(maxEntry, [0, -infinity], pair(v, indexes(v)))[2]\hbox{ }\bf{where}$ $maxEntry = (a: [2]Num, b: [2]Num)\{if$ $a[1] > b[1]$ $then$ $a$ $else$ $b\}$
+${\bf func}\hbox{ }argmax(v: []) =$
+$\hbox{ }fold(maxEntry, [0, -infinity], pair(v, indexes(v)))[2]$
+
+where
+
+${\bf func}\hbox{ }maxEntry(a: [2]Num, b: [2]Num) = \{if$ $a[1] > b[1]$ $then$ $a$ $else$ $b\}$
 
 
 Examples:
@@ -301,7 +325,7 @@ Examples:
 The standard description of a linear classification model is
 
 
-${\bf func}\hbox{ }model(params: \{W:[\$cn][\$fn] Float, b: [\$cn] Float\}, x:)$
+${\bf func}\hbox{ }model(params, x: [])$
 $\hbox{ } = softmax(matmul(params.W,x) + params.b))$
 
 
@@ -311,17 +335,14 @@ $\hbox{ } = softmax(matmul(params.W,x) + params.b))$
 Prior to training the model, a loss function must be defined. A common formulation 
 is
 
-${\bf func}\hbox{ }loss(params: \{ W: [\$cn][\$fn]Float, b: [$cn]Float \},
-             data: [$batchSize]\{x: [\$fn]Float, yp: [\$cn]Float\}): Float =
+${\bf func}\hbox{ }loss(params, data: []) =
      avg(crossEntropyLoss(data.yp, model(params, data.x)))$
      
 
 Using this loss function, training is defined via gradient descent, starting with 
 initial parameters for the model and the training data 
 
-${\bf func}\hbox{ }train(params: \{ W: [\$cn][\$fn]Float, b: [\$cn]Float \},$
-$\hbox{     }data: [\$batchSize]\{ x: [\$fn]Float, yp: [\$cn]Float \})$
-$\hbox{  }:\{ W: [\$cn][\$fn]Float, b: [\$cn]Float \} = gradientDescent(0.05, loss, params, data)$
+${\bf func}\hbox{ }train(params,data: []) = gradientDescent(0.05, loss, params, data)$
 
 We can now train the model
 
@@ -336,7 +357,7 @@ We then reduce over an epoch, which consists of $\$bn$ batches :
 
 We can now test the accuracy of the trained model thus
 
-${\bf func}\hbox{ }infer(x: [\$fn]Float): Int = argmax(model(trainedParams, x))$
+${\bf func}\hbox{ }infer(x: []) = argmax(model(trainedParams, x))$
 
 $infer([[0.25, 0.65], [0.2, 0.9], [0.1, 0.1], [0.7, 0]])$
 
