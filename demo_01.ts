@@ -6,7 +6,9 @@ function getFiles(path: string) {
     });
 }
 
-function compile() { }
+function compile() {
+    
+ }
 
 function link() { }
 
