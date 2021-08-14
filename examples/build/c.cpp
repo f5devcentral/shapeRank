@@ -1,0 +1,3 @@
+char* fromC() {
+  return "fromC";
+}

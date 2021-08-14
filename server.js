@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const util = require('util');
-const readFile = util.promisify(fs.readFile);
+import { readFile as _readFile } from 'fs';
+import { promisify } from 'util';
+const readFile = promisify(_readFile);
 
 async function primordialsoup(mod) {
   // primordialsoup.js isn't structured like an importable module

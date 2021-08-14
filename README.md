@@ -60,13 +60,24 @@ getting the web IDE, not the old Smalltalk based version!
 Note that the IDE app's are unsigned, so you will need to explicitly force
 the OS to open them the first  time.
 
+## Building ShapeRank with Docker
 
+ShapeRank also comes with a Dockerfile, which can be used to build the source. We use NPM to make it easy to build ShapeRank, so make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) and [NodeJS](https://nodejs.org/) installed.
+
+Use `npm i` to install dependencies.
+
+Use `npm run build` to build ShapeRank. (Make sure you have Docker running.)
 ## Support
 For support, please open a GitHub issue. Note that ShapeRank is research project, not a product.
 
 ## Community Code of Conduct
 Please refer to the [F5 DevCentral Community Code of Conduct](code_of_conduct.md).
 
+## Running the Demos
+
+### C Build Demo
+1. ```npm i``` to install dependencies.
+2. ```npm run demo_01``` to run the C build demo.
 
 ## License
 [Apache License 2.0](LICENSE)
