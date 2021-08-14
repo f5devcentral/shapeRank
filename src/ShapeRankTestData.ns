@@ -899,5 +899,11 @@ test_externNewspeak = (
       tenX(2)
   '
 )
+test_sum_matrix = (
+^'func sum(x: []) = reduce(+, 0, x);
+
+sum([[1, 3, 4], [7, 22, 355]])
+'
+)
 ) : (
 )
