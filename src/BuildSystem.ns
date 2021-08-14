@@ -71,29 +71,6 @@ public getFile: path  <String> ^ <HyperStream> = (
      ].
   ^stream
 )
-shapeRankSource ^ <String> = (
-  ^'
-  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [?]String, flags: String): String)
-  func cc(target: String, deps: []String, flags: String) = 
-  clang(getFile(target), zip(getFile(deps)), flags)
-
-  func link(target: String, deps: [][]String, flags: String) =   basicLink(target, zip(deps), flags);
-  
-  link("myApp", [
-   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c"),
-   cc(‘Users/gbracha/shapeRank/f5/shapeRank/examples/b.c’, ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h", "Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
-   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/c.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
-   cc("d.c", [], "-c"),                                     
-], "") 
-  '
-)
-public cc: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
-  | prefix <String>  deps = JSArray new: ds size. |
-  (* ds should be bounded hyperstream; we need to create an array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
-  1 to: ds size do: [:i | deps at: i put: ds iterator next].
-  watcher clang: path dependencies: deps flags: s.
-  ^HyperStream fromScalar: prefix, '.o'
-)
 public link: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
 | deps = JSArray new: ds size. |
   (* ds should be a hyperstream of shape [k] for some finite k; we need to create a k-array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
@@ -107,6 +84,29 @@ public run = (
     ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
     ffi newspeakFunction: #link:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.    
     }.
+)
+public cc: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
+  | prefix <String> = path copyFrom: 1 to path size -2. deps = JSArray new: ds size. |
+  (* ds should be bounded hyperstream; we need to create an array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
+  1 to: ds size do: [:i | deps at: i put: ds iterator next].
+  watcher clang: path dependencies: deps flags: s.
+  ^HyperStream fromScalar: prefix, '.o'
+)
+shapeRankSource ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [?]String, flags: String): String)
+  func cc(target, deps: [], flags) = 
+  clang(getFile(target), zip(getFile(deps)), flags)
+
+  func link(target, deps: [][], flags) =   basicLink(target, zip(deps), flags);
+  
+  link("myApp", [
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c"),
+   cc(‘Users/gbracha/shapeRank/f5/shapeRank/examples/b.c’, ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h", "Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/c.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
+   cc("d.c", [], "-c"),                                     
+], "") 
+  '
 )
 ) : (
 )
