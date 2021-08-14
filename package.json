@@ -101,7 +101,7 @@
   "scripts": {
     "docs": "cd docs && npx --yes http-server",
     "build": "docker build --pull --rm -f 'Dockerfile' -t shaperank '.' && docker run --rm -it -d --name shaperank shaperank:latest && docker cp shaperank:'/src/shaperank/out' './out' && docker stop shaperank",
-    "start-demo": "npx -y ts-node demo_01.ts",
+    "demo_01": "npx -y ts-node demo_01.ts",
     "start": "node server.js"
   },
   "repository": {

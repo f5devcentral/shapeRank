@@ -73,6 +73,11 @@ For support, please open a GitHub issue. Note that ShapeRank is research project
 ## Community Code of Conduct
 Please refer to the [F5 DevCentral Community Code of Conduct](code_of_conduct.md).
 
+## Running the Demos
+
+### C Build Demo
+1. ```npm i``` to install dependencies.
+2. ```npm run demo_01``` to run the C build demo.
 
 ## License
 [Apache License 2.0](LICENSE)
