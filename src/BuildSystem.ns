@@ -40,6 +40,7 @@ class BuildSystem usingPlatform: p parser: parsing <ShapeRankParser> streams: hs
 
     BuildSystem usingPlatform: platform parser: parsing streams:  hyperstreams HyperStream ffi: (ShapeRankWebFFI usingPlatform: platform api: NodeAPI)] value *) = (
   |
+  private JSArray = p js global at: 'Array'.
   private Parser = parsing Parser.
   private HyperStream <HyperStream class> = hs.
   parser = Parser new.
@@ -70,22 +71,6 @@ public getFile: path  <String> ^ <HyperStream> = (
      ].
   ^stream
 )
-shapeRankSource ^ <String> = (
-  ^'
-  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [d!][?]String, flags: String): String)
-  func cc(target: String, deps: []String, flags: String) = 
-  clang(getFile(target), zip(getFile(deps)), flags)
-
-  func link(target: String, deps: [][?]String, flags: String): [?]String =   basicLink(target, zip(deps), flags);
-  
-  link("myApp", [
-   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c"),
-   cc(‘Users/gbracha/shapeRank/f5/shapeRank/examples/b.c’, ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h", "Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
-   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/c.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
-   cc("d.c", [], "-c"),                                     
-], "") 
-  '
-)
 public run = (
   | shapeRankProgram = parser program parseString: shapeRankSource. |
   shapeRankProgram evaluateWithArguments: {
@@ -101,6 +86,22 @@ public cc: path <String> dependencies: ds  <HyperStream[String]> flags: s <Strin
 public link: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
   (* ds should be a hyperstream of shape [k] for some finite k; we need to create a k-array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
   watcher basicLink: path dependencies: ds flags: s
+)
+shapeRankSource ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [?]String, flags: String): String)
+  func cc(target: String, deps: []String, flags: String) = 
+  clang(getFile(target), zip(getFile(deps)), flags)
+
+  func link(target: String, deps: [][]String, flags: String) =   basicLink(target, zip(deps), flags);
+  
+  link("myApp", [
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c"),
+   cc(‘Users/gbracha/shapeRank/f5/shapeRank/examples/b.c’, ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h", "Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/c.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c"),
+   cc("d.c", [], "-c"),                                     
+], "") 
+  '
 )
 ) : (
 )
