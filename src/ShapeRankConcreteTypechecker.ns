@@ -192,11 +192,6 @@ public computeType ^ <Tensor> = (
   thisVisit type: result.
   ^result
 )
-typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
-  | v <AST> = currentTypeActivation at: ast id. | 
-  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
-  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
-)
 computeArgumentTypes = (
    | result = List new: arguments size. |
    1 to: arguments size do: [:i <Integer> | result add: (computeArgumentType: (arguments at: i) for: (typeCallee parameters at: i))].
@@ -210,6 +205,11 @@ public typeCallee ^ <FunctionAST> = (
 	].
   callee_slot isKindOfFunctionAST ifFalse: [Error signal: 'Attempt to call non-function'].
   ^callee_slot
+)
+typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
+  | v <AST> = currentTypeActivation at: ast id ifAbsent: [typeCallStack first at: ast id]. | 
+  v baseType isKindOfFunctionAST ifTrue: [^v baseType].
+  Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
 )
 ) : (
 )

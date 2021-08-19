@@ -287,6 +287,13 @@ public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDime
 (* should we assert that result of map has the dimensions expected? *)
   ^map: f
 )
+public zip ^ <Hyperstream[T]> = (
+  | ds = dimensions copyFrom: 1 to: dimensions size. |
+  ds size > 1 ifTrue: [ds at:1 put: (dimensions at:2). ds at: 2 put: dimensions first].
+(* We really should support transpose, but this is enough for many cases *)
+#BOGUS.
+  ^HyperStream iteratingOver: (ReactiveZipIterator zipping: (window collect: [:s <HyperStream> | s iterator])) dimensions: ds
+)
 ) : (
 )
 public class UnboundedHyperStream iteratingOver: i <Iterator[HyperStream[T def]]> dimensions: ds <List[Integer | UnboundedDimension]>  = HyperStream rank: ds size (
@@ -448,7 +455,7 @@ public clone = (
 )
 class ReactiveZipIterator zipping: iters <List[Iterator]> = Iterator (
 (*
-Iterator for reactive function calls. Takes a list of iterators on the arguments, and produces an iterator for their zipped values. If any argument has a vaue ready, produce a list of zipped values. Iterators that do not have a next value re-use their previous values, which are kept in the lastValues slot. Of course, this can't work the first time  the iterator is called, since there are no \"previous values\".  This is a special case, tracked by the firstTime slot.
+Iterator for reactive function calls. Takes a list of iterators on the arguments, and produces an iterator for their zipped values. If any argument has a value ready, produce a list of zipped values. Iterators that do not have a next value re-use their previous values, which are kept in the lastValues slot. Of course, this can't work the first time  the iterator is called, since there are no \"previous values\".  This is a special case, tracked by the firstTime slot.
 *)
   |
   iterators <List[Iterator]> = iters.
@@ -456,9 +463,6 @@ Iterator for reactive function calls. Takes a list of iterators on the arguments
   lastValues <List> = List new: iterators size.
   |
 ) (
-public rank ^ <Integer> = (
-  ^iterators first rank
-)
 first ^ <List> = (
 (* Produce  the first value of the iterator.  This is a special case, as noted in the class comment.*)
   iterators do: [:iter <Iterator> |
@@ -495,6 +499,9 @@ public next ^ <List> = (
 )
 public clone = (
   ^class zipping: (iterators collect: [:i <iterator> | i clone])
+)
+public rank ^ <Integer> = (
+  ^iterators first rank + 1
 )
 ) : (
 )

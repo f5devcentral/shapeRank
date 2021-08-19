@@ -360,24 +360,26 @@ public isKindOfBlock = (
 )
 public class TensorAST expressions: es <List[ExprAST]> position: p <{Integer. Integer}> = super TensorAST expressions: es  position: p (
 ) (
-appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
-  e isKindOfTensorAST ifTrue: [
-  ds add: e expressions size.
-  appendDimensionsOf: e expressions first to: ds
-  ].
-   ^ds
-)
 public dimensions = (
   ^appendDimensionsOf: self to: List new
-)
-public eval  ^ <Tensor> = (
-  ^ Tensor dimensions: dimensions contents: (expressions flatMap: [:e <ExprAST> | e eval])
 )
 public hasRank ^ <Boolean> = (
    ^true
 )
 public rank ^ <Integer> = (
   ^dimensions size
+)
+public eval  ^ <Tensor> = (
+  | es = expressions flatMap: [:e <ExprAST> | e eval]. |
+  ^ Tensor dimensions: dimensions contents: es
+)
+appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
+  (*e isKindOfTensorAST ifTrue: [
+  ds add: e expressions size.
+  appendDimensionsOf: e expressions first to: ds
+  ].
+   ^ds*)
+   ^computeType dimensions
 )
 ) : (
 )
