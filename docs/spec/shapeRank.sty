@@ -245,6 +245,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\RBRACK{\keyword{]}}
 \def\LCURLY{\keyword{$\{$}}
 \def\RCURLY{\keyword{$\}$}}
+\def\SEMICOLON{\keyword{;}}
 \def\BIND{\keyword{=}}
 \def\COMMA{\keyword{,}}
 \def\DOT{\keyword{.}}
@@ -268,7 +269,9 @@ the ASCII CR character followed by the ASCII LF character
 \def\ParamList#1{\LPAREN{} \CommaList{#1}{} \RPAREN}
 \def\ParamListOp#1{\LPAREN{} \CommaListOp{#1}{} \RPAREN}
 
-\bnf{Program}{(\SYNC? \PROGRAM{} \synt{ProgramSignature})? \synt{Declaration}? \synt{Expression}}
+\bnf{Program}{(\SYNC? \PROGRAM{} \synt{ProgramSignature})? \synt{Declarations?} \synt{Expression}}
+
+% What about type parameters?
 
 \bnf {Parameter} {\VALIDENT{} \synt{RankSigSuffix}?}
 \bnf {ProgramParameter} {\VALIDENT{} \synt{TypeSigSuffix}}
@@ -281,6 +284,7 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {TypeParameter} {\TYPEPARAM{}}
 
 %% Declarations
+\bnf{Declarations} {\synt{Declaration}+ \SEMICOLON}
 \bnf {Declaration} {
   \PUBLIC{}?
   (\synt{LetBinding}
