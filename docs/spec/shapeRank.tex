@@ -72,7 +72,7 @@ A {\em scope} is a mapping from names to entities such as variables [\ref{letBin
 Declarations affect scopes by adding elements to them. 
 Modules [\ref{modules}], ShapeRank functions and where expressions [\ref{whereExpressions}] introduce scopes. 
 
-Let $s_1, s_2$ be scopes.  We write $s_1 \leftarrow s_2$, pronounced $s_1$ overridden by $s_2$, to denote the scope  which maps all names defined in $s_2$ to their values in $s_2$ and any other name to its mapping in $s_1$, if any. We write $\{id_1 \mapsto v_1, \ldots, id_n \mapsto v_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$,  $\{id_1 \mapsto v_1: T_1, \ldots, id_n \mapsto  v_n: T_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$ with type or type schema $T_i$, and $\{id_1 \rightsquigarrow  T_1, \ldots, id_n \rightsquigarrow T_n\}$ to denote a scope that associates $id_i$ with a type or type schema $T_i $ without regard to value, $i \in 1..n$.
+Let $s_1, s_2$ be scopes.  We write $s_1 \leftarrow s_2$, pronounced $s_1$ overridden by $s_2$, to denote the scope  which maps all names defined in $s_2$ to their values in $s_2$ and any other name to its mapping in $s_1$, if any. We write $\{id_1 \mapsto v_1, \ldots, id_n \mapsto v_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$,  $\{id_1 \mapsto v_1: T_1, \ldots, id_n \mapsto  v_n: T_n\}$ to denote a scope that defines $id_i$ and binds it to $v_i$ with type $T_i$, and $\{id_1 \rightsquigarrow  T_1, \ldots, id_n \rightsquigarrow T_n\}$ to denote a scope that associates $id_i$ with a type $T_i $ without regard to value, $i \in 1..n$.
 
 Scopes may nest. Nested scopes override their immediately enclosing scope: if a scope $s_{inner}$ is nested in a scope $s_{outer}$, then the effective scope is $s_{outer} \leftarrow s_{inner}$, and so all elements of $s_{outer}$ are {\em available in} $s_{inner}$ unless an element with the same name is added to $s_{inner}$.
 The scope of a function is always nested in the scope of its enclosing module. 
@@ -155,10 +155,12 @@ A {\em let binding} assigns a value to an identifier.
 
 Let  $l \triangleq $ \LET{} $ID$ \BIND{} $e$
 
-Let $s$ be the enclosing program's compile-time scope, and let $T$ be the type of $e$ in $s$.
-The effect of $l$ is that variable $ID$ is added to $s$, and the type $T$ is associated with $ID$ in $s$
+The {\em enclosing scope} of $l$ is the declaration scope [\ref{programsAndIO}] of the preceding declaration, or the initial declaration scope of the program if there is no preceding declaration.
 
-{\em sloppy; need to make sure we cannot have recursive references.}.
+Let $s$ be the enclosing scope, and let $T$ be the type of $e$ in $s$.
+The type $T$ is associated with $ID$ in $s$.
+
+It is a compile-time error if $e$ does not have a valid type in $s$.
 
 
 \section{Functions}
@@ -206,18 +208,18 @@ It is a compile-time error if $p_i = p_j, i \ne j$.
 
 Let $f \triangleq$ \FUNC{} $F\LPAREN{}p_1 R_1\COMMA{} \ldots\COMMA{} p_n R_n\RPAREN{}$  \BIND{} $e$.
 
+The {\em enclosing scope} of $f$ is the declaration scope [\ref{programsAndIO}] of the preceding declaration, or the initial declaration scope of the program if there is no preceding declaration.
+
 Processing of $f$  has the following effect:
 
-A binding of $F$ to $f$ is added to the compile-time scope of the enclosing program.
-
- Let $s_0$ be the compile-time scope of the enclosing program. % module or program?
+ Let $s_0$ be the enclosing scope of $f$. 
 A new scope $s$ is created, and is known as the {\em immediate scope of} $f$. The scope $s_0 \leftarrow s$ is known as {\em the compile-time scope of $f$}.
 
-{\em Thus, $s$ is nested in the enclosing module definition scope.}
+{\em Thus, $s$ is nested in the enclosing scope.}
 
 The variables $p_i$ are added to $s$, with ranks $r_i$, where $r_i$ is the rank specified by $R_i, i \in 1..n$.
 
-It is a compile-time error if the compile-time scope of the enclosing program contains another declaration named $F$.
+It is a compile-time error if the enclosing scope of $f$ contains another declaration named $F$.
 
 \subsection{External Function Declarations}
 \label{externalFunctionDeclarations}
@@ -482,7 +484,13 @@ A {\em program signature} specifies the name of the program as whole. In additio
 
 \TypeSigSuffix{}
 
-Each value parameter has a specification similar to that of an external function parameter \ref{externalFunctionDeclarations}.
+{\em What about type parameters? We don't yet allow them to be specified explicitly. Yet we do for external functions. TBD }
+
+The program's value parameters are all listed between parentheses.  Each value parameter has a specification consisting of its name, followed by a colon followed by either a type expression [\ref{typeExpressions}] or an external function signature [\ref{externalFunctionDeclarations}].
+
+{\em This is similar to the specification of external function parameters. However, unlike external function parameters, program parameters may be given a function type [\ref{functionTypes}].
+} 
+
 
 {\em
 We require type signatures for program parameters because program arguments (unlike function arguments) are unavailable at compile time and so we cannot
@@ -504,14 +512,18 @@ Thus, ShapeRank has no constructs for I/O in the traditional sense.
 
 If the keyword \SYNC precedes the keyword \PROGRAM, the program is synchronous [\ref{reactivityAndSynchronicity}], otherwise it is reactive.
 
-Let $preludeScope$ be a scope that binds the name of every built-in function [\ref{builtinFunctions}] $f$'s name to $f$.
-Let $declarationScope$ be a scope that binds the name of every declaration $d$ given in the the programs's list of declarations to $d$.
-Let $s$ be the scope $[p_i = a_i]$  where $p_i$ are the program's parameters, and $a_i$ the corresponding arguments.
+Let $p$ be a program with declarations $decl_1, \ldots, decl_n$ and expression $e_p$. Each declaration, $decl_k, k \in 1..n$, is either a function $v_k$ named $id_k$, or a let binding that binds identifier $id_k$ to a value $v_k$.
+Let $preludeScope$ be a scope that binds the name of every built-in function [\ref{builtinFunctions}] $f$'s  to $f$, and let $s_{args}$ be the scope $[p_i = a_i]$  where $p_i$ are the parameters of program $p$, and $a_i$ the corresponding arguments. The {\em initial declaration scope} of $p$ is $s_0 = preludeScope \leftarrow s_{args}$.
+The declaration scope, $s_k$ of declaration $decl_k$ is defined to be $s_{k-1}  \leftarrow [id_k = v_k],  k \in 1..n$.
 
-The {\em program scope} is $preludeScope \leftarrow declarationScope \leftarrow s$.  
-The program is well typed if its expression has valid type in the program scope.
+The {\em program scope} is $s_n$.  
+We say $p$ is well typed iff $e_p$ has valid type in the program scope.
 
-{\em Refine. This is inaccurate, as it does not preclude recursion.
+{\em
+The scope rules preclude recursion, since a function can only invoke functions defined earlier in the program, or in the standard prelude.
+}
+
+{\em 
 
 The above implies a program is typechecked once for every set of  arguments, but this is not true.  A program needs to be checked once for every type of its arguments. 
 
@@ -730,8 +742,8 @@ It is a compile-time error if $ar_i < pr_i, i \in 1..k$. It is a compile-time er
 
 {\em In such a situation, the specification of $common\_frame$ would be ambiguous. Consequently, no consistent replication of the arguments is possible.}
 
-If $F$ is a ShapeRank function declaration [\ref{shapeRankFunctionDeclaration}] then
-let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$. The the type of $c$ is
+If $F$ is a ShapeRank function declaration [\ref{shapeRankFunctionDeclarations}] then
+let $S$ be a scope, let $R$ be the type of the body of $F$ in scope $S <- [p_i = a_i], i = 1..k$. The the type of $c$ in scope $S$ is
 $shape(common\_frame), shape(R) baseType(R)$.
 
 % define baseType, scope override etc. Is shape(max_frame well defined now?
@@ -857,7 +869,7 @@ Evaluation of $m$ proceeds as follows:
 The value of $m$ is $v$ if the value of $e$ is a record scalar with a field $p$ with value $v$; otherwise it is the value of the call expression [\ref{calls}] $dot_T(e)$, where $dot_T$ is defined as if by the function declaration  [\ref{functions}] $\FUNC{}$ $dot_T(x) = x.p$.
 
 
-The type of $m$ scope $S$
+The type of $m$ in scope $S$
  is $T$ if the type of $e$ in $S$ is a scalar struct type [\ref{structTypes}] with a field $p$ with type $T$; otherwise it is the type of the call expression [\ref{calls}] $dot_T(e)$ in $S$, where $dot_T$ is defined as above.
 
 Let $T_e$ be the type of $e$ in scope $S$.  It is a compile-time error if the base type of $T_e$ is not a struct type with a member named $p$. 
@@ -1086,11 +1098,13 @@ The actual rules of type inference for each construct are given in the section d
   \subsubsection{Type Substitution}
   \label{typeSubstitution}
   
-  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{typeVariables}] to types, shapes and dimensions respectively. We write $[X_1 \to T_1, \ldots\, X_n \to T_n]$ to denote the substitution that maps $X_i$ to $T_i, i \in 1..n$. A substitution $[X_1 \to T_1, \ldots, X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each occurrence of $X_i$ in $T$ is replaced by $T_i ,i \in 1..n$.
+  A {\em type substitution} is a mapping of type, shape and dimension variables [\ref{typeVariables}] to types, shapes and dimensions respectively. We write $[X_1 \to T_1, \ldots\, X_n \to T_n]$ to denote the substitution that maps $X_i$ to $T_i, i \in 1..n$. A substitution $[X_1 \to T_1, \ldots, X_n \to T_n]$ may be {\em applied} to a type (respectively, shape or dimension) $T$, producing a new type (respectively, shape or dimension) where each free occurrence of $X_i$ in $T$ is replaced by $T_i ,i \in 1..n$.
   
-  {\em 
-  In our setting, only type schemas bind type , shape and dimension variables, and we only perform substitution on types, shapes and dimensions, so capture is not an issue.
-  }
+If any of the free type variables of $T_i$ is bound in the surrounding scope, it is renamed to avoid capture.
+
+{\em Define renaming.}
+
+% Reference definition of "free". 
   
 If $\theta$ is a substitution, we write $\theta T$ to denote the application of $\theta$ to $T$.
 
@@ -1157,7 +1171,7 @@ A {\em function type} describes the type of a function [\ref{functions}].
 A function type consists of a domain and a range. A {\em domain} is a list of types, composed from the types of the formal parameters of a function, in the order they appear in the function declaration. A {\em range} is a result type of a function. 
 We write a  function type as $T_1, \ldots, T_n \to T_r$, where $T_1, \ldots, T_n$ is the domain and $T_r$ is the range.
 
-Function types are used internally in this specification, but can only occur syntactically in external function declarations [\ref{externalFunctionDeclarations}].
+Function types are used internally in this specification, and can be indicated syntactically by external function signatures [\ref{externalFunctionDeclarations}]. These can only occur in program parameters [\ref{programsAndIO}].
 
 {\em 
 There are two reasons for this.  The base types of ShapeRank variables, other than program parameters, are always inferred. Furthermore, ShapeRank does not support user-defined higher order functions, and so users have no need to declare function signatures as types of parameters,
@@ -1193,9 +1207,9 @@ A {\em type variable} is either a {\em scalar type variable}, a {\em shape varia
 
 Scalar type, shape and dimension variables may be referred to as type, shape or dimension parameters respectively.
 
- The declaration of a program [\ref{programsAndIO}] or of an external function can be {\em parameterized} with one or more type variables. A parameterized declaration can be invoked (or instantiated) with different type arguments, allowing a single parameterized declaration to describe a family of (unparameterized) declarations. 
+ The declaration of a program [\ref{programsAndIO}] or of an external function [\ref{externalFunctionDeclarations}] can be {\em parameterized} with one or more type variables. A parameterized declaration can be invoked (or instantiated) with different type arguments, allowing a single parameterized declaration to describe a family of (unparameterized) declarations. 
  
- A type variable $t$ is said to {\em free} in some expression, type expression, type schema, signature or scope $x$ if $t$ is not declared in $x$.  More precisely, we define the {\em free type variables} of $x$ as follows:
+ A type variable $t$ is said to {\em free} in some expression, type expression, signature or scope $x$ if $t$ is not declared in $x$.  More precisely, we define the {\em free type variables} of $x$ as follows:
  
  
  $free(ID) = \{ID\}$ if $ID$ is a type variable or $\phi$ otherwise.
@@ -1219,32 +1233,34 @@ Scalar type, shape and dimension variables may be referred to as type, shape or 
  
  Let $p \triangleq T$.
  
- Let $t$ be the type variable bound to $T$ in the current compile-time scope. If $T$ is not bound in the current compile-time scope, then, if $p$ occurs within  the parameter list of a function signature [\ref{functions}],  a binding of $T$ to a fresh type variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the type variable bound to $T$ in the current compile-time scope. If $T$ is not bound in the current compile-time scope, then, if $p$ occurs within  the parameter list of an external function signature,  a binding of $T$ to a fresh type variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
  {\em 
-No explicit declaration of a type variable is needed. They are declared by their first use, provided the use occurs in a function signature. This restriction reduces the attendant risk of inadvertently introduced parameters; furthermore, since
+No explicit declaration of a type variable is needed. They are declared by their first use, provided the use occurs in an external function signature. This restriction reduces the attendant risk of inadvertently introduced parameters; furthermore, since
  actual type arguments are inferred, such inconsistencies are likely to be caught due to a mismatch between actuals and formals.
  } 
  
- It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
+ % what about program signatures?
+ 
+ It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of an external function signature.
  
  \paragraph{Dimension Variables.}
  
  Let $p \triangleq d$.
  
- Let $t$ be the dimension variable bound to $d$ in the current compile-time scope. If $d$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of $d$ to a fresh dimension variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the dimension variable bound to $d$ in the current compile-time scope. If $d$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of an external function signature,  a binding of $d$ to a fresh dimension variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
 
  
- It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
+ It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of an external function signature.
  
  \paragraph{Shape Variables.}
 
 
  Let $p \triangleq S$.
  
- Let $t$ be the shape variable bound to  $S$ in the current compile-time scope. If $S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of a function signature [\ref{functions}],  a binding of  $S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
+ Let $t$ be the shape variable bound to  $S$ in the current compile-time scope. If $S$ is not bound in the current compile-time scope, then, if $p$ occurs within the parameter list of an external function signature,  a binding of  $S$ to a fresh shape variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
- It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of a function signature.
+ It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of an external function signature.
  
 \subsubsection{Hyperstream Type Descriptors}
 \label{hyperstreamTypeDescriptors}
