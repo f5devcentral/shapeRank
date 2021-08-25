@@ -108,8 +108,7 @@ At any point in time, an unbounded stream has some number $n \ge 0$ of {\em avai
 A {\em hyperstream} consists of either a scalar or a stream [\ref{streams}], whose elements are hyperstreams, along with 
  its  {\em shape}. 
 
-The most elementary hyperstreams are {\em scalar hyperstreams}. These include  booleans [\ref{bool}], numbers [\ref{number}], strings [\ref{string}] and  structs [\ref{structTypes}]. A scalar hyperstream consists of a single scalar value.  We will often refer to scalar hyperstreams simply as scalars.
-%  functions are scalar hyperstreams too, but their  use is restricted.
+The most elementary hyperstreams are {\em scalar hyperstreams}. These include  booleans [\ref{bool}], numbers [\ref{number}], strings [\ref{string}] and  structs [\ref{structTypes}] and functions [\ref{functions}, \ref{functionTypes}]. A scalar hyperstream consists of a single scalar value.  We will often refer to scalar hyperstreams simply as scalars.
 
 A non-scalar hyperstream consists of a stream, $s$, of hyperstreams. All elements of $s$ must have a common type.
 We refer to $s$ as the {\em primary axis} of the hyperstream.
@@ -137,8 +136,7 @@ Informally, the term dimension may be used to denote an axis or its length. We m
 \subsection{Reactivity and Synchronicity}
 \label{reactivityAndSynchronicity}
 
-A program or function [\ref{functions}] is {\em reactive} if it may fire whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
-% define fire, or replace with run or execute
+A program or function [\ref{functions}] is {\em reactive} if it may execute whenever the number of available elements [\ref{streams}] of any of its inputs increases. Otherwise it is {\em synchronous}.
 
 \subsection{Access Control}
 \label{accessControl}
@@ -366,7 +364,7 @@ For documentation purposes, we use the signature notation used for external func
 $fold(f: P$ $T \to{}Q$ $S \to{}P$ $T, acc: P$ $T, x:[d\BANG]::R::Q $ $S): R::P $ $T $
 
 {\em
-The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (such a stream would have rank $rank(Q) +1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[d!]::R::Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of 'padding'. The overall result shape is padded by $R$.
+The signature above bears some explanation. The function $f$ expects its second argument to have shape $Q$, with rank: $rank(Q)$. The actual stream $x$ is not necessarily a stream of elements of shape $Q$ (such a stream would have rank $rank(Q) +1$); it may have rank $r \gt rank(Q) + 1$. We express this by defining the shape of $x$ to be $[d\BANG]::R::Q$, which ensures that $r = 1 + rank(R) + rank(Q)$. Thus $R$ expresses an extra degree of `padding'. The overall result shape is padded by $R$.
 
 The dimension $d$ is suffixed by \BANG{}, indicating that we require a bounded dimension (see [\ref{hyperstreamTypeDescriptors}]). If $d$ were unbounded, $fold$ might diverge.
 
@@ -400,7 +398,7 @@ The outerProduct function is similar to the concept of outer product in mathemat
 $outerProduct(f: S_1 $ $T_1 \to{} S_2 $ $T_2 \to{} S_3 $ $T_3, a: [d_1]::S_4::S_1 $ $T_1, b: [d_2]::S_5::S_2 $ $T_2): [d_1]::S_4::[d_2]::S_5::S_3 $ $T_3$
 
 {\em
-The signature includes 'padding' much like that of fold above. Here, either the elements of $a$ or of $b$, or both, may have ranks that are strictly greater than what is required by $f$.
+The signature includes `padding' much like that of fold above. Here, either the elements of $a$ or of $b$, or both, may have ranks that are strictly greater than what is required by $f$.
 Hence, each has its own distinct padding shape ($S_4$ and $S_5$ respectively).
 }
 
@@ -1142,7 +1140,7 @@ For each integer $n$, there exists a corresponding type consisting the singleton
 \subsubsection{String}
 \label{string}
 
-The predefined type \STRING{} is a sequence of zero or more Unicode code points. Equality and ordering of code points are defined by the Unicode standard. 
+The predefined type \STRING{} is the set of all sequences of zero or more Unicode code points. Equality and ordering of code points are defined by the Unicode standard. 
 The strings, $a = a_1, \ldots, a_n$ and $b = b_1, \ldots, b_n$ are equal iff $a_i = b_i, i \in 1..n$. Strings are ordered lexicographically., i.e., $a_1, \ldots, a_n < b_1, \ldots, b_m$ iff  either $a_1 < b_1$ or $a_1 = b1$ and $a_2, \ldots, a_n < b_2, \ldots, b_m$.
 
 The type \STRING{} is equal only to itself. 

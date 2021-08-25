@@ -369,12 +369,6 @@ public param ^ <CombinatorialParser[ParameterAST]> = (
 		  ParameterAST named: id_token value type: t position: {id_token start. t end}
 		]
 )
-public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
-  ^super shapeVariable wrap:
-		[:id <Token> |
-		  ShapeVariableReferenceAST named: id value position: {id start. id end}
-		]  
-)
 public typeVariable ^ <CombinatorialParser[TypeVariableReferenceAST]> = (
   ^super typeVariable wrap:
 		[:id_token <Token> |
@@ -433,6 +427,13 @@ public externalFunctionParam ^ <CombinatorialParser[ParameterAST]> = (
 		[:id_token  <Token> :colon <Token> :t <TypeAST> |
 		  ParameterAST named: id_token value type: t position: {id_token start. t end}
 		]
+)
+public shapeVariable ^ <CombinatorialParser[ShapeVariableAST]> = (
+  ^super shapeVariable wrapper:
+		[:idToken <Token> :bang <Token | Nil> |
+          | end = bang isNil ifTrue: [idToken end] ifFalse: [bang end]. |       
+		  ShapeVariableReferenceAST named: idToken value position: {idToken start. end}
+		]  
 )
 ) : (
 )
