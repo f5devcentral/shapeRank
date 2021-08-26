@@ -115,13 +115,13 @@ the ASCII CR character followed by the ASCII LF character
 
 \lex{EXPO}{({\keyword e} $|$ {\keyword E}) ({\keyword +} $|$ {\keyword -})? \FRAC}
 
-\lex{FLOAT}{
+\lex{FLOATLIT}{
 	 \FRAC{} {\keyword .} \FRAC{}? \EXPO{}?
 \alt \FRAC{} \EXPO{}?
 \alt {\keyword .} \FRAC{} \EXPO{}?
 }
 
-\lex{INT}{
+\lex{INTLIT}{
      ({\keyword 1} ... {\keyword 9})\FRAC?
 \alt {\keyword 0} lookahead $\notin$ {\keyword 0} ... {\keyword 9}
 \alt {\keyword 0} ({\keyword x} $|$ {\keyword X}) \HEX+
@@ -201,6 +201,7 @@ the ASCII CR character followed by the ASCII LF character
 \def\GT{\keyword{\gt}}
 \def\LTE{\keyword{\lt=}}
 \def\GTE{\keyword{\gt=}}
+\def\LTCOLON{\keyword{\lt:}}
 
 \def\NUMBER{\keyword{Number}}
 \def\NUM{\keyword{Num}}
@@ -312,19 +313,23 @@ the ASCII CR character followed by the ASCII LF character
   \QUESTIONMARK \alt \synt{[]+}
 }
 
+
+\bnf{ScalarTypeVar}  {\synt{TYPEPARAM} \synt{TypeBound}?}
+\bnf{TypeBound} {\LTCOLON{} \synt{ElementType}}
+
 \bnf{ElementType}{
-  \synt{TYPEPARAM}
+  \synt{ScalarTypeVar}
   \alt \synt{RefType}
   \alt \synt{BuiltinType}
   \alt \synt{StructType}
 }
 
-\bnf {BuiltinType} {\BOOL{}  \alt \NUM{} \alt \STRING{}}
+\bnf {BuiltinType} {\BOOL{}  \alt \NUM{} \alt \INT \alt \FLOAT \alt \STRING{} \alt \INTLIT}
 \bnf {HyperstreamType} {\synt{Shape}? \synt{ElementType}}
 \bnf {PropertySig} {\synt{PropertyName} \COLON \synt{TypeSig}}
 \bnf {RefType} {\TYPEIDENT{} }
 \bnf {StructType} {\LCURLY{} \CommaListOp{\synt{PropertySig}} \RCURLY{}}
-\bnf{Dimension}{\INT{} \alt \DIMPARAM{} \BANG? \alt \synt{Dimension + Dimension} \alt \UNKNOWNDIM}
+\bnf{Dimension}{\INTLIT{} \alt \DIMPARAM{} \BANG? \alt \synt{Dimension + Dimension} \alt \UNKNOWNDIM}
 \bnf{Shape}{\SHAPEPARAM  \BANG? \alt \synt{Shape :: Shape} \alt \synt{[Dimension?]*}}
 
 % Expressions
@@ -353,7 +358,7 @@ the ASCII CR character followed by the ASCII LF character
   \alt \synt{FunctionCall}
   \alt \synt{PrimitiveExpression}
 }
-\bnf{RerankExpression}{\RERANK{} \synt{IdentifierExpression} \TO{} \INT{} (\COMMA{} \INT{})*}
+\bnf{RerankExpression}{\RERANK{} \synt{IdentifierExpression} \TO{} \INTLIT{} (\COMMA{} \INTLIT{})*}
 \bnf{ShapeCastExpression}{\SHAPECAST{} \synt{Expression} \TO{} \synt{Shape}}
 \bnf {IndexExpression} {\synt{MemberExpression} \LBRACK{} \synt{Expression} \RBRACK{}}
 \bnf {DotExpression} {\synt{MemberExpression} \DOT{} \synt{PropertyName}}
@@ -378,5 +383,5 @@ the ASCII CR character followed by the ASCII LF character
 \bnf {StructLiteral} {\LCURLY{} \CommaListOp{\synt{Property}} \RCURLY{}}
 \bnf {Property} {\synt{PropertyName} \COLON{} \synt{Expression}}
 \bnf {StringLiteral} {\DQSTRING \alt \BTSTRING \alt \TDQSTRING}
-\bnf {NumberLiteral} {\FLOAT \alt \INT}
+\bnf {NumberLiteral} {\FLOATLIT \alt \INTLIT}
 \bnf {HyperstreamLiteral} {\LBRACK{} \CommaList{\synt{Expression}} \RBRACK{}}

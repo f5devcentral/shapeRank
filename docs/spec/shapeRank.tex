@@ -1032,11 +1032,12 @@ A {\em shape cast expression} can be used to dynamically test whether the shape 
 
 Let $sc \triangleq \SHAPECAST{}$ $e$ $\TO{}$ $s$.
 Let $s_e T_e$ be the type of $e$ in scope $S$, and let $v$ be the value of $e$.
-Then, if the shape of $v$ is compatible with $s$, the value of $sc$ is $v$, otherwise a runtime error occurs. The type of $sc$ in scope $S$ is $s T_e$. 
+Then, if the shape of $v$ is compatible [\ref{hyperstreamTypes}]  with $s$, the value of $sc$ is $v$, otherwise a runtime error occurs. The type of $sc$ in scope $S$ is $s T_e$. 
 
-It is a compile-time error if the $s_e$ is not compatible $s$.
+It is a compile-time error if the  shape $s_e$ is not compatible with $s$.
 
-Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible} if either $d_{1i} = d_{2i}$, or $d_{1i} = \QUESTIONMARK{}$ or  $d_{2i} = \QUESTIONMARK{}, i \in 1..r$
+% Is a cast operator even needed in the new setting?  Yes.  For incoming parameters, but also for typecasing inside a function
+
 
 \subsection{Where Expressions}
 \label{whereExpressions}
@@ -1106,6 +1107,13 @@ If any of the free type variables of $T_i$ is bound in the surrounding scope, it
   
 If $\theta$ is a substitution, we write $\theta T$ to denote the application of $\theta$ to $T$.
 
+\subsubsection{Subtyping}
+\label{subtyping}
+
+A type $T$ is a subtype of type $S$, written $T \LTCOLON{} S$, if a value of type $T$ can be used in any context where a value  of type $S$ is expected. Subtyping is reflexive and transitive.
+
+Subtyping rules for specific types are given in the sections describing those types.
+
 
 \subsection{Scalar Types}
 \label{scalarTypes}
@@ -1118,23 +1126,23 @@ The predefined type \BOOL{} contains the values true and false.  A boolean value
 \subsubsection{Num}
 \label{number}
 
- The predefined type \NUM{} consists of the types \INT{} and \FLOAT. The type \NUM{} is equal only to itself. 
+ The predefined type \NUM{} consists of the types \INT{} and \FLOAT. The type \NUM{} is equal only to itself.
  
 \subsubsection{Int}
 \label{int}
 
-The predefined type \INT} consists of the integers. Equality and ordering are as defined for the integers in mathematics. The type \INT{} is equal only to itself.
+The predefined type \INT} consists of the integers. Equality and ordering are as defined for the integers in mathematics. The type \INT{} is equal only to itself, and is a subtype  [\ref{subtyping}] of type \FLOAT{}:  $\INT \LTCOLON{} \FLOAT$
 
 
 \subsubsection{Float}
 \label{float}
 
-The predefined type \FLOAT{} consists of the set of IEEE double precision floating point values.  Equality and ordering are defined by the IEEE floating point standard.  The type \FLOAT{} is equal only to itself.
+The predefined type \FLOAT{} consists of the set of IEEE double precision floating point values.  Equality and ordering are defined by the IEEE floating point standard.  The type \FLOAT{} is equal only to itself and is a subtype [\ref{subtyping}] of type \NUM{}: $\FLOAT \LTCOLON{} \NUM$.
  
 \subsubsection{Integer Singleton Types}
 \label{integerSingletonTypes}
 
-For each integer $n$, there exists a corresponding type consisting the singleton set of values $\{n\}$. 
+For each integer $n$, there exists a corresponding type consisting the singleton set of values $\{n\}$. For all  integer singleton types $K, K \LTCOLON{} \INT$  [\ref{subtyping}].
 
 
 \subsubsection{String}
@@ -1161,6 +1169,8 @@ The type \LCURLY{}$f_1 \COLON{} T_1$\COMMA{} \ldots\COMMA{}  $f_k \COLON{} T_k$\
 Structs are lexicographically ordered if we view structs as maps from field names to field values. 
 }
 
+ShapeRank supports both width and depth subtyping [\ref{subtyping}] on record types. \footnote{supporting width subtyping implies that tensors of structs must box them, as the size of all elements cannot be guaranteed to be the same.} 
+
 \subsubsection{Function Types}
 \label{functionTypes}
 
@@ -1176,11 +1186,28 @@ There are two reasons for this.  The base types of ShapeRank variables, other th
 with the exception of external functions declared as program parameters.
 }
 
+Function subtyping [\ref{subtyping}] follows standard contravariant parameters/covariant return type rules. 
+
 
 \subsection{Hyperstream Types}
 \label{hyperstreamTypes} 
 
 A {\em hyperstream type} is a pair of a shape \ref{concepts} and a scalar type \ref{scalarTypes}. The scalar type component of a hyperstream type is known as its {\em base type}. The hyperstream type $(S,  T)$ denotes the set of hyperstreams of shape $S$ with elements of scalar type $T$. We often write $S$ $T$ to denote $(S,  T)$.
+
+A hyperstream type $t_1$ is a subtype [\ref{subtyping}]  of another hyperstream type $t_2$ iff they have the compatible shape and the base type of $t_1$ is a subtype of the base type of $t_2$. 
+
+Two shapes $s_1 = [d_{11} \ldots d_{1r}], s_1 = [d_{21} \ldots d_{2r}]$ of the same rank $r$ are {\em compatible}, written $s_1 \LTCOLON s_2$, if either $d_{1i} \LTCOLON d_{2i}, i \in 1..r$.
+
+{\em 
+A shape $s_1$ is compatible with shape $s_2$ iff all their dimensions are compatible.
+}
+
+ Two dimensions $d_1$ and $d_2$ are compatible , written $d_1 \LTCOLON d_2$, if 
+\begin{itemize}
+\item  $d_1 = d_2$ or 
+\item $d_2 = \QUESTIONMARK$.
+\item $d_1 = \QUESTIONMARK$ and $d_2$ is not of the form $d\BANG$.
+\end{itemize}
 
 
 \subsection{Type Expressions}
@@ -1233,14 +1260,21 @@ Scalar type, shape and dimension variables may be referred to as type, shape or 
  
  Let $t$ be the type variable bound to $T$ in the current compile-time scope. If $T$ is not bound in the current compile-time scope, then, if $p$ occurs within  the parameter list of an external function signature,  a binding of $T$ to a fresh type variable $t$ is added to the current compile-time scope. In either case, $p$ denotes  $t$. 
  
+ \ScalarTypeVar
+ 
  {\em 
 No explicit declaration of a type variable is needed. They are declared by their first use, provided the use occurs in an external function signature. This restriction reduces the attendant risk of inadvertently introduced parameters; furthermore, since
  actual type arguments are inferred, such inconsistencies are likely to be caught due to a mismatch between actuals and formals.
  } 
  
+ A scalar type variable may optionally include a {\em bound}, which indicates that the type variable represents a type that is a subtype of the type given as the bound.
+ Such a type variable is said to be {\em bounded} or {\em constrained}.
+ 
+  \TypeBound
  % what about program signatures?
  
  It is a compile-time error if $p$ is neither available in the enclosing compile-time scope, nor enclosed in the parameter list of an external function signature.
+ It is a compile-time error if more than one occurrence of a type variable  $t$ introduces a bound.
  
  \paragraph{Dimension Variables.}
  
@@ -1300,6 +1334,8 @@ A shape descriptor takes one of the following forms:
  A {\em scalar type descriptor} is either a type variable [\ref{typeVariables}] or one of \BOOL [\ref{bool}],  \NUM,[\ref{number}] \INT, \FLOAT, \STRING [\ref{string}], an integer literal [\ref{integerSingletonTypes}], or a struct type [\ref{structTypes}].
  
  \ElementType
+\RefType
+\BuiltinType
 
 
 \section{Lexical Rules}
