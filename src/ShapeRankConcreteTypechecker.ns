@@ -1261,6 +1261,18 @@ public externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatu
   |
   ^fun
 )
+primitiveZip ^ <FunctionAST> = (
+(* zip(t: [d1][d2]::@S$T):[d2][d1]::@S $T *)
+  | result <FunctionAST> = super primitiveZip. |
+
+  result body typeBlock: [:t <ConcreteType> | 
+      | newDims = List withAll: t dimensions. |
+      newDims at: 1 put: (t dimensions at: 2).
+      newDims at: 2 put: (t dimensions at: 1).      
+      ConcreteType dimensions: newDims baseType: t baseType
+	]. 
+  ^result
+)
 ) : (
 )
 ) : (

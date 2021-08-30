@@ -605,40 +605,6 @@ public IdentifierAST = (
 Tensor ^ <Class> = (
   subclassResponsibility
 )
-addPrimitives = (
- addHOFs.
- primitives
-   add: primitiveAppend;
-   add: primitiveArgmax;
-   add: primitiveContains;
-   add: primitiveDivide;
-   add: primitiveEquals;
-   add: primitiveIf;
-   add: primitiveIota;
-   add: primitiveLength;
-   add: primitiveMakeTensor;
-   add: primitiveMask;
-   add: primitiveModulus;
-   add: primitiveMinus;
-   add: primitiveAnd;
-   add: primitiveOr;
-   add: primitiveLt;
-   add: primitiveGt;
-   add: primitiveLeq;
-   add: primitiveGeq;
-   add: primitiveExp;
-   add: primitiveLog;
-   add: primitiveNot;
-   add: primitiveNegate;
-   add: primitivePlus;
-   add: primitivePower;
-   add: primitiveRange;
-   add: primitiveRotate;
-   add: primitiveShapeOf;
-   add: primitiveTimes;
-   add: primitiveToList;
-   add: primitiveTranspose
-)
 public addPreludeWithParser: parser = (
   addPrelude: '' withParser: parser.
 )
@@ -1480,6 +1446,62 @@ func crossEntropyLoss(p: [], q: []) = reduce(+, 0, crossEntropy(p,q))/length(p)
 api ^ <NodeAPI> = (
   (* Expose method in lexical scope to subclasses *)
   ^outer ShapeRankScopes api
+)
+addPrimitives = (
+ addHOFs.
+ primitives
+   add: primitiveAppend;
+   add: primitiveArgmax;
+   add: primitiveContains;
+   add: primitiveDivide;
+   add: primitiveEquals;
+   add: primitiveIf;
+   add: primitiveIota;
+   add: primitiveLength;
+   add: primitiveMakeTensor;
+   add: primitiveMask;
+   add: primitiveModulus;
+   add: primitiveMinus;
+   add: primitiveAnd;
+   add: primitiveOr;
+   add: primitiveLt;
+   add: primitiveGt;
+   add: primitiveLeq;
+   add: primitiveGeq;
+   add: primitiveExp;
+   add: primitiveLog;
+   add: primitiveNot;
+   add: primitiveNegate;
+   add: primitivePlus;
+   add: primitivePower;
+   add: primitiveRange;
+   add: primitiveRotate;
+   add: primitiveShapeOf;
+   add: primitiveTimes;
+   add: primitiveToList;
+   add: primitiveTranspose;
+   add: primitiveZip
+)
+primitiveZip ^ <FunctionAST> = (
+(* zip(t: [d1][d2]::@S$T): [d2][d1]::@S $T *)
+  | 
+  S = ShapeVariableReferenceAST named: #S position: {0. 0}.
+  T = TypeVariableReferenceAST named: #T position: {0. 0}.
+  d1 = DimensionVariableReferenceAST named: #d1 position: {0. 0}.
+  d2 = DimensionVariableReferenceAST named: #d2 position: {0. 0}. 
+  sv1 = ShapeVectorAST dimensions: {d1. d2} position: {0. 0}.
+  s1 = ShapeAppendAST shape: sv1 to: S  position: {0. 0}.  
+  t1 = TensorTypeAST shape: s1 type: T position: {0. 0}.
+  sv2 = ShapeVectorAST dimensions: {d2. d1} position: {0. 0}.
+  s2 = ShapeAppendAST shape: sv2 to: S  position: {0. 0}.   
+  p = ParameterAST named: #tensor type: t1 position: {0. 0}.
+  body = PrimitiveBodyAST block: [:t <Tensor> | 
+      t isKindOfBoundedHyperStream ifFalse: [Error signal: 'zip only supported for bounded streams'].
+      t zip
+	]. 
+  returnType = TensorTypeAST shape: s2 type: T position: {0. 0}. 
+  |
+  ^FunctionAST named: #zip parameters: {p} returnType: returnType body: body position: {0. 0}
 )
 ) : (
 )
