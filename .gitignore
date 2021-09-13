@@ -9,3 +9,4 @@ examples/build/*.o
 examples/build/*.out
 examples/build/*.h.gch
 examples/build/myApp
+**/yarn.lock
