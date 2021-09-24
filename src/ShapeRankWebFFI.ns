@@ -27,27 +27,27 @@ public class FFI parser: p <ShapeRankParser Parser> = (
 public api ^ <NodeAPI> = (
   ^outer ShapeRankWebFFI api
 )
-public nodeFunction: fn <String> ofModule: mname <String> signature: s <String> ^ <FunctionAST> = (
-  |
-  d = DescriptorForNode module: mname function: fn.
-  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
-  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
-  |
-  ^FunctionAST named: fn parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}
-)
-functionFromDescriptor: d signature: s <String> ^ <FunctionAST> = (
-  |
-  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
-  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
-  |
-  ^FunctionAST named: d functionName parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}
-)
 public newspeakFunction: fn <String> ofObject: o <Object> signature: s <String> ^ <FunctionAST> = (
   | d = DescriptorForNewspeak object: o function: fn. |
   ^functionFromDescriptor: d  signature: s
 )
 public isKindOfFFI ^ <Boolean> = (
   ^true
+)
+public nodeFunction: fn <String> ofModule: mname <String> signature: s <String> ^ <FunctionAST> = (
+  |
+  d = DescriptorForNode module: mname function: fn.
+  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
+  |
+  ^FunctionAST named: fn parameters: sig parameters returnType: sig returnType body: body isSync: false position: {0. 0}
+)
+functionFromDescriptor: d signature: s <String> ^ <FunctionAST> = (
+  |
+  sig <ExternalFunctionSignature> = parser externalFunctionSignature parseString: s.
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST descriptor: d signature: sig.
+  |
+  ^FunctionAST named: d functionName parameters: sig parameters returnType: sig returnType body: body isSync: false position: {0. 0}
 )
 ) : (
 )

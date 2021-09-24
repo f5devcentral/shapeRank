@@ -167,15 +167,6 @@ computeCallType: callee <FunctionAST> arguments: args <List[ConcreteType]> = (
 	].
   ^resultFrame asConcreteType.  
 )
-resolveParameterToFunction: ast <ParameterAST> = (
-  | 
-  t <TypeAST> = ast type. 
-  sig <ExternalFunctionSignature> = 
-      t isKindOfExternalFunctionSignatureAST ifTrue: [t] ifFalse: [Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'].
-  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig. 
-  |
-  ^FunctionAST named: ast id parameters: sig parameters returnType: sig returnType body: body isSync: true  position: {0. 0}
-)
 typecheckerResolveToFunction: ast <AST> ^ <FunctionAST> = (
   ^ast isKindOfFunctionAST ifTrue: [ast] ifFalse: [
 		ast isKindOfLetAST ifTrue: [ast expression etaExpansion] ifFalse: [
@@ -210,6 +201,15 @@ typecheckerResolveParameterToFunction: ast <ParameterAST> ^ <FunctionAST> = (
   | v <AST> = currentTypeActivation at: ast id ifAbsent: [typeCallStack first at: ast id]. | 
   v baseType isKindOfFunctionAST ifTrue: [^v baseType].
   Error signal: 'Parameter ', ast id, ' is called as a function but is not bound to a function'
+)
+resolveParameterToFunction: ast <ParameterAST> = (
+  | 
+  t <TypeAST> = ast type. 
+  sig <ExternalFunctionSignature> = 
+      t isKindOfExternalFunctionSignatureAST ifTrue: [t] ifFalse: [Error signal: 'Parameter ', ast id, ' is called as a function but is not of function type'].
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig. 
+  |
+  ^FunctionAST named: ast id parameters: sig parameters returnType: sig returnType body: body isSync: false  position: {0. 0}
 )
 ) : (
 )
@@ -1254,13 +1254,6 @@ fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | Un
 programScope ^ <Scope> = (
   ^super programScope
 )
-public externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
-  |
-  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
-  fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: true position: {0. 0}.
-  |
-  ^fun
-)
 primitiveZip ^ <FunctionAST> = (
 (* zip(t: [d1][d2]::@S$T):[d2][d1]::@S $T *)
   | result <FunctionAST> = super primitiveZip. |
@@ -1272,6 +1265,13 @@ primitiveZip ^ <FunctionAST> = (
       ConcreteType dimensions: newDims baseType: t baseType
 	]. 
   ^result
+)
+public externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatureAST> ^ <FunctionAST> = (
+  |
+  body <ExternalFunctionBodyAST> = ExternalFunctionBodyAST signature: sig.
+  fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: false position: {0. 0}.
+  |
+  ^fun
 )
 ) : (
 )
