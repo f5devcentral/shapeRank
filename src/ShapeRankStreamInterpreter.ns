@@ -374,12 +374,12 @@ public eval  ^ <Tensor> = (
   ^ Tensor dimensions: dimensions contents: es
 )
 appendDimensionsOf: e <ExprAST> to: ds <List[Integer]> ^  <List[Integer]> = (
-  (*e isKindOfTensorAST ifTrue: [
+  e isKindOfTensorAST ifTrue: [
   ds add: e expressions size.
   appendDimensionsOf: e expressions first to: ds
   ].
-   ^ds*)
-   ^computeType dimensions
+   ^ds
+   (*^computeType dimensions*)
 )
 ) : (
 )
