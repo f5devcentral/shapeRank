@@ -1462,7 +1462,7 @@ primitiveApply ^ <FunctionAST> = (
 )
 public addPrelude: str withParser: parser = (
   | preludeStr = 'func twice(x) = 2*x  
-func rank(t) = length(shapeOf(t))
+func rank(t: ?) = length(shapeOf(t))
 func dotProduct(a: [], b: []) = reduce(+, 0, a*b)
 func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
 let timesVec = rerank * to 1, 1
