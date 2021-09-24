@@ -1426,23 +1426,6 @@ primitiveApply ^ <FunctionAST> = (
   |
   ^FunctionAST named: #apply parameters: {p1. p2} returnType: rt body: body position: {0. 0}
 )
-public addPrelude: str withParser: parser = (
-  | preludeStr = 'func twice(x) = 2*x  
-func rank(t) = length(shapeOf(t))
-func dotProduct(a: [], b: []) = reduce(+, 0, a*b)
-func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
-let timesVec = rerank * to 1, 1
-let reduceByRow = rerank fold to 0, 0 ,1
-func matVecmul(m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m))
-func matmul(a: ?, b: ?) = innerProduct(a, b, +, *)
-func !=(a, b) = not(a == b)
-func avg(v: []) = reduce(+, 0, v)/length(v)
-func softmax(a: []) = exp(a)/reduce(+, 0, exp(a))
-func crossEntropy(p: [], q: []) = negate(p*log(q))
-func crossEntropyLoss(p: [], q: []) = reduce(+, 0, crossEntropy(p,q))/length(p)
-', str. |
-  (parser prelude parseString: preludeStr) do: [:ast | prelude add: ast ].
-)
 api ^ <NodeAPI> = (
   (* Expose method in lexical scope to subclasses *)
   ^outer ShapeRankScopes api
@@ -1502,6 +1485,23 @@ primitiveZip ^ <FunctionAST> = (
   returnType = TensorTypeAST shape: s2 type: T position: {0. 0}. 
   |
   ^FunctionAST named: #zip parameters: {p} returnType: returnType body: body position: {0. 0}
+)
+public addPrelude: str withParser: parser = (
+  | preludeStr = 'func twice(x) = 2*x  
+func rank(t: ?) = length(shapeOf(t))
+func dotProduct(a: [], b: []) = reduce(+, 0, a*b)
+func vecMatmul(v: [], m: [][]) = fold(+, 0, v*m)
+let timesVec = rerank * to 1, 1
+let reduceByRow = rerank fold to 0, 0 ,1
+func matVecmul(m: [][], v: []) = reduceByRow(+, 0, timesVec(v, m))
+func matmul(a: ?, b: ?) = innerProduct(a, b, +, *)
+func !=(a, b) = not(a == b)
+func avg(v: []) = reduce(+, 0, v)/length(v)
+func softmax(a: []) = exp(a)/reduce(+, 0, exp(a))
+func crossEntropy(p: [], q: []) = negate(p*log(q))
+func crossEntropyLoss(p: [], q: []) = reduce(+, 0, crossEntropy(p,q))/length(p)
+', str. |
+  (parser prelude parseString: preludeStr) do: [:ast | prelude add: ast ].
 )
 ) : (
 )
