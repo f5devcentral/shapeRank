@@ -1241,16 +1241,6 @@ primitiveNegate ^ <FunctionAST> = (
     ]. 
   ^result
 )
-fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
- | result <List[Integer | UnboundedDimension]> = List new. |
-  assert: ds1 size = ds2 size message: 'Internal error in fusing dimensions'.
-  ds1 with: ds2 do: [:d1 <Integer | UnboundedDimension> : d2 <Integer | UnboundedDimension> |
-    (d1 isKindOfUnboundedDimension or: [d2 isKindOfUnboundedDimension]) 
-       ifTrue: [result add: dynamic]
-       ifFalse: [d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes! ', d1 printString, ' != ', d2 printString]].
-  ].
-  ^result
-)
 programScope ^ <Scope> = (
   ^super programScope
 )
@@ -1272,6 +1262,24 @@ public externalFunctionNamed: n <String> signature: sig <ExternalFunctionSignatu
   fun <FunctionAST> =  FunctionAST named: n parameters: sig parameters returnType: sig returnType body: body isSync: false position: {0. 0}.
   |
   ^fun
+)
+fuseDims: ds1 <List[Integer | UnboundedDimension]> with: ds2  <List[Integer | UnboundedDimension]> ^ <List[Integer | UnboundedDimension]> = (
+(* 
+Fuse the dimension vectors ds1 and ds2 into one vector that is compatible with both.
+Compatible means: same length and pointwise, either the elements are equal, or at least one is ?. 
+*)
+ | result <List[Integer | UnboundedDimension]> = List new. |
+  assert: ds1 size = ds2 size message: 'Internal error in fusing dimensions'.
+  ds1 with: ds2 do: [:d1 <Integer | UnboundedDimension> :d2 <Integer | UnboundedDimension> |
+    (d1 isKindOfUnboundedDimension or: [d2 isKindOfUnboundedDimension]) 
+       ifTrue: [ (* The fused result uses ? at any index where one of the elements is ?. *)
+          result add: dynamic
+       ]
+       ifFalse: [ (* Neither element is ?.  If they're  equal, pick one. Otherwise we have an error.  *)
+         d1 = d2 ifTrue: [result add: d1] ifFalse: [Error signal: 'Frames are  not prefixes! ', d1 printString, ' != ', d2 printString]
+       ].
+  ].
+  ^result
 )
 ) : (
 )
