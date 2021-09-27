@@ -1,4 +1,4 @@
-var chokidar = require('chokidar')
+var chokidar = require('chokidar');
 var { exec, spawn } = require('child_process');
 
 function getFiles(path, closure) {
@@ -7,21 +7,21 @@ function getFiles(path, closure) {
 
 function concatDeps(deps) {
     // convert deps into a single string 
-    var result = ''
-    for d in deps {
-      result = result ++ d ++ ' '
+    var result = '';
+    for (var d in deps) {
+	result = result + d + ' ';
     }
-    return result
+    return result;
 }
 
 function clang(target, deps, flags) {
-    exec('cc -c ' ++ target ++ ' ' ++ concatDeps(deps))
+    exec('cc -c ' + target + ' ' + concatDeps(deps));
 }
 
 function basicLink(target, deps, flags) {   
-    exec('cc ' ++ flags ++ ' ' ++ target ++ '-Wl '++ concatDeps(deps)) 
+    exec('cc ' + flags + ' ' + target + '-Wl '+ concatDeps(deps)); 
 }
 
-exports.getFiles = getFiles
-exports.clang = clang
+exports.getFiles = getFiles;
+exports.clang = clang;
 exports.basicLink = basicLink

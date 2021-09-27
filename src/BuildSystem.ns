@@ -71,31 +71,6 @@ public getFile: path  <String> ^ <HyperStream> = (
      ].
   ^stream
 )
-public link: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
-| deps = JSArray new: ds size. |
-  (* ds should be a hyperstream of shape [k] for some finite k; we need to create a k-array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
-  watcher basicLink: path dependencies: deps flags: s.
-  ^HyperStream fromScalar: path
-)
-public cc: path <String> dependencies: ds  <HyperStream[String]> flags: s <String>  ^ <HyperStream> = (
-  | prefix <String> = path copyFrom: 1 to path size -2. deps = JSArray new: ds size. |
-  (* ds should be bounded hyperstream; we need to create an array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
-  1 to: ds size do: [:i | deps at: i put: ds iterator next].
-  watcher clang: path dependencies: deps flags: s.
-  ^HyperStream fromScalar: prefix, '.o'
-)
-public run = (
-  | 
-  shapeRankProgram = parser program parseString: shapeRankSource. 
-  raw_args = {
-    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
-    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
-    ffi newspeakFunction: #link:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.    
-    }.
-    args = raw_args collect: [:ra | HyperStream fromScalar: ra].
-  |
-  shapeRankProgram evaluateWithArguments: args.
-)
 shapeRankSource ^ <String> = (
   ^'
   program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [?]String, flags: String): String)
@@ -110,6 +85,45 @@ shapeRankSource ^ <String> = (
    cc("Users/gbracha/shapeRank/f5/shapeRank/examples/c.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/c.h"], "-c")                          
 ], "") 
   '
+)
+public run = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.   
+    ffi newspeakFunction: #link:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'.    
+    }.
+    args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+shapeRankSource3 ^ <String> = (
+  ^'
+  program build(clang: (target: String, deps: [?]String, flags: String): String)
+  
+   clang("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c")
+   '
+)
+public run3 = (
+  | shapeRankProgram = parser program parseString: shapeRankSource3. |
+  ^shapeRankProgram evaluateWithArguments: {
+      HyperStream fromScalar:
+       (ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String')
+    }.
+)
+public cc: path <String> dependencies: ds  <BoundedHyperStream[String]> flags: s <String>  ^ <ScalarHyperStream[String]> = (
+  | prefix <String> = path copyFrom: 1 to: path size -2. deps = JSArray new: ds size. |
+  (* ds should be bounded hyperstream of rank 1; we need to create an array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
+  1 to: ds size do: [:i | deps at: i put: ds iterator next constant].
+  watcher clang: path dependencies: deps flags: s.
+  ^HyperStream fromScalar: prefix, '.o'
+)
+public link: path <String> dependencies: ds  <BoundedHyperStream[String]> flags: s <String>  ^ <ScalarHyperStream[String]> = (
+| deps = JSArray new: ds size. |
+  (* ds should be a hyperstream of shape [k] for some finite k; we need to create a k-array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
+  watcher basicLink: path dependencies: deps flags: s.
+  ^HyperStream fromScalar: path
 )
 ) : (
 )
