@@ -62,15 +62,6 @@ shapeRankSource2  ^ <String> = (
   getFile("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c")
  '
 )
-public getFile: path  <String> ^ <HyperStream> = (
-  | stream <HyperStream> = HyperStream extensible. |
-  stream iterator add: path.
- watcher getFiles: path do: [:filepath <String> | 
-     stream iterator add: path.
-     nil
-     ].
-  ^stream
-)
 shapeRankSource ^ <String> = (
   ^'
   program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String, basicLink: (target: String, deps: [?]String, flags: String): String)
@@ -122,8 +113,103 @@ public cc: path <String> dependencies: ds  <BoundedHyperStream[String]> flags: s
 public link: path <String> dependencies: ds  <BoundedHyperStream[String]> flags: s <String>  ^ <ScalarHyperStream[String]> = (
 | deps = JSArray new: ds size. |
   (* ds should be a hyperstream of shape [k] for some finite k; we need to create a k-array of its elements and pass that down to JS.  Because of the problem with expat arrays, it needs to be a JS array. *)
+  1 to: ds size do: [:i | deps at: i put: ds iterator next constant].
   watcher basicLink: path dependencies: deps flags: s.
   ^HyperStream fromScalar: path
+)
+shapeRankSource4 ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String)
+    func cc(target, deps: [], flags) = clang(getFile(target), zip(getFile(deps)), flags);
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c")
+   '
+)
+public run4 = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource4. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'}.
+  args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+shapeRankSource5 ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String)
+    func cc(target, deps: [], flags) = clang(target, deps, flags);
+   cc("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c")
+   '
+)
+shapeRankSource6 ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String)
+  
+   clang(getFile("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c"), zip(getFile(["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"])), "-c")
+   '
+)
+public run5 = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource5. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'}.
+  args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+public run6 = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource6. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'}.
+  args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+shapeRankSource7 ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String)
+  
+   clang("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c", zip(getFile(["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"])), "-c")
+   '
+)
+public run7 = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource7. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'}.
+  args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+public run8 = (
+  | 
+  shapeRankProgram = parser program parseString: shapeRankSource8. 
+  raw_args = {
+    ffi newspeakFunction: #getFile: ofObject: self signature: '(filePath: String): [?] String'.
+    ffi newspeakFunction: #cc:dependencies:flags: ofObject: self signature: '(target: String, deps: [?]String, flags: String): String'}.
+  args = raw_args collect: [:ra | HyperStream fromScalar: ra].
+  |
+  ^shapeRankProgram evaluateWithArguments: args.
+)
+shapeRankSource8 ^ <String> = (
+  ^'
+  program build(getFile: (filePath: String): [?] String, clang: (target: String, deps: [?]String, flags: String): String)
+  
+   clang(getFile("Users/gbracha/shapeRank/f5/shapeRank/examples/a.c"), ["Users/gbracha/shapeRank/f5/shapeRank/examples/b.h"], "-c")
+   '
+)
+public getFile: path  <String> ^ <HyperStream> = (
+  | stream <HyperStream> = HyperStream extensible. |
+  stream iterator add: path.
+ watcher getFiles: path do: [:filepath <String> | 
+     stream iterator add: (HyperStream fromScalar: path). (* or just path, as before? *)
+     nil
+     ].
+  ^stream
 )
 ) : (
 )

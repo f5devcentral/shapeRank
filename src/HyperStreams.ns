@@ -335,9 +335,6 @@ public take: n <Integer> ^ <HyperStream[T]> = (
   | dimTail = dimensions copyFrom: 2 to: dimensions size. |
   ^class iteratingOver: (iterator take: n)  dimensions:  {n}, dimTail
 )
-public hasNext ^ <Boolean> = (
-  ^iterator haNext
-)
 public next ^ <HyperStream[T]> = (
   | n <HyperStream[T]> = iterator next. |
   window add: n.
@@ -368,6 +365,9 @@ public collect: f <[:T | R]>  ^ <HyperStream[R]> = (
 )
 public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDimension]>  ^ <HyperStream[R]> = (
   ^class iteratingOver: (iterator map:  [:e <HyperStream[T]> | e map: f withRangeOfDimensions: ds] withRank: ds size) dimensions: ds 
+)
+public hasNext ^ <Boolean> = (
+  ^iterator hasNext
 )
 ) : (
 )
