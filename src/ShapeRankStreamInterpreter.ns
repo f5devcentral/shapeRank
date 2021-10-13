@@ -588,56 +588,6 @@ frameArgument: arg <HyperStream[T def]> forParameter: p <ParameterAST> ^ <Frame[
   ].
    ^Error signal: 'Rank of actual argument ' , arg printString, '(', arg rank printString, ') is less than rank of formal parameter ', p id, ' (', p rank printString, ')'.
 )
-reactivelyFuse: cells <HyperStream[Cell[T def]]> with: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[U | V]]> = (
-     cells isKindOfScalarHyperStream ifTrue: [
-        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
-        fcells isKindOfUnboundedHyperStream 
-           ifTrue: [^fuseScalar: cells withUnbounded: fcells].
-        ^fuseScalar: cells withBounded: fcells
-     ] ifFalse: [
-          cells isKindOfUnboundedHyperStream ifTrue: [
-                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
-                  ^reactivelyFuseUnbounded: cells with: fcells
-          ].
-          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
-          ^reactivelyFuseBounded: cells with: fcells  
-          ]
-)
-synchronouslyFuseBounded: u <BoundedHyperStream[Cell[U def]]> with: v <BoundedHyperStream[Cell[V def]]> ^ <BoundedHyperStream[Cell[U | V]]> = (
-(*
-To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream, whose window consists of the pointwise synchronous fusion of the constituent hyperstreams of their windows (whose sizes necessarily agree).
-*)
- | 
- fusedSubstreams <List[HyperStream[Cell[[U | V]]]]> =  List new: u size. 
- dimStart <List[Integer | UnboundedDimension]> = List withAll: {u dimensions first}.
- dims <List[Integer | UnboundedDimension]>
- |
- 1 to: u size do: [:i <Integer> |
-    | ue <HyperStream[Cell[U]]> = u iterator next. ve <HyperStream[Cell[V]]> = v iterator next. | 
-       fusedSubstreams add: (synchronouslyFuse: ue with: ve)
-     ]. 
-   dims:: fusedSubstreams first isKindOfScalarHyperStream 
-      ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
-  ^HyperStream fromList: fusedSubstreams dimensions: dims
-)
-reactivelyFuseBounded: u <BoundedHyperStream[Cell[U def]]> with: v <BoundedHyperStream[Cell[V def]]> ^ <BoundedHyperStream[Cell[T | S]]> = (
-(*
-To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream, whose window consists of the pointwise reactive fusion of the constituent hyperstreams of their windows (whose sizes necessarily agree).
-*)
- | 
- fusedSubstreams <List[HyperStream[Cell[[U | V]]]]> =  List new: u size. 
- dimStart <List[Integer | UnboundedDimension]> = List withAll: {u dimensions first}.
- dims <List[Integer | UnboundedDimension]>
- |
-
- 1 to: u size do: [:i <Integer> |
-    | ue <HyperStream[Cell[U]]> = u iterator next. ve <HyperStream[Cell[V]]> = v iterator next. | 
-       fusedSubstreams add: (reactivelyFuse: ue with: ve)
-     ].
-   dims:: fusedSubstreams first isKindOfScalarHyperStream 
-      ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
-  ^HyperStream fromList: fusedSubstreams dimensions: dims
-)
 public UnknownDimensionAST ^ <UnknownDimensionAST class> = (
   ^super UnknownDimensionAST
 )
@@ -657,21 +607,6 @@ To fuse an unbounded stream, u,  and a scalar one, s, (either synchronously or r
   fusedIterator <Iterator[Cell[U | S]]> = ReactivelyFusedIterator fusing: u iterator and: replicatedIterator. 
   |
   ^HyperStream iteratingOver: fusedIterator dimensions: u dimensions
-)
-synchronouslyFuse: cells <HyperStream[Cell[T def]]> with: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[T | S]]> = ( 
-     cells isKindOfScalarHyperStream ifTrue: [
-        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
-        fcells isKindOfUnboundedHyperStream 
-           ifTrue: [^fuseScalar: cells withUnbounded: fcells].
-        ^fuseScalar: cells withBounded: fcells
-     ] ifFalse: [
-          cells isKindOfUnboundedHyperStream ifTrue: [
-                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
-                  ^synchronouslyFuseUnbounded: cells with: fcells
-          ].
-          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
-          ^synchronouslyFuseBounded: cells with: fcells  
-          ]
 )
 computeCall: callee <FunctionAST | ProgramAST> arguments: args <List[HyperStream]> ^  <HyperStream> = (
   |  (* frame *)
@@ -711,13 +646,6 @@ fuseDimensionsOf: u and: v = (
   |
   ^prefix, suffix
 )
-synchronouslyFuseUnbounded: u <UnboundedHyperStream[Cell[U def]]> with: v <UnboundedHyperStream[Cell[V def]]> ^ <UnboundedHyperStream[Cell[U | V]]> = (
-(*
-To synchronously fuse two unbounded hyperstreams, we create a new unbounded hyperstream, whose iterator is the synchronous fusion of their iterators.
-*)
-(* u and v dimensions must agree *)
-  ^HyperStream iteratingOver: (SynchronouslyFusedIterator fusing: u iterator and: v iterator) dimensions: (fuseDimensionsOf: u and: v)
-)
 fuseScalar: s <ScalarHyperStream[Cell[S def]]> withUnbounded: u <UnboundedHyperStream[Cell[U def]]> ^ <UnboundedHyperStream[Cell[S | U]]> = (
 (*
 To fuse a scalar stream, s, and an unbounded  one, u, (either synchronously or reactively, makes no difference), we create a new unbounded hyperstream whose iterator hasNext if u iterator hasNext, and whose next is the fusion of s and u next.
@@ -728,11 +656,105 @@ To fuse a scalar stream, s, and an unbounded  one, u, (either synchronously or r
   |
   ^HyperStream iteratingOver: fusedIterator dimensions: u dimensions
 )
-reactivelyFuseUnbounded: u <UnboundedHyperStream[Cell[U def]]> with: v <UnboundedHyperStream[Cell[V def]]> ^ <UnboundedHyperStream[Cell[U | V]]> = (
+synchronouslyFuseBounded: u <BoundedHyperStream[Cell[U def]]> withBounded: v <BoundedHyperStream[Cell[V def]]> ^ <BoundedHyperStream[Cell[U | V]]> = (
+(*
+To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream, whose window consists of the pointwise synchronous fusion of the constituent hyperstreams of their windows (whose sizes necessarily agree).
+*)
+ | 
+ fusedSubstreams <List[HyperStream[Cell[[U | V]]]]> =  List new: u size. 
+ dimStart <List[Integer | UnboundedDimension]> = List withAll: {u dimensions first}.
+ dims <List[Integer | UnboundedDimension]>
+ |
+ 1 to: u size do: [:i <Integer> |
+    | ue <HyperStream[Cell[U]]> = u iterator next. ve <HyperStream[Cell[V]]> = v iterator next. | 
+       fusedSubstreams add: (synchronouslyFuse: ue with: ve)
+     ]. 
+   dims:: fusedSubstreams first isKindOfScalarHyperStream 
+      ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
+  ^HyperStream fromList: fusedSubstreams dimensions: dims
+)
+synchronouslyFuseUnbounded: u <UnboundedHyperStream[Cell[U def]]> withUnbounded: v <UnboundedHyperStream[Cell[V def]]> ^ <UnboundedHyperStream[Cell[U | V]]> = (
+(*
+To synchronously fuse two unbounded hyperstreams, we create a new unbounded hyperstream, whose iterator is the synchronous fusion of their iterators.
+*)
+(* u and v dimensions must agree *)
+  ^HyperStream iteratingOver: (SynchronouslyFusedIterator fusing: u iterator and: v iterator) dimensions: (fuseDimensionsOf: u and: v)
+)
+synchronouslyFuse: cells <HyperStream[Cell[T def]]> with: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[T | S]]> = ( 
+     cells isKindOfScalarHyperStream ifTrue: [
+        (* scalar - scalar *)
+        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
+        (* scalar - unbounded *)
+        fcells isKindOfUnboundedHyperStream 
+           ifTrue: [^fuseScalar: cells withUnbounded: fcells].
+        (* scalar - bounded *)
+        ^fuseScalar: cells withBounded: fcells
+     ] ifFalse: [
+          cells isKindOfUnboundedHyperStream ifTrue: [
+                  (* unbounded - scalar *)
+                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
+                   (* unbounded - bounded *)
+                   fcells isKindOfBoundedHyperStream ifTrue: [^synchronouslyFuseUnbounded: cells withBounded: fcells].                 
+                  (* unbounded - unbounded *)                  
+                  ^synchronouslyFuseUnbounded: cells withUnbounded: fcells
+          ].
+          (* bounded - scalar *)
+          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
+           (* bounded - unbounded *)
+          fcells isKindOfUnboundedHyperStream ifTrue: [^synchronouslyFuseBounded: cells withUnbounded: fcells].         
+          (* bounded - bounded *)
+          ^synchronouslyFuseBounded: cells withBounded: fcells  
+          ]
+)
+reactivelyFuseBounded: u <BoundedHyperStream[Cell[U def]]> withBounded: v <BoundedHyperStream[Cell[V def]]> ^ <BoundedHyperStream[Cell[T | S]]> = (
+(*
+To synchronously fuse two bounded hyperstreams, create a new bounded hyperstream, whose window consists of the pointwise reactive fusion of the constituent hyperstreams of their windows (whose sizes necessarily agree).
+*)
+ | 
+ fusedSubstreams <List[HyperStream[Cell[[U | V]]]]> =  List new: u size. 
+ dimStart <List[Integer | UnboundedDimension]> = List withAll: {u dimensions first}.
+ dims <List[Integer | UnboundedDimension]>
+ |
+
+ 1 to: u size do: [:i <Integer> |
+    | ue <HyperStream[Cell[U]]> = u iterator next. ve <HyperStream[Cell[V]]> = v iterator next. | 
+       fusedSubstreams add: (reactivelyFuse: ue with: ve)
+     ].
+   dims:: fusedSubstreams first isKindOfScalarHyperStream 
+      ifTrue: [dimStart] ifFalse: [dimStart, (fusedSubstreams first dimensions)].
+  ^HyperStream fromList: fusedSubstreams dimensions: dims
+)
+reactivelyFuseUnbounded: u <UnboundedHyperStream[Cell[U def]]> withUnbounded: v <UnboundedHyperStream[Cell[V def]]> ^ <UnboundedHyperStream[Cell[U | V]]> = (
 (*
 To reactively fuse two unbounded hyperstreams, we create a new unbounded hyperstream, whose iterator is the reactive fusion of their iterators.
 *)
   ^HyperStream iteratingOver: (ReactivelyFusedIterator fusing: u iterator and: v iterator) dimensions: (fuseDimensionsOf: u and: v)
+)
+reactivelyFuse: cells <HyperStream[Cell[T def]]> with: fcells <HyperStream[Cell[S def]]> ^ <Hyperstream[Cell[U | V]]> = (
+     cells isKindOfScalarHyperStream ifTrue: [
+        (* scalar - scalar *)
+        fcells isKindOfScalarHyperStream ifTrue: [^fuseScalar: cells withScalar: fcells].
+        (* scalar - unbounded *)
+        fcells isKindOfUnboundedHyperStream 
+           ifTrue: [^fuseScalar: cells withUnbounded: fcells].
+        (* scalar - bounded *)
+        ^fuseScalar: cells withBounded: fcells
+     ] ifFalse: [
+          cells isKindOfUnboundedHyperStream ifTrue: [
+                  (* unbounded - scalar *)
+                  fcells isKindOfScalarHyperStream ifTrue: [^fuseUnbounded: cells withScalar: fcells].
+                   (* unbounded - bounded *)
+                  fcells isKindOfBoundedHyperStream ifTrue: [^reactivelyFuseUnbounded: cells withBounded: fcells].                 
+                  (* unbounded - unbounded *)
+                  ^reactivelyFuseUnbounded: cells withUnbounded: fcells
+          ].
+          (* bounded - scalar *)
+          fcells isKindOfScalarHyperStream ifTrue: [^fuseBounded: cells withScalar: fcells].
+           (* bounded - unbounded *)
+          fcells isKindOfUnboundedHyperStream ifTrue: [^reactivelyFuseBounded: cells withUnbounded: fcells].         
+          (* bounded - bounded *)
+          ^reactivelyFuseBounded: cells withBounded: fcells  
+          ]
 )
 ) : (
 )
