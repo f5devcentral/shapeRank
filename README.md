@@ -17,9 +17,16 @@ Once the reference implementation is complete, we intend to build
 an industrial-strength, high performance version using a systems
 programming language such as Rust.
 
-For a quick overview of the language, you can check out this talk:
+For a quick overview of the language, you can check out these talks:
 
 https://www.youtube.com/watch?v=x1FoTYnJxeY&feature=youtu.be
+Zan early overview of the project (by now, somewhat out of date,
+especially the material on types). 38 minutes.
+
+https://www.youtube.com/watch?v=vMO-CFlbYf8. A quick (15 minute)
+discussion the reactive aspects of ShapeRank.
+
+You can  also read the related [in-progress paper](http://shapeRankREBLS-with-build.pdf)
 
 
 ## Getting Started
