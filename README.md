@@ -17,9 +17,16 @@ Once the reference implementation is complete, we intend to build
 an industrial-strength, high performance version using a systems
 programming language such as Rust.
 
-For a quick overview of the language, you can check out this talk:
+For a quick overview of the language, you can check out these talks:
 
 https://www.youtube.com/watch?v=x1FoTYnJxeY&feature=youtu.be
+an early overview of the project (by now, somewhat out of date,
+especially the material on types). 38 minutes.
+
+https://www.youtube.com/watch?v=vMO-CFlbYf8. A quick (15 minute)
+discussion the reactive aspects of ShapeRank.
+
+You can  also read the related [in-progress paper](http://shapeRankReactiveOverview.pdf)
 
 
 ## Getting Started
@@ -67,6 +74,7 @@ ShapeRank also comes with a Dockerfile, which can be used to build the source. W
 Use `npm i` to install dependencies.
 
 Use `npm run build` to build ShapeRank. (Make sure you have Docker running.)
+
 ## Support
 For support, please open a GitHub issue. Note that ShapeRank is research project, not a product.
 
