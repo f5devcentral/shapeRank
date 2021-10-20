@@ -26,7 +26,7 @@ especially the material on types). 38 minutes.
 https://www.youtube.com/watch?v=vMO-CFlbYf8. A quick (15 minute)
 discussion the reactive aspects of ShapeRank.
 
-You can  also read the related [in-progress paper](http://shapeRankReactiveOverview.pdf)
+You can  also read the related [in-progress paper](https://github.com/f5devcentral/shapeRank/blob/main/shapeRankReactiveOverview.pdf)
 
 
 ## Getting Started
