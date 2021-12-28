@@ -32,9 +32,6 @@ class Activation of: f <FunctionAST | ProgramAST> from: argVector <List[Stream]>
   public callVisit <CallVisit> = v.  
 |
 ) (
-public at: k <Symbol> ^ <Stream> = (
-  ^at: k ifAbsent: [Error signal: 'Undefined variable ', k]. (* should never happen in a typechecked prgram *)
-)
 public at: k <Symbol> ifAbsent: blk <[Stream]> ^ <Stream> = (
   1 to: function parameters size do: [:i <Integer> |
   (function parameters at: i) id = k ifTrue: [ | arg |
@@ -44,6 +41,9 @@ public at: k <Symbol> ifAbsent: blk <[Stream]> ^ <Stream> = (
     ]
   ].
 ^blk value 
+)
+public at: k <Symbol> ^ <Stream> = (
+  ^at: k ifAbsent: [Error signal: 'Undefined variable ', k]. (* should never happen in a typechecked program *)
 )
 ) : (
 )

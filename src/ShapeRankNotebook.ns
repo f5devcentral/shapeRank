@@ -17,8 +17,6 @@ class ShapeRankNotebook packageUsing: manifest = (
   private ShapeRankGrammar = manifest ShapeRankGrammar.
   private ShapeRankParser = manifest ShapeRankParser.
   private ShapeRankWorkspace = manifest ShapeRankWorkspace.
-  
-  private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.  
   |
 ) (
 linearClassificationDemo^ <String> = (
@@ -51,12 +49,11 @@ public main: platform args: args = (
   parsers = CombinatorialParsing usingPlatform: platform.
   grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
   parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
-  hopscotchPlatform = hopscotchRuntime using: platform.  
-  ide = HopscotchIDE ideUsingPlatform: hopscotchPlatform.
-  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform browsing: ide browsing engine: evaluator  parser: parsing code: linearClassificationDemo.
+  ide = HopscotchIDE ideUsingPlatform: platform.
+  workspace = ShapeRankWorkspace usingPlatform: platform browsing: ide browsing engine: evaluator  parser: parsing code: linearClassificationDemo.
   |
   
-  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
+  platform hopscotch HopscotchWindow openSubject: workspace programSubject
 )
 ) : (
 )
