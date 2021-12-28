@@ -7,7 +7,6 @@ Quick and dirty demo of ShapeRank in the browser.
 Copyright 2014-2017 Google Inc.
 *)
 |
-        private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.
 	  private Embedder = manifest ShapeRankEmbedder.
 	  private HopscotchIDE = manifest HopscotchWebIDE packageUsing: manifest.
         private ShapeRankASTs = manifest ShapeRankASTs.
@@ -85,12 +84,11 @@ public main: platform args: args = (
         grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
         parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: Evaluator collectionUtils: utils.
 	parser:: parsing Parser new.
-	hopscotchPlatform:: hopscotchRuntime using: platform.
-	ide:: HopscotchIDE ideUsingPlatform: hopscotchPlatform.
+	ide:: HopscotchIDE ideUsingPlatform: platform.
       namespace:: ide namespacing Root.
 	populateNamespace: namespace.
-	embedder:: Embedder usingPlatform: hopscotchPlatform namespace: namespace browsing: ide browsing parser: parser.
-	hopscotchPlatform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
+	embedder:: Embedder usingPlatform: platform namespace: namespace browsing: ide browsing parser: parser.
+	platform hopscotch core HopscotchWindow openSubject: (embedder SnippetSubject onModel: '[1, 2, 3]').
 )
 ) : (
 )

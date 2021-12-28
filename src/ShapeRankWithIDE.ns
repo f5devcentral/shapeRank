@@ -2,7 +2,6 @@ Newspeak3
 'Root'
 class ShapeRankWithIDE  packageUsing: manifest = (
 |
-        private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.
         private hopscotchIDE = manifest HopscotchWebIDE packageUsing: manifest.
 	    private Embedder = manifest ShapeRankEmbedder.
         private ShapeRankASTs = manifest ShapeRankASTs.
@@ -32,16 +31,6 @@ class ShapeRankWithIDE  packageUsing: manifest = (
         private HyperStreams = manifest HyperStreams.        
 |
 ) (
-public main: platform args: args = (
-    | ide namespace hopscotchPlatform |
-	hopscotchPlatform:: hopscotchRuntime using: platform.
-	ide:: hopscotchIDE ideUsingPlatform: hopscotchPlatform.
-    hopscotchIDE augmentIDE: ide withPlatform: platform.
-    namespace:: ide namespacing Root.
-	populateNamespace: namespace.
-    (platform js global at: 'document') at: 'title' put: 'ShapeRank IDE'.
-    ide launch: (ide browsing HomeSubject new)
-)
 populateNamespace: namespace = (
 	namespace at: #ShapeRankWithIDE put: self class.
 	namespace at: #ShapeRankASTs put: ShapeRankASTs.	
@@ -68,6 +57,15 @@ populateNamespace: namespace = (
     namespace at: #CollectionUtils put: CollectionUtils.
     namespace at: #NodeAPI put: NodeAPI.
     namespace at: #Tensorflow put: Tensorflow. 
+)
+public main: platform args: args = (
+    | ide namespace |
+	ide:: hopscotchIDE ideUsingPlatform: platform.
+    hopscotchIDE augmentIDE: ide withPlatform: platform.
+    namespace:: ide namespacing Root.
+	populateNamespace: namespace.
+    (platform js global at: 'document') at: 'title' put: 'ShapeRank IDE'.
+    ide launch: (ide browsing HomeSubject new)
 )
 ) : (
 public shapeRankParserWithTypechecker: platform <Platform> manifest: manifest = (

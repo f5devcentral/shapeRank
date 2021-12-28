@@ -14,8 +14,6 @@ class ShapeRankWorkspaceApp packageUsing: manifest = (
   private ShapeRankGrammar = manifest ShapeRankGrammar.
   private ShapeRankParser = manifest ShapeRankParser.
   private ShapeRankWorkspace = manifest ShapeRankWorkspace.
-  
-  private hopscotchRuntime = manifest HopscotchForHTML5Runtime packageUsing: manifest.  
   |
 ) (
 public main: platform args: args = (
@@ -28,11 +26,10 @@ public main: platform args: args = (
   parsers = CombinatorialParsing usingPlatform: platform.
   grammar = ShapeRankGrammar usingPlatform: platform parsers: parsers.
   parsing = ShapeRankParser usingPlatform: platform grammar: grammar asts: evaluator collectionUtils: utils.
-  hopscotchPlatform = hopscotchRuntime using: platform.  
-  workspace = ShapeRankWorkspace usingPlatform: hopscotchPlatform engine: evaluator  parser: parsing.
+  workspace = ShapeRankWorkspace usingPlatform: platform engine: evaluator  parser: parsing.
   |
   
-  hopscotchPlatform hopscotch HopscotchWindow openSubject: workspace programSubject
+  platform hopscotch HopscotchWindow openSubject: workspace programSubject
 )
 ) : (
 )
