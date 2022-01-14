@@ -1,6 +1,20 @@
 Newspeak3
 'Root'
-class ShapeRankParser usingPlatform: p grammar: grammar asts: asts collectionUtils: u = (
+class ShapeRankParser usingPlatform: p grammar: grammar asts: asts collectionUtils: u 
+(* :exemplar: 
+[
+    |
+	parsers
+	grammar
+    utils
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    parsers:: CombinatorialParsing usingPlatform: platform.
+    grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+        ShapeRankParser usingPlatform: platform grammar: grammar asts: ShapeRankASTs collectionUtils: utils.
+] value *)
+= (
 |
 	private List = p collections List.
         private Map = p collections Map.

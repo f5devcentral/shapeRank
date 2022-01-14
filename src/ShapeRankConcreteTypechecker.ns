@@ -1,7 +1,31 @@
 Newspeak3
 'Root'
 class ShapeRankConcreteTypechecker usingPlatform:
-platform asts: asts collectionUtils: utils streams: hs <HyperStreams> = (
+platform asts: asts collectionUtils: utils streams: hs <HyperStreams> 
+(* :exemplar: 
+[
+    |
+	parsers
+	grammar
+    utils
+    parsing
+    Scopes
+    InterimTypechecker
+    hyperstreams
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    parsers:: CombinatorialParsing usingPlatform: platform.
+    grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+    parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: ShapeRankASTs collectionUtils: utils.
+	Scopes:: (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+    InterimTypechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker. 
+    hyperstreams:: HyperStreams usingPlatform: platform.
+	ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams.
+] value *)
+= (
 (*
 An abstract interpreter for computing the types of programs.
 

@@ -1,7 +1,33 @@
 Newspeak3
 'Root'
 class ShapeRankStreamInterpreter usingPlatform:
-platform asts: asts collectionUtils: utils streams: hs = ( 
+platform asts: asts collectionUtils: utils streams: hs 
+(* :exemplar: 
+[
+    |
+	parsers
+	grammar
+    utils
+    parsing
+    Scopes
+    InterimTypechecker
+    Typechecker
+    hyperstreams
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    parsers:: CombinatorialParsing usingPlatform: platform.
+    grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+    parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: ShapeRankASTs collectionUtils: utils.
+	Scopes:: (ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI) Scopes.
+    InterimTypechecker::
+	  (ShapeRankTypechecker  usingPlatform: platform asts: Scopes collectionUtils: utils)
+	     Typechecker.     
+    hyperstreams:: HyperStreams usingPlatform: platform.
+	Typechecker:: ShapeRankConcreteTypechecker  usingPlatform: platform asts: InterimTypechecker collectionUtils: utils streams: hyperstreams.
+    ShapeRankStreamInterpreter usingPlatform: platform asts: Typechecker collectionUtils: utils streams: hyperstreams.
+] value *)
+= ( 
 (* Interpreter for ShapeRank with stream support.  *)
   | private ASTClass <ShapeRankAST class> = asts.
     private HyperStream <HyperStream class> = hs HyperStream.
@@ -12,7 +38,9 @@ platform asts: asts collectionUtils: utils streams: hs = (
     private ObjectMirror = platform mirrors ObjectMirror.
     | ) (
 public class Evaluator usingPlatform: p
-<Platform> collectionUtils: c = ASTClass usingPlatform: p
+<Platform> collectionUtils: c 
+(* :exemplar: Evaluator usingPlatform: platform collectionUtils: Utils *)
+= ASTClass usingPlatform: p
 collectionUtils: c ( (* As indicated elsewhere, this class leverages class hierarchy inheritance, extending the AST with interpretation
 machinery without compromising modularity.
 

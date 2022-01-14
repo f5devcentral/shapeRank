@@ -1,6 +1,22 @@
 Newspeak3
 'Root'
-class ShapeRankScopes usingPlatform: platform asts: asts <ShapeRankAST class> tensorflow: Tensorflow <Tensorflow class> nodeAPI: NodeAPI <NodeAPI class>  = (
+class ShapeRankScopes usingPlatform: platform asts: asts <ShapeRankAST class> tensorflow: Tensorflow <Tensorflow class> nodeAPI: NodeAPI <NodeAPI class>  
+(* :exemplar: 
+[
+    |
+	parsers
+	grammar
+    utils
+    parsing
+	|
+	
+    utils:: CollectionUtils usingPlatform: platform.
+    parsers:: CombinatorialParsing usingPlatform: platform.
+    grammar:: ShapeRankGrammar usingPlatform: platform parsers: parsers.
+    parsing:: ShapeRankParser usingPlatform: platform grammar: grammar asts: ShapeRankASTs collectionUtils: utils.
+	ShapeRankScopes usingPlatform: platform asts: ShapeRankASTs tensorflow: Tensorflow nodeAPI: NodeAPI.
+] value *)
+= (
   |
   private ASTClass <ShapeRankAST class> = asts.
   private Map = platform collections Map.

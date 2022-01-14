@@ -1,6 +1,10 @@
 Newspeak3
 'Root'
-class ShapeRankASTs usingPlatform: platform collectionUtils: collectionUtils = (
+class ShapeRankASTs usingPlatform: platform collectionUtils: collectionUtils 
+(* :exemplar: 
+        ShapeRankASTs usingPlatform: platform collectionUtils: (CollectionUtils usingPlatform: platform).
+ *)
+= (
 (*
 AST module for ShapeRank.
 *)
