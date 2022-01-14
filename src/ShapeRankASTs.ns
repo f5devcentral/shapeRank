@@ -17,7 +17,7 @@ AST module for ShapeRank.
         private MessageNotUnderstood = platform kernel MessageNotUnderstood.
 |
 ) (
-public class AST position: p <{Integer. Integer}> = (
+public class AST position: p <{Integer. Integer}> (* :exemplar: AST position: {0. 0}*) = (
 (* An abstract syntax tree. An AST knows where in the source code the corresponding construct is. The slots start and end are indices into the source code marking that position. *)
 |
 public start <Integer> ::= p at: 1. (* Note that 0 is out-of-bounds in a Newspeak string. *)
@@ -84,7 +84,7 @@ public body: e <ExprAST> ^ <Instance> = (
   ^body: e position: e position
 )
 )
-public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = ExprAST position: p (
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> (* :exemplar: BoolAST value: true position: {0. 0}*) = ExprAST position: p (
 | public val = v. |
 ) (
 public = other <Object> ^<Boolean> = (
@@ -102,7 +102,7 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-public class StringAST value: v <String> position: p <{Integer. Integer}> = ExprAST position: p (
+public class StringAST value: v <String> position: p <{Integer. Integer}> (* :exemplar: StringAST value: 'abc' position: {0. 0}*) = ExprAST position: p (
   | public val = v. |
 ) (
 public = other <Object> ^<Boolean> = (
@@ -222,7 +222,7 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-class DimensionAST position: p <{Integer. Integer}> = BaseTypeAST position: p (
+class DimensionAST position: p <{Integer. Integer}> (* :exemplar: DimensionAST position: {0. 0}*) = BaseTypeAST position: p (
 ) (
 public = other <Object> ^<Boolean> = (
   ^other isKindOfDimensionAST
@@ -244,7 +244,7 @@ public hash ^<Integer> = (
 )
 ) : (
 )
-public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> = DimensionAST position: p (
+public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> (* :exemplar: DimensionNumberAST number: 1 position: {0. 0}*) = DimensionAST position: p (
 |
 	public dimension <Integer> = n.
 |
@@ -292,7 +292,7 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
-public class DimensionVariableAST position: p <{Integer. Integer}> = DimensionAST position: p (
+public class DimensionVariableAST position: p <{Integer. Integer}> (* :exemplar: DimensionVariableAST position: {0. 0}*) = DimensionAST position: p (
 |
 	name <String>
 |
@@ -318,7 +318,9 @@ public named: n <String> position: p <{Integer. Integer}> = (
  ^ (position: p) id: n
 )
 )
-public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = DimensionAST position: p (
+public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+ (* :exemplar: DimensionVariableReferenceAST named: 'd' position: {0. 0}*)
+= DimensionAST position: p (
 |
 	public id <Symbol> = '$', n.
 |
@@ -352,7 +354,8 @@ public with: t <TypeAST> collect: f <[TypeAST TypeAST | List[T]]> ^<List[T]> = (
 )
 ) : (
 )
-public class DynamicTypeAST position: p <{Integer. Integer}> = TypeAST position: p(
+public class DynamicTypeAST position: p <{Integer. Integer}> 
+(* :exemplar: DynamicTypeAST position: {0. 0}*) = TypeAST position: p(
 ) (
 public = other <Object> ^ <Boolean> = (
   ^other isKindOfDynamicTypeAST
@@ -369,7 +372,7 @@ public hash ^<Integer> = (
 )
 ) : (
 )
-class ExprAST position: p <{Integer. Integer}> = AST position: p (
+class ExprAST position: p <{Integer. Integer}> (* :exemplar: ExpressionAST position: {0. 0}*) = AST position: p (
   | public isShape ::= false. |
 ) (
 public = other <Other> ^ <Boolean> = (
@@ -432,7 +435,7 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = ExprAST position: p (
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> (* :exemplar: IdentifierAST named: 'abc' position: {0. 0}*) = ExprAST position: p (
 |
 	public id <String> = n.
 |
@@ -474,7 +477,7 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-public class NumAST value: n <Integer> position: p <{Integer. Integer}> = ExprAST position: p (
+public class NumAST value: n <Integer> position: p <{Integer. Integer}> (* :exemplar: NumAST value: 3 position: {0. 0}*) = ExprAST position: p (
 |
 	public val <Integer> = n.
 |
@@ -581,7 +584,7 @@ public prettyPrint ^ <String> = (
 )
 ) : (
 )
-class ShapeAST position: p <{Integer. Integer}> = AST position: p (
+class ShapeAST position: p <{Integer. Integer}> (* :exemplar: ShapeAST position: {0. 0}*) = AST position: p (
 |
 
 |
@@ -648,7 +651,8 @@ public isKindOfShapeCastAST ^ <Boolean> = (
 )
 ) : (
 )
-public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> = ShapeAST position: p (
+public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> 
+(* :exemplar: ShapeVariableAST named: 'S' position: {0. 0}*) = ShapeAST position: p (
 |
 	public id <String> = n.
 |
@@ -669,7 +673,9 @@ public isKindOfShapeVariableAST ^ <Boolean> = (
 )
 ) : (
 )
-public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = ShapeAST position: p (
+public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+ (* :exemplar: ShapeVariableReferenceAST named: 'R' position: {0. 0}*)
+= ShapeAST position: p (
 |
 	public id <Symbol> = '@', n.
 |
@@ -791,14 +797,14 @@ public = o <Object> ^ <Boolean> = (
 )
 ) : (
 )
-class TypeAST position: p <{Integer. Integer}> = AST position: p (
+class TypeAST position: p <{Integer. Integer}> (* :exemplar: TypeAST position: {0. 0}*) = AST position: p (
 ) (
 public isKindOfTypeAST ^ <Boolean> = (
   ^true
 )
 ) : (
 )
-class BaseTypeAST position: p <{Integer. Integer}> = TypeAST position: p (
+class BaseTypeAST position: p <{Integer. Integer}> (* :exemplar: BaseTypeAST position: {0. 0}*) = TypeAST position: p (
 ) (
 public asTensorType = (
   (* For base types, the following holds *)
@@ -819,7 +825,9 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
-public class TypeIdAST named: n <String> position: p <{Integer. Integer}> = BaseTypeAST position: p (
+public class TypeIdAST named: n <String> position: p <{Integer. Integer}>
+ (* :exemplar: TypeIdAST named: 'X' position: {0. 0}*)
+ = BaseTypeAST position: p (
 |
 	public id <String> = n.
 |
@@ -952,7 +960,7 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
-public class TypeVariable named: n <String> = (
+public class TypeVariable named: n <String> (* :exemplar: TypeVariableAST named: 'T' *) = (
   (* TypeVariable uses object identity to resolve different type variables
      with the same names. It's also not an AST, it can never be output from the parser. *)
   | public id <String> = n. |
@@ -971,7 +979,9 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
-public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = BaseTypeAST position: p (
+public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+ (* :exemplar: TypeVariableReferenceAST named: 'X1' position: {0. 0}*)
+= BaseTypeAST position: p (
 |
 	public id <Symbol> = '$', n.
 |
@@ -1004,7 +1014,7 @@ public collect: f <[TypeAST | TypeAST]> ^<TypeAST> = (
 )
 ) : (
 )
-public class UnknownDimensionAST position: p <{Integer. Integer}> = DimensionAST position: p (
+public class UnknownDimensionAST position: p <{Integer. Integer}> (* :exemplar: UnknownDimensionAST position: {0. 0}*) = DimensionAST position: p (
 ) (
 public isKindOfUnknownDimensionAST ^ <Boolean> = (
   ^true
