@@ -51,7 +51,9 @@ that typechecker and interpreter could share.
   |
   addPrimitives.
 ) (
-class ExprAST position: p <{Integer. Integer}> = super ExprAST position: p (
+class ExprAST position: p <{Integer. Integer}>
+ (* :exemplar: ExprAST position: {0. 0}*)
+ = super ExprAST position: p (
   | public scope <Scope> = Scope new. |
 ) (
 nestScopesOf: children <List[ExprAST]> = (
@@ -130,7 +132,9 @@ public callee ^ <FunctionAST> = (
 )
 ) : (
 )
-class DimensionAST position: p <{Integer. Integer}> = super DimensionAST position: p (
+class DimensionAST position: p <{Integer. Integer}>
+ (* :exemplar: DimensionAST position: {0. 0}*)
+= super DimensionAST position: p (
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
   subclassResponsibility
@@ -157,7 +161,9 @@ public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class DimensionVariableAST position: p <{Integer. Integer}> = super DimensionVariableAST position: p (
+public class DimensionVariableAST position: p <{Integer. Integer}>
+ (* :exemplar: DimensionVariableAST position: {0. 0}*)
+= super DimensionVariableAST position: p (
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
   scope add: self
@@ -437,7 +443,7 @@ public at: k <Symbol> put: o <Object> = (
 )
 ) : (
 )
-class ShapeAST position: p <{Integer. Integer}> = super ShapeAST position: p (
+class ShapeAST position: p <{Integer. Integer}> (* :exemplar: ShapeAST position: {0. 0}*) = super ShapeAST position: p (
 ) (
 public addShapeVariablesTo: scope <Scope> = (
   subclassResponsibility
@@ -512,7 +518,7 @@ public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-class TypeAST position: p <{Integer. Integer}> = super TypeAST position: p (
+class TypeAST position: p <{Integer. Integer}> (* :exemplar: TypeAST position: {0. 0}*) = super TypeAST position: p (
 ) (
 public addTypeVariablesTo: scope <Scope> = (
   shape addShapeVariablesTo: scope.
@@ -571,7 +577,9 @@ public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class UnknownDimensionAST position: p <{Integer. Integer}> =  super UnknownDimensionAST position: p (
+public class UnknownDimensionAST position: p <{Integer. Integer}>
+ (* :exemplar: UnknownDimensionAST position: {0. 0}*)
+ =  super UnknownDimensionAST position: p (
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
 )
@@ -580,7 +588,9 @@ public printString ^ <String> = (
 )
 ) : (
 )
-public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicTypeAST position: p (
+public class DynamicTypeAST position: p <{Integer. Integer}>
+ (* :exemplar: DynamicTypeAST position: {0. 0}*)
+= super DynamicTypeAST position: p (
 ) (
 public addDimensionVariablesTo: s <Scope> = (
   (* Do nothing *)

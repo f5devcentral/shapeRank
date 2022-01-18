@@ -150,6 +150,10 @@ public computeType ^ <ConcreteType> = (
 ) : (
 )
 public class CallAST function: f <Symbol> arguments: as <List[ExprAST]> position: p <{Integer. Integer}> =  super CallAST function: f  arguments: as  position: p  (
+(* Each call node maintains a list, #visits,  of call graph nodes that reference it.  A given call may have its type computed multiple times, depending on the trace that led to it. Each distinctly typed entry in the trace is represented by a distinct call graph node (an instance of CallVisit).
+
+Storing the call graph nodes explicitly preserves it so the evaluator can access type information (in particular, shape information) for each dynamic call during interpretation.
+*)
   | 
   visits <List[CallVisit]> = List new. 
   |
@@ -564,6 +568,8 @@ public fusePrefix: f = (
 ) : (
 )
 class TypeActivation of: f <FunctionAST> from: argVector <List[ConcreteType]> visit: v <CallVisit> = (
+(* During typechecking, each call is symbolically executed by creating a symbolic activation record, which is an instance of this class.  The activation is created with symbolic values for its arguments; these are ConcreteTypes. In addition, the CallVisit node representing the call is also provided. This links the activation to the corresponding node in the call graph. As a result, when new call graph nodes are created we can use the type stack to link them to their callers, so that they provide a complete trace.
+*)
 |
 	function <FunctionAST> = f.
 	public arguments <List[ConcreteType]> = argVector.
@@ -628,6 +634,12 @@ public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <Tens
 )
 )
 class CallVisit forCall: c <CallAST> callerVisit: cv <CallVisit | Nil> = (
+(* This class represents nodes in the call graph in terms of types.  These nodes are distinct from AST  nodes for calls, which are represented by instances of CallAST. Whereas CallAST represents static calls in the program, the call graph consists of the dynamic calls that can occur in the course of (abstract) interpretation (symbolic execution). 
+
+    Because ShapeRank typechecking is based on symbolic execution, each node in the call graph may have a distinct type. When the type interpreter computes the type of a dynamic call, it stores the computed type in the correpsonding CallVisit's #type slot.
+    
+    The AST node representing the call is stored in the #node slot. Each CallVisit holds on to its caller in the #callerVisit slot.
+*)
 	|
     public type <ConcreteType>
     node <CallAST> = c.
