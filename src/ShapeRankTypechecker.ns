@@ -819,7 +819,9 @@ public signalForVariable: name <Symbol> ofType: typ = (
   ^(self variable: name type: typ) signal
 )
 )
-public class AST position: p <{Integer. Integer}> = super AST position: p (
+public class AST position: p <{Integer. Integer}>
+(* :exemplar: AST position: {0. 0}*)
+= super AST position: p (
 ) (
 public computeType ^ <TensorTypeAST> = (
   subclassResponsibility
@@ -844,14 +846,18 @@ public body: e <ExprAST> ^ <Instance> = (
   ^body: e position: e position
 )
 )
-public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> 
+(* :exemplar: BoolAST value: true position: {0. 0}*)
+= super BoolAST value: v position: p (
 ) (
 public computeType ^ <TensorTypeAST> = (
   ^(TypeIdAST named: #Bool  position: {0. 0}) asTensorType
 )
 ) : (
 )
-public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
+    public class StringAST value: v <String> position: p <{Integer. Integer}>
+(* :exemplar: StringAST value: 'abc' position: {0. 0}*)
+  = super StringAST value: v position: p (
 ) (
 public computeType ^<TensorTypeAST> = (
   ^(TypeIdAST named: #String position: {0. 0}) asTensorType
@@ -1090,7 +1096,9 @@ public substitute: substitution <CallAST> ^ <DimensionAST> = (
 )
 ) : (
 )
-class DimensionAST position: p <{Integer. Integer}> = super DimensionAST position: p (
+class DimensionAST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super DimensionAST position: p (
 ) (
 public = d <Object> ^ <Boolean>  = (
   d isKindOfDimensionAST ifFalse: [^false].
@@ -1130,7 +1138,9 @@ public hash ^ <integer> = (
 )
 ) : (
 )
-public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> = 
+    public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}>
+(* :exemplar: DimensionNumberAST number: 1 position: {0. 0}*)
+  = 
   super DimensionNumberAST number: n position: p (
 ) (
 public canonicalForm ^ <CanonicalDimension> = (
@@ -1215,7 +1225,9 @@ public hash ^ <integer> = (
 )
 ) : (
 )
-public class DimensionVariableAST position: p <{Integer. Integer}> = super DimensionVariableAST position: p (
+public class DimensionVariableAST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super DimensionVariableAST position: p (
 ) (
 public canonicalForm ^ <CanonicalDimension> = (
   ^CanonicalDimension dimVars: variables constant: 0
@@ -1253,7 +1265,9 @@ public named: n <String> position: p <{Integer. Integer}> = (
  ^ (position: p) id: n
 )
 )
-public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+    public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+(* :exemplar: DimensionVariableReferenceAST named: 'd' position: {0. 0}*)
+  = 
   super DimensionVariableReferenceAST named: n position: p  (
 ) (
 public = d <Object> ^ <Boolean> = (
@@ -1291,7 +1305,9 @@ public hash ^ <integer> = (
 )
 ) : (
 )
-public class DynamicTypeAST position: p <{Integer. Integer}> = super DynamicTypeAST position: p (
+public class DynamicTypeAST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super DynamicTypeAST position: p (
 ) (
 public addDimensionVariablesTo: scope = (
 )
@@ -1382,7 +1398,9 @@ public named: n <String> parameters: ps <List[ParameterAST]> returnType: t <Tens
   ^named: n parameters: ps returnType: t body: b isSync: false position: p 
 )
 )
-public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+    public class IdentifierAST named: n <String> position: p <{Integer. Integer}>
+(* :exemplar: IdentifierAST named: 'abc' position: {0. 0}*)
+  = super IdentifierAST named: n  position: p  (
 ) (
 public computeType ^ <TensorTypeAST> = (
   | decl = (currentScope lookup: id) at: #ast. t = decl type. |
@@ -1690,7 +1708,9 @@ public getShapeVariables ^<Set[DimensionVariableAST]> = (
 )
 ) : (
 )
-class ShapeAST position: p <{Integer. Integer}>  = super ShapeAST position: p (
+class ShapeAST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super ShapeAST position: p (
   | normalForm_slot <ShapeAST> ::= nil.
     forceIsNormalForm <Boolean> ::= false.  |
 ) (
@@ -1841,7 +1861,9 @@ public getShapeVariables ^<Set[ShapeVariable | DimensionVariable]> = (
 )
 ) : (
 )
-public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> = super ShapeVariableAST  named: n position: p (
+public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> 
+(* :exemplar: ShapeVariableAST named: 'S' position: {0. 0}*)
+= super ShapeVariableAST  named: n position: p (
 ) (
 public - s <ShapeAST> = (
   self = s ifTrue: [^emptyShape].
@@ -1886,7 +1908,9 @@ public hash ^ <Integer> = (
 )
 ) : (
 )
-public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+    public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+(* :exmeplar: ShapeVariableReferenceAST named: 'R' position: {0. 0}*)
+  = 
   super ShapeVariableReferenceAST named: n position: p  (
 ) (
 public - s <ShapeAST> = (
@@ -2114,7 +2138,9 @@ public printString ^ <String> = (
 )
 ) : (
 )
-class TypeAST position: p <{Integer. Integer}> = super TypeAST position: p (
+class TypeAST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super TypeAST position: p (
 ) (
 public baseType ^ <TypeAST> = (
 (* all types must emulate the TensorType protocol *)
@@ -2172,7 +2198,9 @@ public lcs: t <TypeAST> ^ <TypeAST> = (
 )
 ) : (
 )
-class BaseTypeAST position: p = super BaseTypeAST position: p (
+class BaseTypeAST position: p 
+(* :exemplar: AST position: {0. 0}*)
+= super BaseTypeAST position: p (
 ) (
 public clone ^<TypeAST> = (
   ^self
@@ -2261,7 +2289,9 @@ public subtypeOf: t <TypeAST> ^<Boolean> = (
 )
 ) : (
 )
-public class TypeIdAST named: n <String> position: p <{Integer. Integer}> = super TypeIdAST named: n position: p (
+    public class TypeIdAST named: n <String> position: p <{Integer. Integer}>
+ (* :exemplar: TypeIdAST named: 'X' position: {0. 0}*)
+  = super TypeIdAST named: n position: p (
 ) (
 public = x <Object> = (
   x isKindOfTypeIdAST ifFalse: [^false].
@@ -2340,7 +2370,9 @@ public clone ^<TypeAST> = (
 )
 ) : (
 )
-public class TypeVariable named: n <String> = super TypeVariable named: n (
+    public class TypeVariable named: n <String>
+(* :exemplar: TypeVariableAST named: 'T' *)
+  = super TypeVariable named: n (
 ) (
 public baseType ^<TypeAST> = (
   ^self
@@ -2423,7 +2455,9 @@ public asTypeVariable ^ <TypeVariable> = (
 )
 ) : (
 )
-public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+    public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+ (* :exemplar: TypeVariableReferenceAST named: 'X1' position: {0. 0}*)
+  = 
   super TypeVariableReferenceAST named: n position: p  (
    | n = n. p = p. |
 ) (

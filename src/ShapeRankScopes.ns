@@ -141,7 +141,9 @@ public addDimensionVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}> = 
+    public class DimensionNumberAST number: n <Integer> position: p <{Integer. Integer}>
+(* :exemplar: DimensionNumberAST number: 1 position: {0. 0}*)
+  = 
    super DimensionNumberAST number: n position: p (
 ) (
 public addDimensionVariablesTo: scope <Scope> = (
@@ -173,11 +175,15 @@ public addTypeVariablesTo: scope <Scope> = (
   addDimensionVariablesTo: scope.
 )
 ) : (
-public named: n <String> position: p <{Integer. Integer}> = (
+public named: n <String> position: p <{Integer. Integer}> 
+ (* :exemplar: DimensionVariableReferenceAST named: 'd' position: {0. 0}*)
+= (
  ^ (position: p) id: n
 )
 )
-public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+    public class DimensionVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}>
+(* :exemplar: DimensionVariableReferenceAST named: 'd' position: {0. 0}*)
+  = 
   super DimensionVariableReferenceAST named: n position: p  (
 |
 	bindingSlot <DimensionVariableAST>
@@ -459,7 +465,9 @@ public addShapeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> = super ShapeVariableAST named: n position: p (
+public class ShapeVariableAST named: n <String> position: p <{Integer. Integer}> 
+(* :exemplar: ShapeVariableAST named: 'S' position: {0. 0}*)
+= super ShapeVariableAST named: n position: p (
 |
 	bindingSlot <DimensionVariableAST>
 |
@@ -478,7 +486,9 @@ public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+public class ShapeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> 
+ (* :exemplar: ShapeVariableReferenceAST named: 'R' position: {0. 0}*)
+= 
   super ShapeVariableReferenceAST named: n position: p  (
 |
 	bindingSlot <DimensionVariableAST>
@@ -536,13 +546,17 @@ public shape ^ <ShapeVectorAST> = (
 )
 ) : (
 )
-public class TypeIdAST named: n <String> position: p <{Integer. Integer}> =  super TypeIdAST named: n position: p (
+public class TypeIdAST named: n <String> position: p <{Integer. Integer}> 
+ (* :exemplar: TypeIdAST named: 'X' position: {0. 0}*)
+=  super TypeIdAST named: n position: p (
 ) (
 public addTypeVariablesTo: scope <Scope> = (
 )
 ) : (
 )
-public class TypeVariable named: n <String> = super TypeVariable named: n (
+    public class TypeVariable named: n <String>
+(* :exemplar: TypeVariableAST named: 'T' *)
+  = super TypeVariable named: n (
 ) (
 public addTypeVariablesTo: scope <Scope> = (
   scope add: self.
@@ -561,7 +575,8 @@ public shape ^ <ShapeVectorAST> = (
 )
 ) : (
 )
-public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> = 
+public class TypeVariableReferenceAST named: n <Symbol> position: p  <{Integer. Integer}> 
+ (* :exemplar: TypeVariableReferenceAST named: 'X1' position: {0. 0}*) = 
   super TypeVariableReferenceAST named: n position: p  (
 |
 	bindingSlot <DimensionVariableAST>

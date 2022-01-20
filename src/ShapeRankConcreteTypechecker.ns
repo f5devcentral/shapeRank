@@ -108,7 +108,9 @@ public computeType ^ <ConcreteType> = (
 )
 ) : (
 )
-public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> 
+(* :exemplar: IdentifierAST named: 'abc' position: {0. 0}*)
+= super IdentifierAST named: n  position: p  (
   | cachedType <ConcreteType> |
 ) (
 computeTypeFromScope:  n <Symbol> ^ <ConcreteType> = (
@@ -142,7 +144,9 @@ public body: e <ExprAST> ^ <Instance> = (
   ^body: e position: e position
 )
 )
-public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
+    public class BoolAST value: v <Boolean> position: p <{Integer. Integer}>
+  (* :exemplar: BoolAST value: true position: {0. 0}*)
+  = super BoolAST value: v position: p (
 ) (
 public computeType ^ <ConcreteType> = (
   ^ConcreteType dimensions: List new baseType: 'Bool'
@@ -241,7 +245,9 @@ public typeCallee ^ <FunctionAST> = (
 )
 ) : (
 )
-public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
+    public class NumAST value: n <Integer> position: p <{Integer. Integer}>
+  (* :exemplar: NumAST value: 3 position: {0. 0}*)
+  = super NumAST value: n position: p () (
 public computeType ^ <ConcreteType> = ( 
    | baseType <String> = val isKindOfInteger ifTrue: [val] ifFalse: ['Float']. |
 
@@ -383,7 +389,9 @@ public computeType ^ <ConcreteType> = (
 )
 ) : (
 )
-public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
+    public class StringAST value: v <String> position: p <{Integer. Integer}>
+(* :exemplar: StringAST value: 'abc' position: {0. 0}*)
+  = super StringAST value: v position: p (
 ) (
 public computeType ^ <ConcreteType> = (
   ^ConcreteType dimensions: List new baseType: 'String'
@@ -592,7 +600,9 @@ public of: f <FunctionAST> from: argVector <List[ConcreteType]> = (
   ^of: f from: argVector visit: nil
 )
 )
-public class AST position: p <{Integer. Integer}> = super AST position: p (
+public class AST position: p <{Integer. Integer}> 
+(* :exemplar: AST position: {0. 0}*)
+= super AST position: p (
 ) (
 public eval = (
  (* do we really need this? *)

@@ -98,14 +98,18 @@ public eval ^ <Tensor> = (
 )
 ) : (
 )
-public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> = super BoolAST value: v position: p (
+public class BoolAST value: v <Boolean> position: p <{Integer. Integer}> 
+(* :exemplar: BoolAST value: true position: {0. 0}*)
+= super BoolAST value: v position: p (
 ) (
 public eval  ^ <Tensor> = (
   ^ Tensor dimensions: {} contents: {val}
 )
 ) : (
 )
-public class StringAST value: v <String> position: p <{Integer. Integer}> = super StringAST value: v position: p (
+    public class StringAST value: v <String> position: p <{Integer. Integer}>
+(* :exemplar: StringAST value: 'abc' position: {0. 0}*)
+  = super StringAST value: v position: p (
 ) (
 public eval ^<Tensor> = (
   ^Tensor dimensions: {} contents: {val}
@@ -242,7 +246,9 @@ public map: f <[:T | R]> withRangeOfDimensions: ds <List[Integer | UnboundedDime
 )
 ) : (
 )
-public class IdentifierAST named: n <String> position: p <{Integer. Integer}> = super IdentifierAST named: n  position: p  (
+public class IdentifierAST named: n <String> position: p <{Integer. Integer}> 
+(* :exemplar: IdentifierAST named: 'abc' position: {0. 0}*)
+= super IdentifierAST named: n  position: p  (
 ) (
 computeBinding  ^ <Tensor> = (
    callStack isEmpty ifFalse: [^currentActivation at: id ifAbsent: [evalFromScope: id]].
@@ -261,7 +267,9 @@ evalFromScope:  n <Symbol> ^ <ExprAST> = (
 )
 ) : (
 )
-public class NumAST value: n <Integer> position: p <{Integer. Integer}> = super NumAST value: n position: p () (
+    public class NumAST value: n <Integer> position: p <{Integer. Integer}>
+(* :exemplar: NumAST value: 3 position: {0. 0}*)
+  = super NumAST value: n position: p () (
 public eval  ^ <Tensor> = (
   ^ Tensor dimensions: {} contents: {val}
 )
